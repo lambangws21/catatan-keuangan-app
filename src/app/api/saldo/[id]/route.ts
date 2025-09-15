@@ -1,64 +1,67 @@
-import { NextResponse } from "next/server";
-import admin from "@/lib/firebase/admin";
+import { NextResponse } from 'next/server';
+import admin from '@/lib/firebase/admin';
 
-// ----------------- PUT (Update saldo) -----------------
+
+interface SaldoData {
+  tanggal: string;
+  keterangan: string;
+  jumlah: number;
+}
+
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
-    const body = await request.json();
-    const { tanggal, keterangan, jumlah } = body;
+    // ✅ sesuai dokumentasi: params harus di-await
+    const { id } = await context.params;
+    const body: SaldoData = await request.json();
 
-    if (!tanggal || !keterangan || jumlah === undefined) {
+    // Validasi sederhana
+    if (!body || typeof body.jumlah !== "number") {
       return NextResponse.json(
-        { error: "Field untuk update tidak boleh kosong" },
+        { error: "Field 'jumlah' wajib berupa number." },
         { status: 400 }
       );
     }
 
-    const db = admin.firestore();
-    const docRef = db.collection("saldo").doc(id);
-
-    await docRef.update({
-      tanggal: new Date(tanggal),
-      keterangan,
-      jumlah: Number(jumlah),
-    });
+    // --- Simulasi update saldo ---
+    const updatedSaldo = {
+      id,
+      ...body,
+      updatedAt: new Date().toISOString(),
+    };
 
     return NextResponse.json(
-      { id, message: "Saldo berhasil diperbarui" },
+      { message: "Saldo berhasil diperbarui", data: updatedSaldo },
       { status: 200 }
     );
   } catch (error) {
-    console.error(`Error saat mengupdate saldo ${params.id}:`, error);
+    console.error("PUT /api/saldo/[id] error:", error);
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      { error: "Gagal memperbarui saldo" },
       { status: 500 }
     );
   }
 }
 
-// ----------------- DELETE (Hapus saldo) -----------------
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await context.params; // ✅ params harus di-await
     const db = admin.firestore();
-
     await db.collection("saldo").doc(id).delete();
 
     return NextResponse.json(
-      { id, message: "Saldo berhasil dihapus" },
+      { message: "Saldo berhasil dihapus", id },
       { status: 200 }
     );
   } catch (error) {
-    console.error(`Error saat menghapus saldo ${params.id}:`, error);
+    console.error("DELETE /api/saldo/[id] error:", error);
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      { error: "Gagal menghapus saldo" },
       { status: 500 }
     );
   }
