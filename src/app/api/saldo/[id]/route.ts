@@ -1,15 +1,11 @@
 import { NextResponse } from "next/server";
 import admin from "@/lib/firebase/admin";
 
-// Definisi tipe params agar tidak pakai "any"
-interface Params {
-  params: {
-    id: string;
-  };
-}
-
-// Handler untuk PUT (update saldo)
-export async function PUT(request: Request, { params }: Params) {
+// ----------------- PUT (Update saldo) -----------------
+export async function PUT(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
   try {
     const { id } = params;
     const body = await request.json();
@@ -36,7 +32,7 @@ export async function PUT(request: Request, { params }: Params) {
       { status: 200 }
     );
   } catch (error) {
-    console.error(`Error saat mengupdate saldo:`, error);
+    console.error(`Error saat mengupdate saldo ${params.id}:`, error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 }
@@ -44,11 +40,15 @@ export async function PUT(request: Request, { params }: Params) {
   }
 }
 
-// Handler untuk DELETE (hapus saldo)
-export async function DELETE(request: Request, { params }: Params) {
+// ----------------- DELETE (Hapus saldo) -----------------
+export async function DELETE(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
   try {
     const { id } = params;
     const db = admin.firestore();
+
     await db.collection("saldo").doc(id).delete();
 
     return NextResponse.json(
@@ -56,7 +56,7 @@ export async function DELETE(request: Request, { params }: Params) {
       { status: 200 }
     );
   } catch (error) {
-    console.error(`Error saat menghapus saldo:`, error);
+    console.error(`Error saat menghapus saldo ${params.id}:`, error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 }
