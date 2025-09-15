@@ -1,16 +1,11 @@
 import { NextResponse } from 'next/server';
 import admin from '@/lib/firebase/admin';
 
-type RouteParams = {
-  params: {
-    id: string;
-  };
-};
-
 // Handler untuk PUT (Mengedit saldo)
-export async function PUT(request: Request, context: RouteParams) {
+// PERBAIKAN: Gunakan tipe inline { params }: { params: { id: string } }
+export async function PUT(request: Request, { params }: { params: { id: string } }) {
   try {
-    const { id } = context.params;
+    const { id } = params; // Sekarang 'id' bisa diakses langsung
     const body = await request.json();
     const { tanggal, keterangan, jumlah } = body;
 
@@ -29,20 +24,22 @@ export async function PUT(request: Request, context: RouteParams) {
 
     return NextResponse.json({ id, message: 'Saldo berhasil diperbarui' }, { status: 200 });
   } catch (error) {
-    console.error(`Error saat mengupdate saldo ${context.params.id}:`, error);
+    console.error(`Error saat mengupdate saldo ${params.id}:`, error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
 
 // Handler untuk DELETE (Menghapus saldo)
-export async function DELETE(request: Request, context: RouteParams) {
+// PERBAIKAN: Gunakan tipe inline { params }: { params: { id: string } }
+export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   try {
-    const { id } = context.params;
+    const { id } = params; // 'id' juga bisa diakses langsung di sini
     const db = admin.firestore();
     await db.collection('saldo').doc(id).delete();
     return NextResponse.json({ id, message: 'Saldo berhasil dihapus' }, { status: 200 });
   } catch (error) {
-    console.error(`Error saat menghapus saldo ${context.params.id}:`, error);
+    console.error(`Error saat menghapus saldo ${params.id}:`, error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
+
