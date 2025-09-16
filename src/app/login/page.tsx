@@ -4,7 +4,7 @@ import { useState, ChangeEvent, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ShieldCheck } from 'lucide-react';
 
 // Menggunakan fungsi dari authService untuk menjaga konsistensi
 import { signInWithEmail, signUpWithEmail } from '@/lib/AuthServices';
@@ -63,17 +63,20 @@ export default function LoginPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <Card className="w-full max-w-md bg-gray-800 border-gray-700 text-white">
-          <CardHeader className="text-center space-y-1">
-            <CardTitle className="text-2xl font-bold text-cyan-400">
-              {isLogin ? 'Selamat Datang Kembali' : 'Buat Akun Baru'}
+        <Card className="w-lg h-[500px] max-w-md bg-gray-800 border-gray-700 text-white">
+        <CardHeader className="text-center space-y-4">
+            <div className="mx-auto bg-cyan-500/10 p-3 rounded-full border border-cyan-500/30">
+                <ShieldCheck className="h-8 w-8 text-cyan-400" />
+            </div>
+            <CardTitle className="text-2xl font-bold">
+              {isLogin ? 'Selamat Datang' : 'Buat Akun Baru'}
             </CardTitle>
             <CardDescription className="text-gray-400">
-              Silakan masuk untuk melanjutkan ke dashboard.
+              {isLogin ? 'Masuk untuk melanjutkan.' : 'Mulai kelola keuangan Anda.'}
             </CardDescription>
           </CardHeader>
           <form onSubmit={handleSubmit}>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-7">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input 
@@ -111,7 +114,7 @@ export default function LoginPage() {
                 )}
               </AnimatePresence>
             </CardContent>
-            <CardFooter className="flex flex-col gap-4">
+            <CardFooter className="flex flex-col gap-8 mt-7">
               <Button type="submit" disabled={loading} className="w-full bg-cyan-600 mt-4 hover:bg-cyan-700">
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {loading ? 'Memproses...' : (isLogin ? 'Login' : 'Daftar')}

@@ -17,8 +17,12 @@ function AppLayout({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // Jika pengecekan selesai dan tidak ada user, paksa ke halaman login
-    if (!loading && !user && pathname !== '/login') {
+    if (!loading && !user && pathname !== '/login' && pathname !== '/register') {
       router.push('/login');
+    }
+    // Jika pengecekan selesai dan user sudah login tapi berada di halaman login/register, arahkan ke dashboard
+    if (!loading && user && (pathname === '/login' || pathname === '/register')) {
+      router.push('/dashboard');
     }
   }, [user, loading, pathname, router]);
 
@@ -27,17 +31,16 @@ function AppLayout({ children }: { children: ReactNode }) {
     return null;
   }
   
-  // Jika tidak ada user, halaman login akan dirender
-  if (!user) {
+  // PERBAIKAN: Secara eksplisit daftarkan halaman yang tidak menggunakan layout utama.
+  // Ini memastikan navbar tidak akan pernah muncul di halaman login atau register.
+  const noLayoutPages: string[] = ['/login', '/register'];
+  if (noLayoutPages.includes(pathname)) {
     return <>{children}</>;
   }
-
-  // PERBAIKAN: Berikan tipe eksplisit 'string[]' pada array
-  const noLayoutPages: string[] = [];
-  const useMainLayout = !noLayoutPages.some(path => pathname.startsWith(path));
-
-  if (!useMainLayout) {
-    return <>{children}</>;
+  
+  // Jika tidak ada user, jangan tampilkan layout utama (meskipun sudah ada redirect di useEffect)
+  if (!user) {
+    return null;
   }
 
   return (
@@ -57,7 +60,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body>
           <AuthProvider>
             <Toaster richColors position="top-right" />
-            {/* 3. Render AppLayout yang akan menangani logika */}
+            {/* Render AppLayout yang akan menangani semua logika */}
             <AppLayout>{children}</AppLayout>
           </AuthProvider>
       </body>
