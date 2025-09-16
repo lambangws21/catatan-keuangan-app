@@ -63,7 +63,7 @@ export default function LoginPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <Card className="w-lg h-[500px] max-w-md bg-gray-800 border-gray-700 text-white">
+        <Card className="w-[360px] h-[500px] max-w-md bg-gray-800 border-gray-700 text-white">
         <CardHeader className="text-center space-y-4">
             <div className="mx-auto bg-cyan-500/10 p-3 rounded-full border border-cyan-500/30">
                 <ShieldCheck className="h-8 w-8 text-cyan-400" />
