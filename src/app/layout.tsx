@@ -22,7 +22,7 @@ function AppLayout({ children }: { children: ReactNode }) {
     }
     // Jika pengecekan selesai dan user sudah login tapi berada di halaman login/register, arahkan ke dashboard
     if (!loading && user && (pathname === '/login' || pathname === '/register')) {
-      router.push('/dashboard');
+      router.push('/transaction-manager');
     }
   }, [user, loading, pathname, router]);
 
