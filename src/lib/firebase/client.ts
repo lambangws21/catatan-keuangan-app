@@ -10,7 +10,7 @@ const firebaseConfig = {
   authDomain: "data-ok-b4091.firebaseapp.com",
   databaseURL: "https://data-ok-b4091-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "data-ok-b4091",
-  storageBucket: "data-ok-b4091.firebasestorage.app",
+  storageBucket: "data-ok-b4091.firebasestorage.app", 
   messagingSenderId: "525002375108",
   appId: "1:525002375108:web:8f54dfaa2526b1e795ae91"
 };
@@ -24,3 +24,5 @@ const storage = getStorage(app);
 const auth = getAuth(app);
 
 export { app, db, storage, auth };
+
+// "data-ok-b4091.firebasestorage.app",

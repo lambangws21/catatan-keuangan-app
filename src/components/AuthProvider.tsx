@@ -31,7 +31,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           toast.info("Anda telah logout secara otomatis karena tidak aktif.");
         });
       }
-    }, 3600000); 
+    }, 1600000); 
   };
 
   useEffect(() => {

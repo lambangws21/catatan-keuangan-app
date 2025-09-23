@@ -95,7 +95,7 @@ export default function SaldoForm({ onSaldoAdded }: SaldoFormProps) {
           
           <div className="grid gap-2">
             <Label htmlFor="keterangan">Keterangan</Label>
-            <Textarea id="keterangan" value={keterangan} onChange={(e) => setKeterangan(e.target.value)} required placeholder="Contoh: Saldo Awal, Pemasukan Proyek B..." className="bg-gray-700 border-gray-600"/>
+            <Textarea id="keterangan" value={keterangan} onChange={(e) => setKeterangan(e.target.value)} required placeholder="Contoh: Saldo Awal, Pemasukan B..." className="bg-gray-700 border-gray-600"/>
           </div>
 
           <div className="grid gap-2">

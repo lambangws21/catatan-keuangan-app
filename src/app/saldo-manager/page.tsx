@@ -8,10 +8,12 @@ import FinancialDashboard from "@/components/FinalcialDashboard";
 import TransactionManager from "@/components/transaction-manager";
 import ImageGallery from "@/components/ImagePreview";
 import SaldoForm from "@/components/FormSaldo";
-import SaldoManager from "@/components/ManajerSaldo"; // Komponen yang ada di Canvas Anda
+import SaldoManager from "@/components/ManajerSaldo"; 
+import {useAuth} from "@/components/AuthProvider";// Komponen yang ada di Canvas Anda
 
 
 
+// Definisikan tipe data untuk konsistensi
 interface Transaction {
   id: string;
   tanggal: string;
@@ -29,87 +31,88 @@ interface Saldo {
   jumlah: number;
 }
 
-
-
 export default function Home() {
-  // State untuk menyimpan semua data aplikasi
+  const { user } = useAuth(); // 2. Dapatkan informasi pengguna yang login
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [saldoData, setSaldoData] = useState<Saldo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Fungsi untuk mengambil data transaksi (pengeluaran)
   const fetchTransactions = useCallback(async () => {
+    if (!user) return; // Jangan lakukan fetch jika user belum login
     try {
-      const response = await fetch('/api/transactions');
+      const token = await user.getIdToken(); // Dapatkan token
+      const response = await fetch('/api/transactions', {
+        headers: { 'Authorization': `Bearer ${token}` } // Sertakan token di header
+      });
       if (!response.ok) throw new Error('Gagal mengambil data transaksi.');
       const data = await response.json();
       setTransactions(data);
     } catch (error) {
       console.error(error);
-      setTransactions([]); // Set ke array kosong jika gagal
+      setTransactions([]);
     }
-  }, []);
+  }, [user]); // 3. Tambahkan user sebagai dependensi
 
   // Fungsi untuk mengambil data saldo
   const fetchSaldo = useCallback(async () => {
+    if (!user) return; // Jangan lakukan fetch jika user belum login
     try {
-      const response = await fetch('/api/saldo');
+      const token = await user.getIdToken(); // Dapatkan token
+      const response = await fetch('/api/saldo', {
+        headers: { 'Authorization': `Bearer ${token}` } // Sertakan token di header
+      });
       if (!response.ok) throw new Error('Gagal mengambil data saldo.');
       const data = await response.json();
       setSaldoData(data);
     } catch (error) {
       console.error(error);
-      setSaldoData([]); // Set ke array kosong jika gagal
+      setSaldoData([]);
     }
-  }, []);
+  }, [user]); // 4. Tambahkan user sebagai dependensi
 
   // Ambil semua data saat komponen pertama kali dimuat
   useEffect(() => {
     const fetchAllData = async () => {
         setIsLoading(true);
-        // Jalankan kedua fetch secara bersamaan untuk efisiensi
-        await Promise.all([fetchTransactions(), fetchSaldo()]);
+        // Pastikan user sudah ada sebelum mengambil data
+        if (user) {
+            await Promise.all([fetchTransactions(), fetchSaldo()]);
+        }
         setIsLoading(false);
     }
     fetchAllData();
-  }, [fetchTransactions, fetchSaldo]);
+  }, [user, fetchTransactions, fetchSaldo]); // Tambahkan user di sini juga
 
   return (
-  
     <main className="min-h-screen bg-gray-900 p-4 md:p-8 text-white">
       <div className="max-w-7xl mx-auto space-y-8">
         <header className="flex justify-between items-center">
           <h1 className="text-4xl font-bold">Dashboard Keuangan</h1>
           <div className="flex gap-4">
-            {/* Tombol untuk menambah saldo, akan me-refresh data saldo */}
             <SaldoForm onSaldoAdded={fetchSaldo} />
-            {/* Tombol untuk menambah biaya, akan me-refresh data transaksi */}
             <ExpenseForm onTransactionAdded={fetchTransactions} />
           </div>
         </header>
 
-        {/* Kirim data transaksi ke komponen dashboard */}
-        <FinancialDashboard transactions={transactions}  saldoData={saldoData} isLoading={isLoading} />
+        <FinancialDashboard transactions={transactions} saldoData={saldoData} isLoading={isLoading} />
         
-        {/* Kirim data saldo ke komponen SaldoManager */}
         <SaldoManager
           saldoData={saldoData}
           isLoading={isLoading}
           onDataChange={fetchSaldo}
         />
         
-        {/* Kirim data transaksi ke komponen TransactionManager */}
         <TransactionManager 
           transactions={transactions} 
           isLoading={isLoading}
           onDataChange={fetchTransactions} 
         />
         
-        {/* Kirim data transaksi ke komponen galeri gambar */}
         <ImageGallery transactions={transactions} isLoading={isLoading}/>
       </div>
     </main>
-
   );
 }
+
 

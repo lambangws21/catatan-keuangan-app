@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Toaster } from 'sonner';
 import { AuthProvider, useAuth } from '@/components/AuthProvider';
 import Navbar from '@/components/navbar/navbar';
+// import Sidebar from '@/components/navbar/sidebar';
 
 
 // Komponen baru yang bertugas melindungi halaman dan menampilkan layout
@@ -45,6 +46,7 @@ function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex h-full bg-gray-100 dark:bg-gray-800">
+      {/* <Sidebar /> */}
       <main className="flex-1 flex flex-col">
         <Navbar />
         <div className="flex-grow overflow-y-auto">{children}</div>

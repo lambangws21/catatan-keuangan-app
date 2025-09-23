@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, ChangeEvent, FormEvent } from 'react';
+import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import { Loader2, ShieldCheck } from 'lucide-react';
+import { Loader2, UserPlus } from 'lucide-react';
 
-// Menggunakan fungsi dari authService untuk menjaga konsistensi
-import { signInWithEmail, signUpWithEmail } from '@/lib/AuthServices';
+import { signUpWithEmail } from '@/lib/AuthServices';
 
 // Import komponen dari shadcn/ui
 import { Button } from '@/components/ui/button';
@@ -22,31 +22,41 @@ import {
   CardTitle 
 } from '@/components/ui/card';
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isLogin, setIsLogin] = useState(true);
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    // Validasi password
+    if (password !== confirmPassword) {
+      const msg = "Password dan konfirmasi password tidak cocok.";
+      setError(msg);
+      toast.error(msg);
+      return;
+    }
+    if (password.length < 6) {
+      const msg = "Password minimal harus 6 karakter.";
+      setError(msg);
+      toast.error(msg);
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
-      if (isLogin) {
-        const { error } = await signInWithEmail(email, password);
-        if (error) throw new Error(error);
-        toast.success('Login berhasil!');
-        router.push('/transaction-manager'); // Arahkan ke halaman transaksi setelah login
-      } else {
-        const { error } = await signUpWithEmail(email, password);
-        if (error) throw new Error(error);
-        toast.success('Akun berhasil dibuat!');
-        router.push('/'); // Arahkan ke halaman utama/dashboard setelah mendaftar
-      }
+      // Panggil fungsi pendaftaran dari authService
+      const { error: signUpError } = await signUpWithEmail(email, password);
+      if (signUpError) throw new Error(signUpError);
+      
+      toast.success('Akun berhasil dibuat! Silakan login.');
+      router.push('/login'); // Arahkan ke halaman login setelah berhasil mendaftar
+      
     } catch (err: unknown) {
         const errorMessage = err instanceof Error ? err.message : 'Terjadi kesalahan tidak diketahui.';
         setError(errorMessage);
@@ -56,23 +66,25 @@ export default function LoginPage() {
     }
   };
 
+  
+
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-900">
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-cyan-900/50 p-4">
       <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
       >
-        <Card className="w-full max-w-md bg-gray-800 border-gray-700 text-white">
-        <CardHeader className="text-center space-y-4">
+        <Card className="w-full max-w-sm bg-gray-800/60 backdrop-blur-xl border border-white/10 text-white shadow-2xl">
+          <CardHeader className="text-center space-y-4">
             <div className="mx-auto bg-cyan-500/10 p-3 rounded-full border border-cyan-500/30">
-                <ShieldCheck className="h-8 w-8 text-cyan-400" />
+                <UserPlus className="h-8 w-8 text-cyan-400" />
             </div>
             <CardTitle className="text-2xl font-bold">
-              {isLogin ? 'Selamat Datang' : 'Buat Akun Baru'}
+              Buat Akun Baru
             </CardTitle>
             <CardDescription className="text-gray-400">
-              {isLogin ? 'Masuk untuk melanjutkan.' : 'Mulai kelola keuangan Anda.'}
+              Mulai kelola keuangan Anda hari ini.
             </CardDescription>
           </CardHeader>
           <form onSubmit={handleSubmit}>
@@ -84,9 +96,10 @@ export default function LoginPage() {
                   type="email" 
                   placeholder="email@example.com" 
                   value={email} 
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)} 
+                  onChange={(e) => setEmail(e.target.value)} 
                   required 
                   disabled={loading}
+                  className="bg-gray-700/50 border-gray-600 focus:border-cyan-500"
                 />
               </div>
               <div className="space-y-2">
@@ -94,11 +107,25 @@ export default function LoginPage() {
                 <Input 
                   id="password" 
                   type="password" 
-                  placeholder="••••••••" 
+                  placeholder="Minimal 6 karakter" 
                   value={password} 
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)} 
+                  onChange={(e) => setPassword(e.target.value)} 
                   required 
                   disabled={loading}
+                  className="bg-gray-700/50 border-gray-600 focus:border-cyan-500"
+                />
+              </div>
+               <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Konfirmasi Password</Label>
+                <Input 
+                  id="confirmPassword" 
+                  type="password" 
+                  placeholder="Ulangi password" 
+                  value={confirmPassword} 
+                  onChange={(e) => setConfirmPassword(e.target.value)} 
+                  required 
+                  disabled={loading}
+                  className="bg-gray-700/50 border-gray-600 focus:border-cyan-500"
                 />
               </div>
                <AnimatePresence>
@@ -115,20 +142,15 @@ export default function LoginPage() {
               </AnimatePresence>
             </CardContent>
             <CardFooter className="flex flex-col gap-4">
-              <Button type="submit" disabled={loading} className="w-full bg-cyan-600 mt-4 hover:bg-cyan-700">
+              <Button type="submit" disabled={loading} className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold">
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {loading ? 'Memproses...' : (isLogin ? 'Login' : 'Daftar')}
+                {loading ? 'Memproses...' : 'Daftar'}
               </Button>
               <p className="text-center text-sm text-gray-400">
-                {isLogin ? "Belum punya akun?" : "Sudah punya akun?"}
-                <button 
-                  type="button"
-                  onClick={() => { setIsLogin(!isLogin); setError(null); }} 
-                  className="font-semibold text-cyan-400 hover:underline ml-1"
-                  disabled={loading}
-                >
-                  {isLogin ? 'Daftar di sini' : 'Login di sini'}
-                </button>
+                Sudah punya akun?
+                <Link href="/login" className="font-semibold text-cyan-400 hover:underline ml-1">
+                  Login di sini
+                </Link>
               </p>
             </CardFooter>
           </form>
@@ -137,3 +159,4 @@ export default function LoginPage() {
     </div>
   );
 }
+

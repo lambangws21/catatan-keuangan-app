@@ -119,7 +119,7 @@ export default function TransactionManagerPage() {
                 {years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
               </SelectContent>
             </Select>
-            <SaldoForm onSaldoAdded={fetchSaldo} />
+            <SaldoForm onSaldoAdded={fetchSaldo}  />
             <ExpenseForm onTransactionAdded={fetchTransactions} />
           </div>
         </header>
