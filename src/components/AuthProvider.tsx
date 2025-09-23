@@ -23,44 +23,41 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (inactivityTimer.current) {
       clearTimeout(inactivityTimer.current);
     }
-    // Set timer baru untuk 1 jam (3600000 milidetik)
+    // PERBAIKAN: Timer diatur ke 1 jam (3600000 milidetik)
     inactivityTimer.current = setTimeout(() => {
-      // Cek apakah pengguna masih login sebelum mencoba logout
       if (auth.currentUser) { 
         logOut().then(() => {
           toast.info("Anda telah logout secara otomatis karena tidak aktif.");
         });
       }
-    }, 1600000); 
+    }, 3600000); 
   };
 
   useEffect(() => {
-    // Listener untuk perubahan status login
+    // Listener onAuthStateChanged adalah cara terbaik untuk melacak sesi.
+    // Ia akan berjalan saat inisialisasi, login, dan logout.
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
-      setLoading(false);
+      setLoading(false); // Hentikan loading setelah status auth pertama kali diketahui
       if (currentUser) {
-        resetInactivityTimer(); // Mulai timer saat login
+        resetInactivityTimer(); // Mulai/reset timer saat pengguna login atau aktif
       } else {
         if (inactivityTimer.current) {
-          clearTimeout(inactivityTimer.current); // Hentikan timer saat logout
+          clearTimeout(inactivityTimer.current); // Hentikan timer saat pengguna logout
         }
       }
     });
 
-    // Daftar event yang menandakan aktivitas pengguna
     const activityEvents: (keyof WindowEventMap)[] = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'];
     
     const handleActivity = () => {
+      // Hanya reset timer jika ada pengguna yang login
       if (auth.currentUser) {
         resetInactivityTimer();
       }
     };
 
-    // Tambahkan event listeners
-    activityEvents.forEach(event => {
-      window.addEventListener(event, handleActivity);
-    });
+    activityEvents.forEach(event => window.addEventListener(event, handleActivity));
 
     // Cleanup saat komponen tidak lagi digunakan
     return () => {
@@ -68,12 +65,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (inactivityTimer.current) {
         clearTimeout(inactivityTimer.current);
       }
-      activityEvents.forEach(event => {
-        window.removeEventListener(event, handleActivity);
-      });
+      activityEvents.forEach(event => window.removeEventListener(event, handleActivity));
     };
-  }, []);
+  }, []); // Dependency array kosong agar listener ini hanya dipasang sekali
 
+  // Tampilkan spinner loading global saat status autentikasi awal sedang diperiksa
   if (loading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-gray-900">
@@ -90,3 +86,4 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 };
 
 export const useAuth = () => useContext(AuthContext);
+

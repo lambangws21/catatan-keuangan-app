@@ -22,7 +22,7 @@ function AppLayout({ children }: { children: ReactNode }) {
       router.push('/login');
     }
     if (!loading && user && (pathname === '/login' || pathname === '/register')) {
-      router.push('/transaction-manager');
+      router.push('/dashboard');
     }
   }, [user, loading, pathname, router]);
 

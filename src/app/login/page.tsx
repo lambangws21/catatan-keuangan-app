@@ -40,7 +40,7 @@ export default function LoginPage() {
         const { error } = await signInWithEmail(email, password);
         if (error) throw new Error(error);
         toast.success('Login berhasil!');
-        router.push('/transaction-manager'); // Arahkan ke halaman transaksi setelah login
+        router.push('/dahsboard'); // Arahkan ke halaman transaksi setelah login
       } else {
         const { error } = await signUpWithEmail(email, password);
         if (error) throw new Error(error);

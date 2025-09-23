@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 
 // Daftar item navigasi utama dengan href yang sudah diperbaiki
 export const navItems = [
- { href: "/transaction-manager", icon: Home, label: "Dashboard" },
+ { href: "/dashboard", icon: Home, label: "Dashboard" },
   { href: "/transaction-manager", icon: Wallet, label: "Transaksi" },
   { href: "/saldo", icon: Landmark, label: "Saldo" },
   { href: "/gallery", icon: GalleryHorizontal, label: "Galeri Berkas" },
