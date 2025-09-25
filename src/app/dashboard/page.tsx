@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useAuth } from "@/components/AuthProvider";
 import ExpenseForm from "@/components/ExepenseForm";
 import FinancialDashboard from "@/components/FinalcialDashboard";
 import TransactionManager from "@/components/transaction-manager";
@@ -24,23 +25,27 @@ interface Saldo {
   id: string;
   tanggal: string;
   keterangan: string;
+
   jumlah: number;
 }
 
-export default function TransactionManagerPage() {
+export default function DashboardPage() {
+  const { user } = useAuth();
   // State untuk menyimpan semua data mentah dari API
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [allSaldoData, setAllSaldoData] = useState<Saldo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // State BARU untuk mengontrol filter
+  // State untuk mengontrol filter
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth()); // 0-11
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
 
   // Fungsi untuk mengambil data transaksi (pengeluaran)
   const fetchTransactions = useCallback(async () => {
+    if (!user) return;
     try {
-      const response = await fetch('/api/transactions');
+      const token = await user.getIdToken();
+      const response = await fetch('/api/transactions', { headers: { 'Authorization': `Bearer ${token}` } });
       if (!response.ok) throw new Error('Gagal mengambil data transaksi.');
       const data = await response.json();
       setAllTransactions(data);
@@ -48,12 +53,14 @@ export default function TransactionManagerPage() {
       console.error(error);
       setAllTransactions([]); 
     }
-  }, []);
+  }, [user]);
 
   // Fungsi untuk mengambil data saldo
   const fetchSaldo = useCallback(async () => {
+    if (!user) return;
     try {
-      const response = await fetch('/api/saldo');
+      const token = await user.getIdToken();
+      const response = await fetch('/api/saldo', { headers: { 'Authorization': `Bearer ${token}` } });
       if (!response.ok) throw new Error('Gagal mengambil data saldo.');
       const data = await response.json();
       setAllSaldoData(data);
@@ -61,20 +68,21 @@ export default function TransactionManagerPage() {
       console.error(error);
       setAllSaldoData([]); 
     }
-  }, []);
+  }, [user]);
 
   // Ambil semua data saat komponen pertama kali dimuat
   useEffect(() => {
     const fetchAllData = async () => {
         setIsLoading(true);
-        await Promise.all([fetchTransactions(), fetchSaldo()]);
+        if(user) {
+            await Promise.all([fetchTransactions(), fetchSaldo()]);
+        }
         setIsLoading(false);
     }
     fetchAllData();
-  }, [fetchTransactions, fetchSaldo]);
+  }, [user, fetchTransactions, fetchSaldo]);
   
   // Gunakan useMemo untuk menyaring data secara efisien
-  // Kalkulasi ini hanya akan berjalan jika data mentah atau filter berubah
   const filteredTransactions = useMemo(() => {
     if (!Array.isArray(allTransactions)) return [];
     return allTransactions.filter(tx => {
@@ -101,26 +109,35 @@ export default function TransactionManagerPage() {
   ];
 
   return (
-    <main className="min-h-screen bg-gray-900 p-4 md:p-8 text-white">
-      <div className="max-w-7xl mx-auto space-y-8">
-        <header className="flex flex-col md:flex-row justify-between items-center gap-4">
-          <h1 className="text-4xl font-bold">Dashboard Keuangan</h1>
-          <div className="flex items-center gap-4">
+    <div className="space-y-8">
+        {/* PERBAIKAN: Header sekarang responsif */}
+        <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <div>
+            <h1 className="text-3xl font-bold text-white">Dashboard Keuangan</h1>
+            <p className="text-gray-400 mt-1">Ringkasan aktivitas keuangan Anda.</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
             {/* Filter Bulan dan Tahun */}
-            <Select value={String(selectedMonth)} onValueChange={(v) => setSelectedMonth(Number(v))}>
-              <SelectTrigger className="w-[120px] bg-gray-800 border-gray-700"><SelectValue /></SelectTrigger>
-              <SelectContent className="bg-gray-800 text-white border-gray-700">
-                {months.map(m => <SelectItem key={m.value} value={String(m.value)}>{m.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
-              <SelectTrigger className="w-[100px] bg-gray-800 border-gray-700"><SelectValue /></SelectTrigger>
-              <SelectContent className="bg-gray-800 text-white border-gray-700">
-                {years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <SaldoForm onSaldoAdded={fetchSaldo}  />
-            <ExpenseForm onTransactionAdded={fetchTransactions} />
+            <div className="flex-1 md:flex-none">
+                <Select value={String(selectedMonth)} onValueChange={(v) => setSelectedMonth(Number(v))}>
+                  <SelectTrigger className="w-full md:w-[130px] bg-gray-800 border-gray-700"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-gray-800 text-white border-gray-700">
+                    {months.map(m => <SelectItem key={m.value} value={String(m.value)}>{m.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+            </div>
+             <div className="flex-1 md:flex-none">
+                <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
+                  <SelectTrigger className="w-full md:w-[100px] bg-gray-800 border-gray-700"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-gray-800 text-white border-gray-700">
+                    {years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+            </div>
+            <div className="w-full md:w-auto flex gap-3">
+                <div className="flex-1"><SaldoForm onSaldoAdded={fetchSaldo} /></div>
+                <div className="flex-1"><ExpenseForm onTransactionAdded={fetchTransactions} /></div>
+            </div>
           </div>
         </header>
 
@@ -140,8 +157,8 @@ export default function TransactionManagerPage() {
         />
         
         <ImageGallery transactions={filteredTransactions} isLoading={isLoading}/>
-      </div>
-    </main>
+    </div>
   );
 }
+
 

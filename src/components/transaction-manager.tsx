@@ -1,16 +1,26 @@
 "use client";
 
-import { useState, ChangeEvent, useMemo } from 'react';
-import { Edit, Trash2, FileText, Download, X, FileDown, Wallet, ArchiveX, Loader2 } from 'lucide-react';
-import { motion } from 'framer-motion';
-import Image from 'next/image';
-import { useAuth } from '@/context/AuthContext';
-import { toast } from 'sonner';
+import { useState, ChangeEvent, useMemo } from "react";
+import {
+  Edit,
+  Trash2,
+  FileText,
+  Download,
+  X,
+  FileDown,
+  Wallet,
+  ArchiveX,
+  Loader2,
+} from "lucide-react";
+import { motion } from "framer-motion";
+import Image from "next/image";
+import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
 
 // Import library untuk ekspor
-import * as XLSX from 'xlsx';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 // Import komponen dari shadcn/ui
 import {
@@ -83,17 +93,23 @@ export default function TransactionManager({
 
   // --- Fungsi Ekspor ---
   const handleExportExcel = () => {
-    const dataToExport = transactions.map(tx => ({
+    const dataToExport = transactions.map((tx) => ({
       Tanggal: tx.tanggal,
       Keterangan: tx.keterangan,
-      'Jenis Biaya': tx.jenisBiaya,
+      "Jenis Biaya": tx.jenisBiaya,
       Jumlah: Number(tx.jumlah),
       Klaim: tx.klaim,
     }));
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Data Transaksi");
-    worksheet['!cols'] = [{ wch: 12 }, { wch: 40 }, { wch: 20 }, { wch: 15 }, { wch: 15 }];
+    worksheet["!cols"] = [
+      { wch: 12 },
+      { wch: 40 },
+      { wch: 20 },
+      { wch: 15 },
+      { wch: 15 },
+    ];
     XLSX.writeFile(workbook, "Laporan Transaksi.xlsx");
   };
 
@@ -101,13 +117,13 @@ export default function TransactionManager({
     const doc = new jsPDF();
     doc.text("Laporan Riwayat Transaksi", 14, 16);
     autoTable(doc, {
-      head: [['Tanggal', 'Keterangan', 'Jenis Biaya', 'Jumlah', 'Klaim']],
-      body: transactions.map(tx => [
+      head: [["Tanggal", "Keterangan", "Jenis Biaya", "Jumlah", "Klaim"]],
+      body: transactions.map((tx) => [
         tx.tanggal,
         tx.keterangan,
         tx.jenisBiaya,
         formatCurrency(Number(tx.jumlah)),
-        tx.klaim
+        tx.klaim,
       ]),
       startY: 22,
       headStyles: { fillColor: [38, 145, 158] },
@@ -118,13 +134,14 @@ export default function TransactionManager({
   // --- Fungsi CRUD dengan Autentikasi ---
   const handleDeleteTransaction = async (id: string) => {
     if (!user) return toast.error("Sesi tidak valid, silakan login kembali.");
-    if (!window.confirm("Apakah Anda yakin ingin menghapus transaksi ini?")) return;
-    
+    if (!window.confirm("Apakah Anda yakin ingin menghapus transaksi ini?"))
+      return;
+
     try {
       const token = await user.getIdToken();
-      const response = await fetch(`/api/transactions/${id}`, { 
-          method: "DELETE",
-          headers: { 'Authorization': `Bearer ${token}` },
+      const response = await fetch(`/api/transactions/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (!response.ok) {
@@ -133,9 +150,8 @@ export default function TransactionManager({
       }
       toast.success("Transaksi berhasil dihapus.");
       await onDataChange();
-
     } catch (error) {
-        toast.error((error as Error).message);
+      toast.error((error as Error).message);
     }
   };
 
@@ -147,41 +163,54 @@ export default function TransactionManager({
     setIsEditModalOpen(false);
     setTransactionToEdit(null);
   };
-  
+
   const handleUpdateTransaction = async () => {
     if (!user) return toast.error("Sesi tidak valid, silakan login kembali.");
     if (!transactionToEdit) return;
 
     const { tanggal, jenisBiaya, keterangan, jumlah } = transactionToEdit;
-    if (!tanggal || !jenisBiaya.trim() || !keterangan.trim() || isNaN(Number(jumlah))) {
-        toast.error("Data tidak valid. Pastikan semua field terisi dengan benar.");
-        return;
+    if (
+      !tanggal ||
+      !jenisBiaya.trim() ||
+      !keterangan.trim() ||
+      isNaN(Number(jumlah))
+    ) {
+      toast.error(
+        "Data tidak valid. Pastikan semua field terisi dengan benar."
+      );
+      return;
     }
-    
+
     try {
       const token = await user.getIdToken();
-      const response = await fetch(`/api/transactions/${transactionToEdit.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({
-          ...transactionToEdit,
-          jumlah: Number(transactionToEdit.jumlah)
-        }),
-      });
+      const response = await fetch(
+        `/api/transactions/${transactionToEdit.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            ...transactionToEdit,
+            jumlah: Number(transactionToEdit.jumlah),
+          }),
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || "Gagal memperbarui transaksi.");
       }
-      
+
       handleCloseEditModal();
       toast.success("Transaksi berhasil diperbarui.");
       await onDataChange();
     } catch (error) {
-        toast.error((error as Error).message);
+      toast.error((error as Error).message);
     }
   };
-  
+
   const handleEditFormChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -190,12 +219,13 @@ export default function TransactionManager({
     setTransactionToEdit((prev) => (prev ? { ...prev, [name]: value } : null));
   };
 
-  if (isLoading) return (
-    <div className="flex justify-center items-center p-16">
+  if (isLoading)
+    return (
+      <div className="flex justify-center items-center p-16">
         <Loader2 className="h-8 w-8 animate-spin text-cyan-400" />
-    </div>
-  );
-  
+      </div>
+    );
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
@@ -207,29 +237,45 @@ export default function TransactionManager({
   };
 
   return (
-    <motion.div 
+    <motion.div
       className="bg-gray-800/60 backdrop-blur-xl border border-white/10 rounded-lg shadow-lg p-6 text-white"
       variants={containerVariants}
       initial="hidden"
       animate="visible"
     >
-      <motion.div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4" variants={itemVariants}>
+      <motion.div
+        className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4"
+        variants={itemVariants}
+      >
         <h2 className="text-xl font-semibold text-cyan-400">
           Riwayat Transaksi
         </h2>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={!transactions || transactions.length === 0}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportExcel}
+            disabled={!transactions || transactions.length === 0}
+          >
             <FileDown className="h-4 w-4 mr-2" /> Excel
           </Button>
-          <Button variant="outline" size="sm" onClick={handleExportPdf} disabled={!transactions || transactions.length === 0}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportPdf}
+            disabled={!transactions || transactions.length === 0}
+          >
             <FileDown className="h-4 w-4 mr-2" /> PDF
           </Button>
         </div>
       </motion.div>
 
-      <motion.div className="mb-6 p-4 bg-gray-700/50 rounded-lg flex justify-between items-center" variants={itemVariants}>
+      <motion.div
+        className="mb-6 p-4 bg-gray-700/50 rounded-lg flex justify-between items-center"
+        variants={itemVariants}
+      >
         <div className="flex items-center gap-3">
-          <Wallet className="h-6 w-6 text-gray-400"/>
+          <Wallet className="h-6 w-6 text-gray-400" />
           <h3 className="text-md font-semibold text-gray-300">
             Total Transaksi
           </h3>
@@ -254,17 +300,33 @@ export default function TransactionManager({
                   <TableHead className="text-white">Tanggal</TableHead>
                   <TableHead className="text-white">Keterangan</TableHead>
                   <TableHead className="text-white">Jenis Biaya</TableHead>
-                  <TableHead className="text-white text-right">Jumlah</TableHead>
+                  <TableHead className="text-white text-right">
+                    Jumlah
+                  </TableHead>
                   <TableHead className="text-white">Klaim</TableHead>
                   <TableHead className="text-white text-center">Aksi</TableHead>
                 </TableRow>
               </TableHeader>
-              <motion.tbody variants={containerVariants} initial="hidden" animate="visible">
+              <motion.tbody
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+              >
                 {transactions.map((tx) => (
-                  <motion.tr key={tx.id} className="border-b border-gray-700" variants={itemVariants}>
+                  <motion.tr
+                    key={tx.id}
+                    className="border-b border-gray-700"
+                    variants={itemVariants}
+                  >
                     <TableCell className="py-3 px-6">{tx.tanggal}</TableCell>
-                    <TableCell className="font-medium py-3 px-6">{tx.keterangan}</TableCell>
-                    <TableCell className="py-3 px-6"><span className="bg-cyan-900/50 text-cyan-300 text-xs font-medium px-2.5 py-0.5 rounded-full">{tx.jenisBiaya}</span></TableCell>
+                    <TableCell className="font-medium py-3 px-6">
+                      {tx.keterangan}
+                    </TableCell>
+                    <TableCell className="py-3 px-6">
+                      <span className="bg-cyan-900/50 text-cyan-300 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                        {tx.jenisBiaya}
+                      </span>
+                    </TableCell>
                     <TableCell className="text-right py-3 px-6 font-mono">
                       {formatCurrency(Number(tx.jumlah))}
                     </TableCell>
@@ -272,20 +334,52 @@ export default function TransactionManager({
                     <TableCell className="text-center py-3 px-6">
                       <div className="flex justify-center items-center gap-1">
                         <TooltipProvider>
-                            {tx.fileUrl && (
-                                <Tooltip>
-                                    <TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => setPreviewImageUrl(tx.fileUrl!)}><FileText className="h-4 w-4 text-cyan-400" /></Button></TooltipTrigger>
-                                    <TooltipContent><p>Lihat Berkas</p></TooltipContent>
-                                </Tooltip>
-                            )}
+                          {tx.fileUrl && (
                             <Tooltip>
-                                <TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => handleOpenEditModal(tx)}><Edit className="h-4 w-4 text-yellow-500" /></Button></TooltipTrigger>
-                                <TooltipContent><p>Edit Transaksi</p></TooltipContent>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() =>
+                                    setPreviewImageUrl(tx.fileUrl!)
+                                  }
+                                >
+                                  <FileText className="h-4 w-4 text-cyan-400" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Lihat Berkas</p>
+                              </TooltipContent>
                             </Tooltip>
-                             <Tooltip>
-                                <TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => handleDeleteTransaction(tx.id)}><Trash2 className="h-4 w-4 text-red-500" /></Button></TooltipTrigger>
-                                <TooltipContent><p>Hapus Transaksi</p></TooltipContent>
-                            </Tooltip>
+                          )}
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleOpenEditModal(tx)}
+                              >
+                                <Edit className="h-4 w-4 text-yellow-500" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Edit Transaksi</p>
+                            </TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDeleteTransaction(tx.id)}
+                              >
+                                <Trash2 className="h-4 w-4 text-red-500" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Hapus Transaksi</p>
+                            </TooltipContent>
+                          </Tooltip>
                         </TooltipProvider>
                       </div>
                     </TableCell>
@@ -299,39 +393,142 @@ export default function TransactionManager({
 
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
         <DialogContent className="sm:max-w-[625px] bg-gray-800/80 backdrop-blur-md border-gray-700 text-white">
-          <DialogHeader><DialogTitle className="text-cyan-400">Edit Transaksi</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle className="text-cyan-400">Edit Transaksi</DialogTitle>
+          </DialogHeader>
           {transactionToEdit && (
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2"><Label htmlFor="tanggal">Tanggal</Label><Input id="tanggal" name="tanggal" type="date" value={transactionToEdit.tanggal} onChange={handleEditFormChange} className="bg-gray-700 border-gray-600" /></div>
-                <div className="grid gap-2"><Label htmlFor="jenisBiaya">Jenis Biaya</Label><Input id="jenisBiaya" name="jenisBiaya" value={transactionToEdit.jenisBiaya} onChange={handleEditFormChange} className="bg-gray-700 border-gray-600" /></div>
+                <div className="grid gap-2">
+                  <Label htmlFor="tanggal">Tanggal</Label>
+                  <Input
+                    id="tanggal"
+                    name="tanggal"
+                    type="date"
+                    value={transactionToEdit.tanggal}
+                    onChange={handleEditFormChange}
+                    className="bg-gray-700 border-gray-600"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="jenisBiaya">Jenis Biaya</Label>
+                  <Input
+                    id="jenisBiaya"
+                    name="jenisBiaya"
+                    value={transactionToEdit.jenisBiaya}
+                    onChange={handleEditFormChange}
+                    className="bg-gray-700 border-gray-600"
+                  />
+                </div>
               </div>
-              <div className="grid gap-2"><Label htmlFor="keterangan">Keterangan</Label><Textarea id="keterangan" name="keterangan" value={transactionToEdit.keterangan} onChange={handleEditFormChange} className="bg-gray-700 border-gray-600" /></div>
+              <div className="grid gap-2">
+                <Label htmlFor="keterangan">Keterangan</Label>
+                <Textarea
+                  id="keterangan"
+                  name="keterangan"
+                  value={transactionToEdit.keterangan}
+                  onChange={handleEditFormChange}
+                  className="bg-gray-700 border-gray-600"
+                />
+              </div>
               <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2"><Label htmlFor="jumlah">Jumlah (Rp)</Label><Input id="jumlah" name="jumlah" type="number" value={transactionToEdit.jumlah} onChange={handleEditFormChange} className="bg-gray-700 border-gray-600" /></div>
-                <div className="grid gap-2"><Label htmlFor="klaim">Klaim</Label><Input type="text" id="klaim" name="klaim" value={transactionToEdit.klaim} onChange={handleEditFormChange} className="bg-gray-700 border-gray-600" /></div>
+                <div className="grid gap-2">
+                  <Label htmlFor="jumlah">Jumlah (Rp)</Label>
+                  <Input
+                    id="jumlah"
+                    name="jumlah"
+                    type="number"
+                    value={transactionToEdit.jumlah}
+                    onChange={handleEditFormChange}
+                    className="bg-gray-700 border-gray-600"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="klaim">Klaim</Label>
+                  <Input
+                    type="text"
+                    id="klaim"
+                    name="klaim"
+                    value={transactionToEdit.klaim}
+                    onChange={handleEditFormChange}
+                    className="bg-gray-700 border-gray-600"
+                  />
+                </div>
               </div>
             </div>
           )}
-          <DialogFooter><Button variant="outline" onClick={handleCloseEditModal}>Batal</Button><Button onClick={handleUpdateTransaction} className="bg-cyan-600 hover:bg-cyan-700">Simpan Perubahan</Button></DialogFooter>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCloseEditModal}>
+              Batal
+            </Button>
+            <Button
+              onClick={handleUpdateTransaction}
+              className="bg-cyan-600 hover:bg-cyan-700"
+            >
+              Simpan Perubahan
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
-      
-      <Dialog open={!!previewImageUrl} onOpenChange={(isOpen) => !isOpen && setPreviewImageUrl(null)}>
+
+      <Dialog
+        open={!!previewImageUrl}
+        onOpenChange={(isOpen) => !isOpen && setPreviewImageUrl(null)}
+      >
         <DialogContent className="sm:max-w-4xl w-auto bg-transparent border-none shadow-none p-0">
-           <DialogHeader className="sr-only"><DialogTitle>Pratinjau Gambar Berkas</DialogTitle><DialogDescription>Ini adalah pratinjau gambar yang diperbesar dari berkas yang dipilih.</DialogDescription></DialogHeader>
-          <motion.div className="relative" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }}>
+          <DialogHeader className="sr-only">
+            <DialogTitle>Pratinjau Gambar Berkas</DialogTitle>
+            <DialogDescription>
+              Ini adalah pratinjau gambar yang diperbesar dari berkas yang
+              dipilih.
+            </DialogDescription>
+          </DialogHeader>
+          <motion.div
+            className="relative"
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.8, opacity: 0 }}
+          >
             <div className="relative w-auto h-auto max-w-[90vw] max-h-[90vh]">
               {previewImageUrl && (
-                <Image src={previewImageUrl} alt="Preview Berkas" width={1920} height={1080} style={{ width: "auto", height: "auto", maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} className="rounded-lg shadow-2xl" />
+                <Image
+                  src={previewImageUrl}
+                  alt="Preview Berkas"
+                  width={1920}
+                  height={1080}
+                  style={{
+                    width: "auto",
+                    height: "auto",
+                    maxWidth: "100%",
+                    maxHeight: "100%",
+                    objectFit: "contain",
+                  }}
+                  className="rounded-lg shadow-2xl"
+                />
               )}
             </div>
-            <Button variant="ghost" size="icon" onClick={() => setPreviewImageUrl(null)} className="absolute top-2 right-2 bg-black/50 hover:bg-black/75 text-white rounded-full h-8 w-8"><X className="h-5 w-5" /></Button>
-            <Button variant="default" size="sm" className="absolute bottom-4 right-4 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg" asChild><a href={previewImageUrl || "#"} download><Download className="h-4 w-4 mr-2" />Unduh</a></Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setPreviewImageUrl(null)}
+              className="absolute top-2 right-2 bg-black/50 hover:bg-black/75 text-white rounded-full h-8 w-8"
+            >
+              <X className="h-5 w-5" />
+            </Button>
+            <Button
+              variant="default"
+              size="sm"
+              className="absolute bottom-4 right-4 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg"
+              asChild
+            >
+              <a href={previewImageUrl || "#"} download>
+                <Download className="h-4 w-4 mr-2" />
+                Unduh
+              </a>
+            </Button>
           </motion.div>
         </DialogContent>
       </Dialog>
     </motion.div>
   );
 }
-

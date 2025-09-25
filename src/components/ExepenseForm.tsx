@@ -26,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { CurrencyInput } from "@/components/CurencyInput";
 
 interface ExpenseFormProps {
     onTransactionAdded: () => Promise<void>;
@@ -37,10 +38,10 @@ export default function ExpenseForm({ onTransactionAdded }: ExpenseFormProps) {
   const [jenisBiaya, setJenisBiaya] = useState("Transportasi");
   const [customJenisBiaya, setCustomJenisBiaya] = useState("");
   const [keterangan, setKeterangan] = useState("");
-  const [jumlah, setJumlah] = useState("");
   const [klaim, setKlaim] = useState("");
   const [berkas, setBerkas] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [jumlah, setJumlah] = useState<number | undefined>(undefined);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -78,7 +79,7 @@ export default function ExpenseForm({ onTransactionAdded }: ExpenseFormProps) {
     setJenisBiaya("Transportasi");
     setCustomJenisBiaya("");
     setKeterangan("");
-    setJumlah("");
+    setJumlah(undefined);
     setKlaim("");
     setBerkas(null);
     if (previewUrl) {
@@ -89,6 +90,10 @@ export default function ExpenseForm({ onTransactionAdded }: ExpenseFormProps) {
     if (fileInput) fileInput.value = "";
   };
 
+    // Handler baru yang spesifik untuk CurrencyInput
+    const handleJumlahChange = (value: number | undefined) => {
+      setJumlah(value);
+    };
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -183,7 +188,13 @@ export default function ExpenseForm({ onTransactionAdded }: ExpenseFormProps) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label htmlFor="jumlah">Jumlah (Rp)</Label>
-              <Input id="jumlah" type="number" value={jumlah} onChange={(e) => setJumlah(e.target.value)} required placeholder="50000" className="bg-gray-700 border-gray-600"/>
+              <CurrencyInput 
+                id="jumlah" 
+                placeholder="1.000.000"
+                required
+                value={jumlah || ''}
+                onValueChange={handleJumlahChange}
+            />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="klaim">Nama Klaim</Label>

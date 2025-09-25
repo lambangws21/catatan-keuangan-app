@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Wallet, GalleryHorizontal, Settings, Landmark, ChevronsLeft } from "lucide-react";
+import { Home, Wallet, GalleryHorizontal, Settings, Landmark, ChevronsLeft, StethoscopeIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -15,12 +15,13 @@ import {
 } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 
-// Daftar item navigasi utama dengan href yang sudah diperbaiki
+// Daftar item navigasi yang bisa dibagikan
 export const navItems = [
  { href: "/dashboard", icon: Home, label: "Dashboard" },
   { href: "/transaction-manager", icon: Wallet, label: "Transaksi" },
   { href: "/saldo", icon: Landmark, label: "Saldo" },
   { href: "/gallery", icon: GalleryHorizontal, label: "Galeri Berkas" },
+  { href: "/operasi", icon: StethoscopeIcon, label: "Operasi" },
   { href: "/settings", icon: Settings, label: "Pengaturan" },
 ];
 
@@ -28,6 +29,7 @@ export const navItems = [
 const textVariants = {
   hidden: { opacity: 0, x: -10, transition: { duration: 0.1 } },
   visible: { opacity: 1, x: 0, transition: { duration: 0.2, delay: 0.1 } },
+  exit: { opacity: 0, x: -10, transition: { duration: 0.1 } },
 };
 
 // Definisikan props yang akan diterima komponen
@@ -42,8 +44,7 @@ export default function Sidebar({ isCollapsed, toggleSidebar }: SidebarProps) {
   return (
     <motion.aside
       className={cn(
-        "hidden lg:flex h-screen flex-col fixed inset-y-0 left-0 z-40 bg-gray-800 text-white border-r border-gray-700",
-        isCollapsed ? "w-20" : "w-64"
+        "hidden lg:flex h-screen flex-col fixed inset-y-0 left-0 z-40 bg-gray-800 text-white border-r border-gray-700"
       )}
       animate={{ width: isCollapsed ? 80 : 256 }}
       transition={{ duration: 0.3, ease: "easeInOut" }}
@@ -58,7 +59,7 @@ export default function Sidebar({ isCollapsed, toggleSidebar }: SidebarProps) {
                 variants={textVariants}
                 initial="hidden"
                 animate="visible"
-                exit="hidden"
+                exit="exit"
               >
                 KeuanganKu
               </motion.span>
@@ -76,6 +77,7 @@ export default function Sidebar({ isCollapsed, toggleSidebar }: SidebarProps) {
                     className={cn(
                     "flex items-center gap-3 rounded-lg px-3 py-2 text-gray-300 transition-all hover:bg-gray-700 hover:text-white",
                     isCollapsed && "justify-center",
+                    // Logika 'active' diubah menjadi startsWith untuk mencakup sub-halaman
                     pathname.startsWith(item.href) && "bg-cyan-600 text-white"
                     )}
                 >
@@ -87,7 +89,7 @@ export default function Sidebar({ isCollapsed, toggleSidebar }: SidebarProps) {
                           variants={textVariants}
                           initial="hidden"
                           animate="visible"
-                          exit="hidden"
+                          exit="exit"
                         >
                           {item.label}
                         </motion.span>
@@ -96,7 +98,7 @@ export default function Sidebar({ isCollapsed, toggleSidebar }: SidebarProps) {
                 </Link>
                 </TooltipTrigger>
                 {isCollapsed && (
-                    <TooltipContent side="right" className="bg-gray-700 text-white border-gray-600">
+                    <TooltipContent side="right" className="bg-slate-200 text-gray-700 border-gray-600">
                         {item.label}
                     </TooltipContent>
                 )}
@@ -117,7 +119,7 @@ export default function Sidebar({ isCollapsed, toggleSidebar }: SidebarProps) {
                 <ChevronsLeft className={cn("h-5 w-5 transition-transform duration-300", isCollapsed && "rotate-180")} />
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="right" className="bg-gray-700 text-white border-gray-600">
+            <TooltipContent side="right" className="bg-slate-200 text-gray-700 border-gray-600">
               {isCollapsed ? "Perluas" : "Ciutkan"}
             </TooltipContent>
           </Tooltip>
