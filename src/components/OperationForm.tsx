@@ -80,7 +80,7 @@ export default function OperationForm({ onFormSubmit, initialData }: OperationFo
       const token = await user.getIdToken();
       
       // Tentukan URL dan metode berdasarkan mode (edit atau tambah baru)
-      const url = isEditMode ? `/api/operasi/${initialData?.id}` : "/api/operations";
+      const url = isEditMode ? `/api/operasi/${initialData?.id}` : "/api/operasi";
       const method = isEditMode ? "PUT" : "POST";
 
       const response = await fetch(url, {

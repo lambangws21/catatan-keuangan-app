@@ -1,13 +1,11 @@
 "use client";
 
 import { useState, useMemo, ChangeEvent } from "react";
-import { Edit, Trash2, Wallet, ArchiveX } from "lucide-react";
+import { Edit, Trash2, Wallet, ArchiveX, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/context/AuthContext"; // Impor useAuth untuk mendapatkan user
+import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-
-// Impor komponen UI lain
 import {
   Table,
   TableCell,
@@ -30,7 +28,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { CurrencyInput } from "@/components/CurencyInput"; // Pastikan path ke CurrencyInput benar
+import { CurrencyInput } from "@/components/CurencyInput";
+import Spinner from "./Spinner";
 
 interface Operation {
   id: string;
@@ -59,24 +58,49 @@ export default function OperationManager({
   isLoading,
   onDataChange,
 }: ManagerProps) {
-  const { user } = useAuth(); // Dapatkan user dari context
+  const { user } = useAuth();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [itemToEdit, setItemToEdit] = useState<Operation | null>(null);
 
+  // --- Tambahan filter state ---
+  const [filterDate, setFilterDate] = useState("");
+  const [filterQuery, setFilterQuery] = useState("");
+
+  // Hitung total biaya
   const totalOperations = useMemo(() => {
     if (!Array.isArray(operationsData)) return 0;
     return operationsData.reduce((sum, op) => sum + Number(op.jumlah || 0), 0);
   }, [operationsData]);
 
-  // --- Logika CRUD dengan Autentikasi ---
+  // --- Filtering & Sorting ---
+  const filteredData = useMemo(() => {
+    if (!Array.isArray(operationsData)) return [];
 
+    return operationsData
+      .filter((op) => {
+        const matchDate = filterDate ? op.date === filterDate : true;
+        const matchQuery = filterQuery
+          ? [op.dokter, op.tindakanOperasi, op.rumahSakit, op.klaim]
+              .some((field) =>
+                field?.toLowerCase().includes(filterQuery.toLowerCase())
+              )
+          : true;
+        return matchDate && matchQuery;
+      })
+      .sort(
+        (a, b) =>
+          new Date(b.date).getTime() - new Date(a.date).getTime() // data terbaru di atas
+      );
+  }, [operationsData, filterDate, filterQuery]);
+
+  // --- Logika CRUD (delete, edit, update) tetap sama ---
   const handleDelete = async (id: string) => {
     if (!user) return toast.error("Sesi tidak valid, silakan login kembali.");
     if (!window.confirm("Apakah Anda yakin ingin menghapus data ini?")) return;
 
     try {
       const token = await user.getIdToken();
-      const response = await fetch(`/api/operations/${id}`, { // Path API diperbaiki
+      const response = await fetch(`/api/operasi/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -108,7 +132,7 @@ export default function OperationManager({
 
     try {
       const token = await user.getIdToken();
-      const response = await fetch(`/api/operations/${itemToEdit.id}`, { // Path API diperbaiki
+      const response = await fetch(`/api/operasi/${itemToEdit.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -138,45 +162,46 @@ export default function OperationManager({
     const { name, value } = e.target;
     setItemToEdit((prev) => (prev ? { ...prev, [name]: value } : null));
   };
-  
-  // Handler baru untuk CurrencyInput di dalam modal edit
+
   const handleEditJumlahChange = (value: number | undefined) => {
     if (!itemToEdit) return;
     setItemToEdit((prev) => (prev ? { ...prev, jumlah: value || 0 } : null));
   };
 
-
   if (isLoading)
-    return <p className="text-center p-8">Memuat data operasi...</p>;
-
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
-  };
-
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: { y: 0, opacity: 1 },
-  };
+    return <div className="text-center p-8"><Spinner /></div>;
 
   return (
     <motion.div
       className="bg-gray-800/60 backdrop-blur-xl border border-white/10 rounded-lg shadow-lg p-6 text-white"
-      variants={containerVariants}
       initial="hidden"
       animate="visible"
     >
-      <motion.h2
-        className="text-xl font-semibold mb-4 text-cyan-400"
-        variants={itemVariants}
-      >
+      <motion.h2 className="text-xl font-semibold mb-4 text-cyan-400">
         Riwayat Data Operasi
       </motion.h2>
 
-      <motion.div
-        className="mb-6 p-4 bg-gray-700/50 rounded-lg flex justify-between items-center"
-        variants={itemVariants}
-      >
+      {/* --- Filter Section --- */}
+      <div className="flex flex-col sm:flex-row gap-3 mb-6">
+        <Input
+          type="date"
+          value={filterDate}
+          onChange={(e) => setFilterDate(e.target.value)}
+          className="sm:w-1/3"
+        />
+        <div className="relative sm:flex-1">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
+          <Input
+            placeholder="Cari dokter, tindakan, rumah sakit, klaim..."
+            value={filterQuery}
+            onChange={(e) => setFilterQuery(e.target.value)}
+            className="pl-8"
+          />
+        </div>
+      </div>
+
+      {/* --- Total --- */}
+      <div className="mb-6 p-4 bg-gray-700/50 rounded-lg flex justify-between items-center">
         <div className="flex items-center gap-3">
           <Wallet className="h-6 w-6 text-gray-400" />
           <h3 className="text-md font-semibold text-gray-300">
@@ -186,95 +211,80 @@ export default function OperationManager({
         <p className="text-2xl font-bold text-cyan-400">
           {formatCurrency(totalOperations)}
         </p>
-      </motion.div>
+      </div>
 
-      <motion.div variants={itemVariants}>
-        {!Array.isArray(operationsData) || operationsData.length === 0 ? (
-          <div className="text-center text-gray-400 py-16 bg-gray-800/50 rounded-lg">
-            <ArchiveX className="h-12 w-12 mx-auto mb-4 text-gray-500" />
-            <p className="font-semibold">Tidak Ada Data Operasi</p>
-            <p className="text-sm">
-              Data yang Anda tambahkan akan muncul di sini.
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-gray-700 hover:bg-gray-800 sticky top-0 bg-gray-800 z-10">
-                  <TableHead>Tanggal</TableHead>
-                  <TableHead>Dokter</TableHead>
-                  <TableHead>Tindakan</TableHead>
-                  <TableHead>Rumah Sakit</TableHead>
-                  <TableHead className="text-right">Jumlah</TableHead>
-                  <TableHead className="text-center">Aksi</TableHead>
-                </TableRow>
-              </TableHeader>
-              <motion.tbody
-                variants={containerVariants}
-                initial="hidden"
-                animate="visible"
-              >
-                {operationsData.map((item) => (
-                  <motion.tr
-                    key={item.id}
-                    className="border-b border-gray-700"
-                    variants={itemVariants}
-                  >
-                    <TableCell className="py-3 px-6">{item.date}</TableCell>
-                    <TableCell className="py-3 px-6">{item.dokter}</TableCell>
-                    <TableCell className="py-3 px-6">
-                      {item.tindakanOperasi}
-                    </TableCell>
-                    <TableCell className="py-3 px-6">
-                      {item.rumahSakit}
-                    </TableCell>
-                    <TableCell className="text-right py-3 px-6 font-mono">
-                      {formatCurrency(Number(item.jumlah))}
-                    </TableCell>
-                    <TableCell className="text-center py-3 px-6">
-                      <TooltipProvider>
-                        <div className="flex justify-center items-center gap-1">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleOpenEditModal(item)}
-                              >
-                                <Edit className="h-4 w-4 text-yellow-500" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Edit Data</p>
-                            </TooltipContent>
-                          </Tooltip>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleDelete(item.id)}
-                              >
-                                <Trash2 className="h-4 w-4 text-red-500" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Hapus Data</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </div>
-                      </TooltipProvider>
-                    </TableCell>
-                  </motion.tr>
-                ))}
-              </motion.tbody>
-            </Table>
-          </div>
-        )}
-      </motion.div>
+      {/* --- Table --- */}
+      {!Array.isArray(filteredData) || filteredData.length === 0 ? (
+        <div className="text-center text-gray-400 py-16 bg-gray-800/50 rounded-lg">
+          <ArchiveX className="h-12 w-12 mx-auto mb-4 text-gray-500" />
+          <p className="font-semibold">Tidak Ada Data Operasi</p>
+          <p className="text-sm">Data yang Anda tambahkan akan muncul di sini.</p>
+        </div>
+      ) : (
+        <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-gray-700 hover:bg-gray-800 sticky top-0 bg-gray-800 z-10">
+                <TableHead>Tanggal</TableHead>
+                <TableHead>Dokter</TableHead>
+                <TableHead>Tindakan</TableHead>
+                <TableHead>Rumah Sakit</TableHead>
+                <TableHead className="text-right">Jumlah</TableHead>
+                <TableHead className="text-center">Aksi</TableHead>
+              </TableRow>
+            </TableHeader>
+            <tbody>
+              {filteredData.map((item) => (
+                <tr key={item.id} className="border-b border-gray-700">
+                  <TableCell>{item.date}</TableCell>
+                  <TableCell>{item.dokter}</TableCell>
+                  <TableCell>{item.tindakanOperasi}</TableCell>
+                  <TableCell>{item.rumahSakit}</TableCell>
+                  <TableCell className="text-right font-mono">
+                    {formatCurrency(Number(item.jumlah))}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <TooltipProvider>
+                      <div className="flex justify-center items-center gap-1">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleOpenEditModal(item)}
+                            >
+                              <Edit className="h-4 w-4 text-yellow-500" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Edit Data</p>
+                          </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDelete(item.id)}
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Hapus Data</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                    </TooltipProvider>
+                  </TableCell>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        </div>
+      )}
 
-      {/* Modal Edit */}
+      {/* Modal Edit tetap sama */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
         <DialogContent className="sm:max-w-[625px] bg-gray-800/80 backdrop-blur-md border-gray-700 text-white">
           <DialogHeader>
@@ -287,34 +297,60 @@ export default function OperationManager({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="date">Tanggal</Label>
-                  <Input id="date" name="date" type="date" value={itemToEdit.date} onChange={handleEditFormChange} />
+                  <Input
+                    id="date"
+                    name="date"
+                    type="date"
+                    value={itemToEdit.date}
+                    onChange={handleEditFormChange}
+                  />
                 </div>
                 <div>
                   <Label htmlFor="dokter">Dokter</Label>
-                  <Input id="dokter" name="dokter" value={itemToEdit.dokter} onChange={handleEditFormChange} />
+                  <Input
+                    id="dokter"
+                    name="dokter"
+                    value={itemToEdit.dokter}
+                    onChange={handleEditFormChange}
+                  />
                 </div>
               </div>
               <div>
                 <Label htmlFor="tindakanOperasi">Tindakan Operasi</Label>
-                <Input id="tindakanOperasi" name="tindakanOperasi" value={itemToEdit.tindakanOperasi} onChange={handleEditFormChange} />
+                <Input
+                  id="tindakanOperasi"
+                  name="tindakanOperasi"
+                  value={itemToEdit.tindakanOperasi}
+                  onChange={handleEditFormChange}
+                />
               </div>
               <div>
                 <Label htmlFor="rumahSakit">Rumah Sakit</Label>
-                <Input id="rumahSakit" name="rumahSakit" value={itemToEdit.rumahSakit} onChange={handleEditFormChange} />
+                <Input
+                  id="rumahSakit"
+                  name="rumahSakit"
+                  value={itemToEdit.rumahSakit}
+                  onChange={handleEditFormChange}
+                />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="jumlah">Jumlah (Rp)</Label>
-                   <CurrencyInput 
-                        id="jumlah" 
-                        placeholder="5.000.000" 
-                        value={itemToEdit.jumlah || ''}
-                        onValueChange={handleEditJumlahChange}
-                    />
+                  <CurrencyInput
+                    id="jumlah"
+                    placeholder="5.000.000"
+                    value={itemToEdit.jumlah || ""}
+                    onValueChange={handleEditJumlahChange}
+                  />
                 </div>
                 <div>
                   <Label htmlFor="klaim">Klaim</Label>
-                  <Input id="klaim" name="klaim" value={itemToEdit.klaim} onChange={handleEditFormChange} />
+                  <Input
+                    id="klaim"
+                    name="klaim"
+                    value={itemToEdit.klaim}
+                    onChange={handleEditFormChange}
+                  />
                 </div>
               </div>
             </div>
@@ -335,4 +371,3 @@ export default function OperationManager({
     </motion.div>
   );
 }
-
