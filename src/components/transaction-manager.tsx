@@ -14,8 +14,6 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { useAuth } from "@/context/AuthContext";
-import { toast } from "sonner";
 
 // Import library untuk ekspor
 import * as XLSX from "xlsx";
@@ -80,7 +78,6 @@ export default function TransactionManager({
   isLoading,
   onDataChange,
 }: TransactionManagerProps) {
-  const { user } = useAuth();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [transactionToEdit, setTransactionToEdit] =
     useState<Transaction | null>(null);
@@ -88,7 +85,7 @@ export default function TransactionManager({
 
   const totalJumlah = useMemo(() => {
     if (!Array.isArray(transactions)) return 0;
-    return transactions.reduce((sum, tx) => sum + Number(tx.jumlah || 0), 0);
+    return transactions.reduce((sum, tx) => sum + Number(tx.jumlah), 0);
   }, [transactions]);
 
   // --- Fungsi Ekspor ---
@@ -131,84 +128,32 @@ export default function TransactionManager({
     doc.save("Laporan Transaksi.pdf");
   };
 
-  // --- Fungsi CRUD dengan Autentikasi ---
   const handleDeleteTransaction = async (id: string) => {
-    if (!user) return toast.error("Sesi tidak valid, silakan login kembali.");
     if (!window.confirm("Apakah Anda yakin ingin menghapus transaksi ini?"))
       return;
-
-    try {
-      const token = await user.getIdToken();
-      const response = await fetch(`/api/transactions/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Gagal menghapus transaksi.");
-      }
-      toast.success("Transaksi berhasil dihapus.");
-      await onDataChange();
-    } catch (error) {
-      toast.error((error as Error).message);
-    }
+    await fetch(`/api/transactions/${id}`, { method: "DELETE" });
+    await onDataChange();
   };
 
   const handleOpenEditModal = (tx: Transaction) => {
     setTransactionToEdit({ ...tx });
     setIsEditModalOpen(true);
   };
+
   const handleCloseEditModal = () => {
     setIsEditModalOpen(false);
     setTransactionToEdit(null);
   };
 
   const handleUpdateTransaction = async () => {
-    if (!user) return toast.error("Sesi tidak valid, silakan login kembali.");
     if (!transactionToEdit) return;
-
-    const { tanggal, jenisBiaya, keterangan, jumlah } = transactionToEdit;
-    if (
-      !tanggal ||
-      !jenisBiaya.trim() ||
-      !keterangan.trim() ||
-      isNaN(Number(jumlah))
-    ) {
-      toast.error(
-        "Data tidak valid. Pastikan semua field terisi dengan benar."
-      );
-      return;
-    }
-
-    try {
-      const token = await user.getIdToken();
-      const response = await fetch(
-        `/api/transactions/${transactionToEdit.id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            ...transactionToEdit,
-            jumlah: Number(transactionToEdit.jumlah),
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Gagal memperbarui transaksi.");
-      }
-
-      handleCloseEditModal();
-      toast.success("Transaksi berhasil diperbarui.");
-      await onDataChange();
-    } catch (error) {
-      toast.error((error as Error).message);
-    }
+    await fetch(`/api/transactions/${transactionToEdit.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(transactionToEdit),
+    });
+    handleCloseEditModal();
+    await onDataChange();
   };
 
   const handleEditFormChange = (
@@ -277,7 +222,7 @@ export default function TransactionManager({
         <div className="flex items-center gap-3">
           <Wallet className="h-6 w-6 text-gray-400" />
           <h3 className="text-md font-semibold text-gray-300">
-            Total Transaksi
+            Total Semua Transaksi
           </h3>
         </div>
         <p className="text-2xl font-bold text-cyan-400">
@@ -300,7 +245,7 @@ export default function TransactionManager({
                   <TableHead className="text-white">Tanggal</TableHead>
                   <TableHead className="text-white">Keterangan</TableHead>
                   <TableHead className="text-white">Jenis Biaya</TableHead>
-                  <TableHead className="text-white text-right">
+                  <TableHead className="text-white text-center">
                     Jumlah
                   </TableHead>
                   <TableHead className="text-white">Klaim</TableHead>
@@ -327,7 +272,7 @@ export default function TransactionManager({
                         {tx.jenisBiaya}
                       </span>
                     </TableCell>
-                    <TableCell className="text-right py-3 px-6 font-mono">
+                    <TableCell className="text-center py-3 px-3 font-mono">
                       {formatCurrency(Number(tx.jumlah))}
                     </TableCell>
                     <TableCell className="py-3 px-6">{tx.klaim}</TableCell>
@@ -391,6 +336,7 @@ export default function TransactionManager({
         )}
       </motion.div>
 
+      {/* Modal untuk Edit Transaksi */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
         <DialogContent className="sm:max-w-[625px] bg-gray-800/80 backdrop-blur-md border-gray-700 text-white">
           <DialogHeader>
@@ -438,7 +384,7 @@ export default function TransactionManager({
                     id="jumlah"
                     name="jumlah"
                     type="number"
-                    value={transactionToEdit.jumlah}
+                    value={Number(transactionToEdit.jumlah)}
                     onChange={handleEditFormChange}
                     className="bg-gray-700 border-gray-600"
                   />
@@ -471,6 +417,7 @@ export default function TransactionManager({
         </DialogContent>
       </Dialog>
 
+      {/* Modal Preview Gambar dengan Next/Image */}
       <Dialog
         open={!!previewImageUrl}
         onOpenChange={(isOpen) => !isOpen && setPreviewImageUrl(null)}
@@ -507,6 +454,7 @@ export default function TransactionManager({
                 />
               )}
             </div>
+
             <Button
               variant="ghost"
               size="icon"
@@ -515,6 +463,7 @@ export default function TransactionManager({
             >
               <X className="h-5 w-5" />
             </Button>
+
             <Button
               variant="default"
               size="sm"
