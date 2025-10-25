@@ -120,7 +120,8 @@ export default function DailyTimelineView({ schedulesData, onEditSchedule }: Dai
 
     const hourLabels = Array.from({ length: totalHours + 1 }, (_, i) => {
         const hour = HOURS_START + i;
-        return format(setMinutes(setHours(new Date(), hour), 0), 'h a');
+        // PERBAIKAN: Menggunakan format 'H:00' untuk format 24 jam (8:00, 14:00, 17:00)
+        return format(setMinutes(setHours(new Date(), hour), 0), 'H:00'); 
     });
 
     const PIXELS_PER_HOUR = 60; 
@@ -166,7 +167,7 @@ export default function DailyTimelineView({ schedulesData, onEditSchedule }: Dai
             </div>
 
             {/* Header Hari-Hari (Mon, Tue,...) - PENYESUAIAN FONT */}
-            <div className="flex justify-around items-center mb-4 text-center border-b border-border/50 pb-4">
+            <div className="flex justify-around items-center mb-8 text-center border-b border-border/50 pb-4">
                 {weekDays.map(day => (
                     <div 
                         key={day.toISOString()} 
@@ -189,12 +190,12 @@ export default function DailyTimelineView({ schedulesData, onEditSchedule }: Dai
             {/* Konten Timeline */}
             <div className="relative flex">
                 
-                {/* Kolom Label Jam (w-20 untuk ruang ekstra) */}
-                <div className="w-16 flex-shrink-0 text-right pr-3">
+                {/* Kolom Label Jam (w-16 untuk ruang ekstra) */}
+                <div className="w-16 flex-shrink-0 text-right pr-4">
                     {hourLabels.map((label) => (
                         <div 
                             key={label} 
-                            className="text-[12px] text-muted-foreground pt-12.5 relative" 
+                            className="text-[12px] text-muted-foreground pt-5 relative" 
                             style={{ height: `${PIXELS_PER_HOUR}px`, top: `-${PIXELS_PER_HOUR / 2}px` }} 
                         >
                             {label}
@@ -204,7 +205,7 @@ export default function DailyTimelineView({ schedulesData, onEditSchedule }: Dai
 
                 {/* Kolom Jadwal */}
                 <div 
-                    className="flex-1 relative border-l-0 border-border/50"
+                    className="flex-1 relative border-l border-border/50" // Border vertikal di sini
                     style={{ minHeight: `${timelineHeight}px` }}
                 >
                     {/* Garis Jam Horisontal */}
@@ -243,16 +244,16 @@ export default function DailyTimelineView({ schedulesData, onEditSchedule }: Dai
                             <div
                                 key={schedule.id}
                                 // Menerapkan offset dan lebar berdasarkan slot
-                                className="absolute z-10 p-4 rounded-md mt-4 transition-all duration-300" 
+                                className="absolute z-10" 
                                 style={{
                                     top: `${eventTop}px`,
                                     height: `${heightPx}px`,
                                     // Menerapkan lebar dan offset yang diperhitungkan
                                     left: `${schedule.slotOffset}%`, 
                                     width: `${schedule.slotWidth}%`,
+                                    padding: '2px', // Padding agar kartu tidak menyentuh garis
                                 }}
                             >
-                                {/* FIXED: Meneruskan prop onClick yang hilang */}
                                 <TimelineItem schedule={schedule} isFocused={isFocused} onClick={onEditSchedule} /> 
                             </div>
                         );

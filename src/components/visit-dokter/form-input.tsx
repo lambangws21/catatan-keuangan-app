@@ -129,11 +129,11 @@ export default function ScheduleForm({ onFormSubmit, initialData, doctorsList = 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>{TriggerButton}</DialogTrigger>
-      <DialogContent className="sm:max-w-[425px] bg-gray-800/80 backdrop-blur-md border-gray-700 text-white">
+      <DialogContent className="sm:max-w-[425px] overflow-hidden bg-gray-800/80 backdrop-blur-md border-gray-700 text-white p-8">
         <DialogHeader>
           <DialogTitle className="text-cyan-400">{isEditMode ? 'Edit' : 'Input'} Jadwal Visit</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="grid gap-4 py-4">
+        <form onSubmit={handleSubmit} className="grid gap-4 py-4 overflow-auto">
             <div className="space-y-2">
                 <Label htmlFor="namaDokter">Pilih Dokter</Label>
                 <div className="relative"><Stethoscope className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />

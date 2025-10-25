@@ -34,7 +34,7 @@ const getStatusStyles = (status: string) => {
 };
 
 export function TimelineItem({ schedule, isFocused = false, onClick }: TimelineItemProps) {
-    const time = format(new Date(schedule.waktuVisit), 'h:mm a');
+    const time = format(new Date(schedule.waktuVisit), 'HH:mm');
     const styles = getStatusStyles(schedule.status);
 
     return (
@@ -45,7 +45,7 @@ export function TimelineItem({ schedule, isFocused = false, onClick }: TimelineI
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
             onClick={() => onClick(schedule)} // Event klik memicu edit
             className={cn(
-                "w-full p-1.5 rounded-2xl border-0 cursor-pointer transition-all duration-300 relative",
+                "w-full p-1.5 rounded-xl border-0 cursor-pointer transition-all duration-300 relative",
                 styles,
                 isFocused ? 'scale-[1.03] ring-4 ring-white/20' : 'hover:shadow-2xl', 
                 schedule.status === 'Terjadwal' ? 'min-h-[60px]' : 'min-h-[30px]' 
@@ -65,7 +65,7 @@ export function TimelineItem({ schedule, isFocused = false, onClick }: TimelineI
                 </div>
                 
                 {/* Waktu: Diberi flex-shrink-0 agar tidak dikecilkan */}
-                <span className="font-semibold text-lg pr-1 md:text-sm text-white flex-shrink-0">
+                <span className="font-semibold text-lg pr-7 md:text-sm text-white flex-shrink-0">
                     {time}
                 </span>
             </div>

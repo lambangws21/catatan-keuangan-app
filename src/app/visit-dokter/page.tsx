@@ -122,6 +122,7 @@ export default function SchedulesPage() {
                 <ScheduleSidebar 
                     schedules={schedules} 
                     onEdit={handleEdit} 
+                    onDelete={fetchData}
                 />
             </div>
         </div>
