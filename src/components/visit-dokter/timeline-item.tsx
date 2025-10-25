@@ -17,15 +17,15 @@ interface TimelineItemProps {
 const getStatusStyles = (status: string) => {
     // Mewarnai card berdasarkan status (warna cerah yang kontras di Dark Mode)
     switch (status) {
-        case 'In Progress':
+        case 'Terjadwal':
         case 'Terjadwal':
             // Biru cerah (Seperti di gambar contoh)
             return 'bg-blue-600 text-white shadow-xl border-blue-700 dark:bg-blue-700/80';
-        case 'Done':
+        case 'Selesai':
         case 'Selesai':
             // Hijau (Completed)
             return 'bg-green-500 text-white shadow-lg border-green-600 dark:bg-green-600/80';
-        case 'To Do':
+        case 'Dibatalkan':
         case 'Dibatalkan':
         default:
             // Kuning/Oranye (Pending/To Do)

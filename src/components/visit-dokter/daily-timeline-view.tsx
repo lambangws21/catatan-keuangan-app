@@ -16,7 +16,7 @@ interface DailyTimelineViewProps {
 }
 
 const HOURS_START = 8;
-const HOURS_END = 18;
+const HOURS_END = 19;
 const totalHours = HOURS_END - HOURS_START;
 
 // Konfigurasi Slotting/Overlap
@@ -123,7 +123,7 @@ export default function DailyTimelineView({ schedulesData, onEditSchedule }: Dai
         return format(setMinutes(setHours(new Date(), hour), 0), 'h a');
     });
 
-    const PIXELS_PER_HOUR = 80; 
+    const PIXELS_PER_HOUR = 60; 
     const timelineHeight = totalHours * PIXELS_PER_HOUR;
 
     const getTopPosition = (date: Date) => {
@@ -138,10 +138,10 @@ export default function DailyTimelineView({ schedulesData, onEditSchedule }: Dai
     };
 
     return (
-        <div className="bg-card rounded-xl p-4 shadow-xl">
+        <div className="bg-card rounded-xl p-1.5 shadow-xl">
             
             {/* Header Kalender Mini dan Navigasi */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-7">
                 
                 {/* Tanggal Utama */}
                 <div className="mb-4 md:mb-0">
@@ -166,7 +166,7 @@ export default function DailyTimelineView({ schedulesData, onEditSchedule }: Dai
             </div>
 
             {/* Header Hari-Hari (Mon, Tue,...) - PENYESUAIAN FONT */}
-            <div className="flex justify-around items-center mb-4 text-center border-b border-border/50 pb-2">
+            <div className="flex justify-around items-center mb-4 text-center border-b border-border/50 pb-4">
                 {weekDays.map(day => (
                     <div 
                         key={day.toISOString()} 
@@ -190,11 +190,11 @@ export default function DailyTimelineView({ schedulesData, onEditSchedule }: Dai
             <div className="relative flex">
                 
                 {/* Kolom Label Jam (w-20 untuk ruang ekstra) */}
-                <div className="w-20 flex-shrink-0 text-right pr-3">
+                <div className="w-16 flex-shrink-0 text-right pr-3">
                     {hourLabels.map((label) => (
                         <div 
                             key={label} 
-                            className="text-[10px] text-muted-foreground pt-8 relative" 
+                            className="text-[12px] text-muted-foreground pt-12.5 relative" 
                             style={{ height: `${PIXELS_PER_HOUR}px`, top: `-${PIXELS_PER_HOUR / 2}px` }} 
                         >
                             {label}
@@ -243,7 +243,7 @@ export default function DailyTimelineView({ schedulesData, onEditSchedule }: Dai
                             <div
                                 key={schedule.id}
                                 // Menerapkan offset dan lebar berdasarkan slot
-                                className="absolute z-10 p-4 rounded-md mt-8 transition-all duration-300" 
+                                className="absolute z-10 p-4 rounded-md mt-4 transition-all duration-300" 
                                 style={{
                                     top: `${eventTop}px`,
                                     height: `${heightPx}px`,
