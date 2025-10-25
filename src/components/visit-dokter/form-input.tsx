@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, FormEvent, useEffect } from "react";
-// import { useAuth } from "@/components/AuthProvider"; // Tidak diperlukan lagi
 import { toast } from "sonner";
 import { Loader2, Plus, Edit, Stethoscope, Hospital, Clock, ListChecks } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -28,40 +27,69 @@ export interface ScheduleData {
 interface ScheduleFormProps {
   onFormSubmit: () => Promise<void>; 
   initialData?: ScheduleData & { id: string }; 
-  doctorsList?: Doctor[]; // PERBAIKAN: Menggunakan 'doctorsList'
+  doctorsList?: Doctor[]; 
 }
 
+/**
+ * Mengubah ISO string menjadi format YYYY-MM-DDTHH:MM yang diperlukan 
+ * oleh input type="datetime-local" (format 24 jam).
+ * @param isoString String tanggal dan waktu (misal: "2025-10-26T05:29:38.000Z")
+ * @returns String format lokal yang dibutuhkan input (misal: "2025-10-26T12:29")
+ */
 const formatDateTimeForInput = (isoString: string) => {
     if (!isoString) return "";
-    return isoString.slice(0, 16);
+    // Menggunakan Date object untuk memastikan waktu dikonversi ke waktu lokal
+    // sebelum diformat ulang ke YYYY-MM-DDTHH:MM
+    try {
+        const date = new Date(isoString);
+        // Mengambil bagian YYYY-MM-DDTHH:MM
+        // Catatan: toISOString() mengembalikan UTC, jadi kita gunakan slice untuk input
+        // atau bisa juga menggunakan library seperti date-fns/moment untuk formatting yang lebih baik.
+        // Namun, slice(0, 16) seringkali cukup untuk input datetime-local.
+        
+        // Alternatif yang lebih aman untuk penanganan waktu lokal:
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+
+        // Ini adalah format YYYY-MM-DDTHH:MM yang dibutuhkan input
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+
+    } catch  {
+        return isoString.slice(0, 16); // Fallback
+    }
 };
 
 const initialFormData: ScheduleData = {
     namaDokter: "",
     rumahSakit: "",
-    waktuVisit: formatDateTimeForInput(new Date().toISOString()),
+    // Memberikan nilai awal waktu saat ini dalam format input
+    waktuVisit: formatDateTimeForInput(new Date().toISOString()), 
     status: "Terjadwal"
 };
 
 export default function ScheduleForm({ onFormSubmit, initialData, doctorsList = [] }: ScheduleFormProps) {
-  // const { user } = useAuth(); // Tidak diperlukan lagi
   const [isOpen, setIsOpen] = useState(false);
   const [formData, setFormData] = useState<ScheduleData>(initialFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isEditMode = !!initialData;
 
-  // Logika 'uniqueDoctors' dan 'useMemo' dihapus
-  // Kita akan langsung menggunakan 'doctorsList' dari props
-
   useEffect(() => {
     if (isEditMode && initialData && isOpen) {
       setFormData({
         ...initialData,
-        waktuVisit: formatDateTimeForInput(initialData.waktuVisit),
+        // Penting: Mengubah ISO String dari backend ke format input datetime-local
+        waktuVisit: formatDateTimeForInput(initialData.waktuVisit), 
       });
     } else if (!isEditMode && isOpen) {
-      setFormData(initialFormData);
+      // Mengatur ulang ke waktu saat ini saat membuat baru
+      setFormData({ 
+        ...initialFormData,
+        waktuVisit: formatDateTimeForInput(new Date().toISOString())
+      });
     }
   }, [initialData, isEditMode, isOpen]);
 
@@ -76,7 +104,6 @@ export default function ScheduleForm({ onFormSubmit, initialData, doctorsList = 
 
   // Handler untuk auto-fill saat dokter dipilih
   const handleDoctorChange = (doctorName: string) => {
-    // Cari dokter di 'doctorsList' (prop baru)
     const selectedDoctor = doctorsList.find(doc => doc.namaDokter === doctorName);
     if (selectedDoctor) {
         setFormData(prev => ({
@@ -91,15 +118,38 @@ export default function ScheduleForm({ onFormSubmit, initialData, doctorsList = 
     e.preventDefault();
     
     setIsSubmitting(true);
+
+    // 🌟 PERUBAHAN UTAMA UNTUK FORMAT WAKTU 24 JAM SAAT POST/PUT 🌟
+    const dataToSend = { ...formData };
+    
+    // 1. Ambil string waktu dari input (format: YYYY-MM-DDTHH:MM - ini sudah 24 jam lokal)
+    // 2. Konversi ke objek Date, yang menginterpretasikannya sebagai waktu lokal.
+    // 3. Konversi ke ISOString() (format: YYYY-MM-DDTHH:MM:SS.sssZ - ini adalah 24 jam UTC)
     try {
-      // PERBAIKAN: Path API dikembalikan ke /api/schedules agar konsisten
+        const localDate = new Date(formData.waktuVisit);
+        
+        if (isNaN(localDate.getTime())) {
+            throw new Error("Format waktu tidak valid.");
+        }
+        
+        // Hasilnya adalah format 24 jam universal (UTC) yang ideal untuk database.
+        dataToSend.waktuVisit = localDate.toISOString(); 
+
+    } catch (error) {
+        toast.error(`Kesalahan Waktu: ${(error as Error).message}`);
+        setIsSubmitting(false);
+        return; // Hentikan submit jika ada error waktu
+    }
+    // 🌟 AKHIR PERUBAHAN UTAMA 🌟
+
+    try {
       const url = isEditMode ? `/api/visit-dokter/${initialData?.id}` : "/api/visit-dokter";
       const method = isEditMode ? "PUT" : "POST";
 
       const response = await fetch(url, {
         method: method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(dataToSend), // Mengirim dataToSend yang sudah diubah format waktunya
       });
 
       if (!response.ok) {
@@ -118,7 +168,7 @@ export default function ScheduleForm({ onFormSubmit, initialData, doctorsList = 
   };
 
   const TriggerButton = isEditMode ? (
-    <Button variant="ghost" size="icon"><Edit className="h-4 w-4 text-yellow-500" /></Button>
+    <Button variant="ghost" size="icon" aria-label="Edit Jadwal"><Edit className="h-4 w-4 text-yellow-500" /></Button>
   ) : (
     <Button className="bg-cyan-600 hover:bg-cyan-700 text-white font-bold md:rounded-lg rounded-full p-3 md:px-4 md:py-2 transition-all">
       <Plus className="h-5 w-5 md:mr-2" />
@@ -137,13 +187,11 @@ export default function ScheduleForm({ onFormSubmit, initialData, doctorsList = 
             <div className="space-y-2">
                 <Label htmlFor="namaDokter">Pilih Dokter</Label>
                 <div className="relative"><Stethoscope className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    {/* PERBAIKAN: Gunakan 'value' dari state untuk 'Select' */}
                     <Select onValueChange={handleDoctorChange} value={formData.namaDokter}>
                         <SelectTrigger className="w-full pl-10">
                             <SelectValue placeholder="Pilih dari daftar dokter..." />
                         </SelectTrigger>
                         <SelectContent className="bg-gray-700 text-white border-gray-600">
-                            {/* PERBAIKAN: Iterasi 'doctorsList' (prop baru) */}
                             {doctorsList.map(doc => (
                                 <SelectItem key={doc.id} value={doc.namaDokter}>
                                     {doc.namaDokter} ({doc.rumahSakit})
@@ -154,8 +202,6 @@ export default function ScheduleForm({ onFormSubmit, initialData, doctorsList = 
                 </div>
             </div>
             
-            {/* Input manual untuk 'namaDokter' dihapus karena sudah di-handle 'Select' */}
-
             <div className="space-y-2">
                 <Label htmlFor="rumahSakit">Rumah Sakit</Label>
                 <div className="relative"><Hospital className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -167,19 +213,30 @@ export default function ScheduleForm({ onFormSubmit, initialData, doctorsList = 
                     placeholder="Akan terisi otomatis" 
                     required 
                     className="pl-10"
-                    readOnly // Dibuat read-only karena diisi oleh dropdown
+                    readOnly 
                 /></div>
             </div>
             <div className="space-y-2">
-                <Label htmlFor="waktuVisit">Waktu Visit</Label>
-                <div className="relative"><Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" /><Input id="waktuVisit" name="waktuVisit" type="datetime-local" value={formData.waktuVisit} onChange={handleChange} required className="pl-10"/></div>
+                <Label htmlFor="waktuVisit">Waktu Visit (Format 24 Jam)</Label>
+                <div className="relative">
+                    <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input 
+                        id="waktuVisit" 
+                        name="waktuVisit" 
+                        type="datetime-local" 
+                        value={formData.waktuVisit} 
+                        onChange={handleChange} 
+                        required 
+                        className="pl-10"
+                    />
+                </div>
             </div>
             <div className="space-y-2">
                 <Label htmlFor="status">Status</Label>
                 <div className="relative"><ListChecks className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <Select value={formData.status} onValueChange={handleStatusChange}>
                         <SelectTrigger className="w-full pl-10"><SelectValue placeholder="Pilih status" /></SelectTrigger>
-                        <SelectContent className="bg-gray-700 text-white border-gray-600">
+                        <SelectContent className="bg-gray-700/90 text-white border-gray-600">
                             <SelectItem value="Terjadwal">Terjadwal</SelectItem>
                             <SelectItem value="Selesai">Selesai</SelectItem>
                             <SelectItem value="Dibatalkan">Dibatalkan</SelectItem>
@@ -198,4 +255,3 @@ export default function ScheduleForm({ onFormSubmit, initialData, doctorsList = 
     </Dialog>
   );
 }
-
