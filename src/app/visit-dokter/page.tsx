@@ -1,16 +1,15 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Loader2, ClipboardList } from "lucide-react"; // Clock dihapus
+import { Loader2, ClipboardList, Stethoscope, Hospital, Clock } from "lucide-react"; // Tambahkan ikon yang relevan
 import Link from "next/link"; 
 import { Button } from "@/components/ui/button"; 
-// Card komponen dihapus karena hanya digunakan di ScheduleSidebar
 import ScheduleForm from "@/components/visit-dokter/form-input"; 
 import DailyTimelineView from "@/components/visit-dokter/daily-timeline-view"; 
 import ScheduleSidebar from "@/components/visit-dokter/schedule-sidebar"; 
-import {toast} from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"; 
-// format dihapus
+import { toast } from "sonner"; // Impor toast
+import { format } from "date-fns"; // Impor format untuk menampilkan waktu
 
 
 // --- TIPE DATA UTAMA ---
@@ -62,7 +61,6 @@ export default function SchedulesPage() {
     }
   }, []);
 
-  // 💡 FUNGSI DELETE YANG HILANG
   const handleDeleteSchedule = async (scheduleId: string) => {
     try {
       const response = await fetch(`/api/visit-dokter/${scheduleId}`, {
@@ -77,13 +75,11 @@ export default function SchedulesPage() {
         throw new Error(errorData.error || "Gagal menghapus jadwal.");
       }
 
-      // Setelah berhasil menghapus, muat ulang data jadwal
       await fetchData(); 
       toast.success("Jadwal berhasil dihapus!");
       
     } catch (error) {
       console.error("Error deleting schedule:", error);
-      // Gunakan toast jika diimpor, jika tidak, gunakan alert
       toast.error(`Gagal menghapus: ${(error as Error).message}`); 
     }
   };
@@ -104,6 +100,32 @@ export default function SchedulesPage() {
     handleCloseEdit(); 
     await fetchData(); 
   }
+
+  // --- Fungsi untuk merender detail jadwal di modal ---
+  const renderScheduleDetails = (schedule: Schedule) => {
+    if (!schedule) return null;
+
+    const date = new Date(schedule.waktuVisit);
+    
+    return (
+      <div className="mt-4 p-3 bg-gray-100 dark:bg-gray-700/50 rounded-lg space-y-2 text-sm">
+        <div className="flex items-center text-foreground">
+          <Stethoscope className="w-4 h-4 mr-2 text-cyan-500" />
+          <span className="font-semibold">{schedule.namaDokter}</span>
+        </div>
+        <div className="flex items-center text-muted-foreground">
+          <Hospital className="w-4 h-4 mr-2 text-orange-500" />
+          <span className="font-semibold text-slate-200">{schedule.rumahSakit}</span>
+        </div>
+        <div className="flex items-center text-muted-foreground">
+          <Clock className="w-4 h-4 mr-2 text-blue-500" />
+          <span className="font-medium text-slate-200">
+            {format(date, 'EEEE, dd MMMM yyyy')} | {format(date, 'HH:mm')}
+          </span>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-8 p-4 md:p-8 bg-background min-h-screen text-foreground">
@@ -139,9 +161,9 @@ export default function SchedulesPage() {
             {/* Kolom Kiri: Daily Timeline */}
             <div className="flex-1 lg:w-2/3">
                 <DailyTimelineView
-                   schedulesData={schedules}
-                   onDataChange={fetchData}
-                   onEditSchedule={handleEdit}
+                    schedulesData={schedules}
+                    onDataChange={fetchData}
+                    onEditSchedule={handleEdit} 
                 />
             </div>
 
@@ -158,12 +180,19 @@ export default function SchedulesPage() {
       
       {/* Modal/Dialog Edit Jadwal */}
       <Dialog open={!!editingSchedule} onOpenChange={(open) => !open && handleCloseEdit()}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[425px] bg-slate-800">
           <DialogHeader>
-            <DialogTitle className="text-slate-400">{editingSchedule ? "Edit Jadwal" : "Tambah Jadwal"}</DialogTitle>
-            <DialogDescription className="text-slate-400">
+            <DialogTitle className="text-cyan-400">
+                {editingSchedule ? "Edit Jadwal Kunjungan" : "Tambah Jadwal Baru"}
+            </DialogTitle>
+            
+            {/* 🌟 DETAIL DATA YANG DIMINTA 🌟 */}
+            {editingSchedule && renderScheduleDetails(editingSchedule)}
+            {/* 🌟 AKHIR DETAIL DATA 🌟 */}
+            
+            <DialogDescription className="text-muted-foreground pt-2 text-slate-500">
               {editingSchedule 
-                ? "Ubah detail jadwal kunjungan dokter. Klik tombol Simpan setelah selesai, atau Hapus untuk membatalkan."
+                ? "Ubah detail jadwal kunjungan dokter di bawah ini. Jangan lupa simpan perubahan."
                 : "Isi detail jadwal kunjungan dokter baru Anda."
               }
             </DialogDescription>
