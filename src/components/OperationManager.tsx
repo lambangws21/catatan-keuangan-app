@@ -1,9 +1,12 @@
 "use client";
 
-import { useState, useMemo, ChangeEvent } from "react";
+import { useState, useMemo, ChangeEvent, useCallback } from "react";
+// 1. Impor tipe 'User' dari firebase
+import { User } from "firebase/auth"; 
 import { Edit, Trash2, Wallet, ArchiveX, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/context/AuthContext";
+// 2. HAPUS 'useAuth' dari file ini
+// import { useAuth } from "@/context/AuthContext"; 
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import {
@@ -13,6 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+// ... (sisa import dialog, input, label, dll)
 import {
   Dialog,
   DialogContent,
@@ -31,6 +35,7 @@ import {
 import { CurrencyInput } from "@/components/CurencyInput";
 import Spinner from "./Spinner";
 
+// Interface (pastikan 'jumlah' bisa string | number untuk form)
 interface Operation {
   id: string;
   date: string;
@@ -40,10 +45,17 @@ interface Operation {
   jumlah: number | string;
   klaim: string;
 }
+
+type EditableOperation = Omit<Operation, "jumlah"> & {
+  jumlah: number;
+};
+
+// 3. Perbarui ManagerProps untuk MENERIMA 'user'
 interface ManagerProps {
   operationsData: Operation[];
   isLoading: boolean;
   onDataChange: () => Promise<void>;
+  user: User; // <-- TAMBAHKAN INI
 }
 
 const formatCurrency = (value: number) =>
@@ -57,22 +69,22 @@ export default function OperationManager({
   operationsData,
   isLoading,
   onDataChange,
+  user, // 4. Terima 'user' dari props
 }: ManagerProps) {
-  const { user } = useAuth();
+  // 5. HAPUS baris 'useAuth' ini
+  // const { user } = useAuth(); 
+  
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [itemToEdit, setItemToEdit] = useState<Operation | null>(null);
+  const [itemToEdit, setItemToEdit] = useState<EditableOperation | null>(null);
 
-  // --- Tambahan filter state ---
   const [filterDate, setFilterDate] = useState("");
   const [filterQuery, setFilterQuery] = useState("");
 
-  // Hitung total biaya
   const totalOperations = useMemo(() => {
     if (!Array.isArray(operationsData)) return 0;
     return operationsData.reduce((sum, op) => sum + Number(op.jumlah || 0), 0);
   }, [operationsData]);
 
-  // --- Filtering & Sorting ---
   const filteredData = useMemo(() => {
     if (!Array.isArray(operationsData)) return [];
 
@@ -89,13 +101,15 @@ export default function OperationManager({
       })
       .sort(
         (a, b) =>
-          new Date(b.date).getTime() - new Date(a.date).getTime() // data terbaru di atas
+          new Date(b.date).getTime() - new Date(a.date).getTime()
       );
   }, [operationsData, filterDate, filterQuery]);
 
-  // --- Logika CRUD (delete, edit, update) tetap sama ---
-  const handleDelete = async (id: string) => {
-    if (!user) return toast.error("Sesi tidak valid, silakan login kembali.");
+  // --- Logika CRUD ---
+  // 'user' di sini sekarang merujuk ke prop yang dijamin valid oleh parent
+  
+  const handleDelete = useCallback(async (id: string) => {
+    if (!user) return toast.error("Sesi tidak valid."); // Pengaman
     if (!window.confirm("Apakah Anda yakin ingin menghapus data ini?")) return;
 
     try {
@@ -114,34 +128,34 @@ export default function OperationManager({
     } catch (error) {
       toast.error((error as Error).message);
     }
-  };
+  }, [user, onDataChange]); // 'user' sekarang adalah prop dependency
 
-  const handleOpenEditModal = (item: Operation) => {
-    setItemToEdit({ ...item });
+  const handleOpenEditModal = useCallback((item: Operation) => {
+    setItemToEdit({ 
+      ...item, 
+      jumlah: Number(item.jumlah || 0) 
+    });
     setIsEditModalOpen(true);
-  };
+  }, []);
 
-  const handleCloseEditModal = () => {
+  const handleCloseEditModal = useCallback(() => {
     setIsEditModalOpen(false);
     setItemToEdit(null);
-  };
+  }, []);
 
-  const handleUpdate = async () => {
-    if (!user) return toast.error("Sesi tidak valid, silakan login kembali.");
+  const handleUpdate = useCallback(async () => {
+    if (!user) return toast.error("Sesi tidak valid.");
     if (!itemToEdit) return;
 
     try {
       const token = await user.getIdToken();
-      const response = await fetch(`/api/operasi/${itemToEdit.id}`, {
+       const response = await fetch(`/api/operasi/${itemToEdit.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          ...itemToEdit,
-          jumlah: Number(itemToEdit.jumlah),
-        }),
+        body: JSON.stringify(itemToEdit),
       });
 
       if (!response.ok) {
@@ -155,33 +169,41 @@ export default function OperationManager({
     } catch (error) {
       toast.error((error as Error).message);
     }
-  };
+  }, [user, itemToEdit, onDataChange, handleCloseEditModal]);
 
-  const handleEditFormChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (!itemToEdit) return;
+  // Perbaikan 'stale state' (sudah benar dari sebelumnya)
+  const handleEditFormChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setItemToEdit((prev) => (prev ? { ...prev, [name]: value } : null));
-  };
+    setItemToEdit((prev) => {
+      if (!prev) return null; 
+      return { ...prev, [name]: value };
+    });
+  }, []);
 
-  const handleEditJumlahChange = (value: number | undefined) => {
-    if (!itemToEdit) return;
-    setItemToEdit((prev) => (prev ? { ...prev, jumlah: value || 0 } : null));
-  };
+  const handleEditJumlahChange = useCallback((value: number | undefined) => {
+    setItemToEdit((prev) => {
+      if (!prev) return null;
+      return { ...prev, jumlah: value || 0 };
+    });
+  }, []);
 
+  
   if (isLoading)
     return <div className="text-center p-8"><Spinner /></div>;
 
+  // ... (Sisa JSX Anda untuk return motion.div, table, modal, dll) ...
+  // Tidak ada perubahan di bagian JSX
   return (
-    <motion.div
+     <motion.div
       className="bg-gray-800/60 backdrop-blur-xl border border-white/10 rounded-lg shadow-lg p-6 text-white"
       initial="hidden"
       animate="visible"
     >
-      <motion.h2 className="text-xl font-semibold mb-4 text-cyan-400">
+      {/* ... (h2, filter, total) ... */}
+      <h2 className="text-xl font-semibold mb-4 text-cyan-400">
         Riwayat Data Operasi
-      </motion.h2>
-
-      {/* --- Filter Section --- */}
+      </h2>
+      
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <Input
           type="date"
@@ -199,8 +221,7 @@ export default function OperationManager({
           />
         </div>
       </div>
-
-      {/* --- Total --- */}
+      
       <div className="mb-6 p-4 bg-gray-700/50 rounded-lg flex justify-between items-center">
         <div className="flex items-center gap-3">
           <Wallet className="h-6 w-6 text-gray-400" />
@@ -213,7 +234,6 @@ export default function OperationManager({
         </p>
       </div>
 
-      {/* --- Table --- */}
       {!Array.isArray(filteredData) || filteredData.length === 0 ? (
         <div className="text-center text-gray-400 py-16 bg-gray-800/50 rounded-lg">
           <ArchiveX className="h-12 w-12 mx-auto mb-4 text-gray-500" />
@@ -284,7 +304,6 @@ export default function OperationManager({
         </div>
       )}
 
-      {/* Modal Edit tetap sama */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
         <DialogContent className="sm:max-w-[625px] bg-gray-800/80 backdrop-blur-md border-gray-700 text-white">
           <DialogHeader>
@@ -339,7 +358,7 @@ export default function OperationManager({
                   <CurrencyInput
                     id="jumlah"
                     placeholder="5.000.000"
-                    value={itemToEdit.jumlah || ""}
+                    value={itemToEdit.jumlah}
                     onValueChange={handleEditJumlahChange}
                   />
                 </div>
@@ -350,6 +369,7 @@ export default function OperationManager({
                     name="klaim"
                     value={itemToEdit.klaim}
                     onChange={handleEditFormChange}
+                  
                   />
                 </div>
               </div>

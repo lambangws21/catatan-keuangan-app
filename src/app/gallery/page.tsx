@@ -3,7 +3,7 @@
 "use client";
 
 // 1. Impor komponen ImageGallery Anda
-import ImageGallery from "@/components/FirebaseGallery";
+import ImageGallery from "@/components/new-gallery";
 // import ImageGallery from "@/components/dash-image";
 // 2. Buat komponen halaman
 export default function GalleryPage() {

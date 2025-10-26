@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  
 }
 
 const AuthContext = createContext<AuthContextType>({ user: null, loading: true });
