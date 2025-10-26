@@ -108,7 +108,7 @@ export default function SchedulesPage() {
     const date = new Date(schedule.waktuVisit);
     
     return (
-      <div className="mt-4 p-3 bg-gray-100 dark:bg-gray-700/50 rounded-lg space-y-2 text-sm">
+      <div className="mt-4 p-1 bg-gray-100 dark:bg-gray-700/90 rounded-lg space-y-2 text-sm">
         <div className="flex items-center text-foreground">
           <Stethoscope className="w-4 h-4 mr-2 text-cyan-500" />
           <span className="font-semibold">{schedule.namaDokter}</span>
@@ -128,8 +128,8 @@ export default function SchedulesPage() {
   };
 
   return (
-    <div className="space-y-8 p-4 md:p-8 bg-background min-h-screen text-foreground">
-      <header className="flex flex-col md:flex-row justify-between items-center gap-4 pb-4 border-b border-border">
+    <div className="space-y-5 p-1 md:p-2 min-h-screen text-foreground">
+      <header className="flex flex-col md:flex-row justify-between items-center gap-2 pb-2 border-b border-border">
         <div>
             <h1 className="text-3xl font-bold text-foreground">Manajemen Jadwal Visit</h1>
             <p className="text-muted-foreground">Atur semua jadwal visit dokter dan pertemuan penting Anda.</p>

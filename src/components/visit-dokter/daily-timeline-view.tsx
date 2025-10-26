@@ -16,7 +16,7 @@ interface DailyTimelineViewProps {
 }
 
 const HOURS_START = 8;
-const HOURS_END = 19;
+const HOURS_END = 20;
 const totalHours = HOURS_END - HOURS_START;
 
 // Konfigurasi Slotting/Overlap
@@ -139,7 +139,7 @@ export default function DailyTimelineView({ schedulesData, onEditSchedule }: Dai
     };
 
     return (
-        <div className="bg-card rounded-xl p-1.5 shadow-xl">
+        <div className="bg-slate-200/20 rounded-xl p-1.5 shadow-xl">
             
             {/* Header Kalender Mini dan Navigasi */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-7">
@@ -205,7 +205,7 @@ export default function DailyTimelineView({ schedulesData, onEditSchedule }: Dai
 
                 {/* Kolom Jadwal */}
                 <div 
-                    className="flex-1 relative border-l border-border/50 bg-background" // Border vertikal di sini
+                    className="flex-1 relative border-l border-border/50 bg-slate-100/20" // Border vertikal di sini
                     style={{ minHeight: `${timelineHeight}px` }}
                 >
                     {/* Garis Jam Horisontal */}
