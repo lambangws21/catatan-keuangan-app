@@ -1,5 +1,5 @@
 // lib/types.ts
-export type VisitStatus = 'To Do' | 'In Progress' | 'Done';
+export type VisitStatus = 'Terjadwal' | 'Selesai' | 'Dibatalkan';
 
 export interface VisitDokter {
   id: string; 

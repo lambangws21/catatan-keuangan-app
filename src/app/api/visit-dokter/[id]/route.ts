@@ -6,9 +6,9 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
   try {
     const { id } = await context.params; // ✅ Menggunakan await pada context.params
     const body = await request.json();
-    const { namaDokter, rumahSakit, waktuVisit, status } = body;
+    const { namaDokter, rumahSakit, note, waktuVisit, status } = body;
 
-    if (!namaDokter || !rumahSakit || !waktuVisit || !status) {
+    if (!namaDokter || !rumahSakit || !note || !waktuVisit || !status) {
       return NextResponse.json({ error: 'Data tidak valid.' }, { status: 400 });
     }
 
@@ -23,6 +23,7 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
     await docRef.update({
       namaDokter,
       rumahSakit,
+      note,
       waktuVisit: new Date(waktuVisit),
       status,
     });

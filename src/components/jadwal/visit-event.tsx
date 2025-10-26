@@ -9,13 +9,13 @@ interface VisitEventProps {
 
 const getStatusColors = (status: VisitStatus) => {
   switch (status) {
-    case 'In Progress':
+    case 'Terjadwal':
       // Biru (Team meeting style)
       return 'bg-blue-500 hover:bg-blue-600 text-white shadow-md'; 
-    case 'Done':
+    case 'Selesai':
       // Hijau (Workout style)
       return 'bg-green-500 hover:bg-green-600 text-white shadow-md'; 
-    case 'To Do':
+    case 'Dibatalkan':
     default:
       // Merah (Project deadline style)
       return 'bg-red-500 hover:bg-red-600 text-white shadow-md';

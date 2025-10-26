@@ -210,7 +210,7 @@ export function AddVisitForm({ onSuccess, onClose }: AddVisitFormProps) {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {(['To Do', 'In Progress', 'Done'] as VisitStatus[]).map((status) => (
+                    {(['Terjadwal', 'Selesai', 'Dibatalkan'] as VisitStatus[]).map((status) => (
                       <SelectItem key={status} value={status}>
                         {status}
                       </SelectItem>

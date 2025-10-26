@@ -191,7 +191,7 @@ export default function DailyTimelineView({ schedulesData, onEditSchedule }: Dai
             <div className="relative flex">
                 
                 {/* Kolom Label Jam (w-16 untuk ruang ekstra) */}
-                <div className="w-16 flex-shrink-0 text-right pr-4">
+                <div className="w-10 flex-shrink-0 text-right pr-16">
                     {hourLabels.map((label) => (
                         <div 
                             key={label} 
@@ -205,7 +205,7 @@ export default function DailyTimelineView({ schedulesData, onEditSchedule }: Dai
 
                 {/* Kolom Jadwal */}
                 <div 
-                    className="flex-1 relative border-l border-border/50" // Border vertikal di sini
+                    className="flex-1 relative border-l border-border/50 bg-background" // Border vertikal di sini
                     style={{ minHeight: `${timelineHeight}px` }}
                 >
                     {/* Garis Jam Horisontal */}

@@ -34,9 +34,9 @@ export async function POST(request: Request) {
   try {
   
     const body = await request.json();
-    const { namaDokter, rumahSakit, waktuVisit, status } = body;
+    const { namaDokter, rumahSakit, note, waktuVisit, status } = body;
 
-    if (!namaDokter || !rumahSakit || !waktuVisit || !status) {
+    if (!namaDokter || !rumahSakit || !note || !waktuVisit || !status) {
       return NextResponse.json({ error: 'Semua field wajib diisi.' }, { status: 400 });
     }
 
@@ -44,6 +44,7 @@ export async function POST(request: Request) {
     const docRef = await db.collection('visitDokter').add({
       namaDokter,
       rumahSakit,
+      note,
       waktuVisit: new Date(waktuVisit), // Simpan sebagai Timestamp
       status,
       createdAt: new Date(), // Tambahkan timestamp pembuatan

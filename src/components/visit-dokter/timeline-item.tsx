@@ -3,8 +3,7 @@
 import { motion } from 'framer-motion';
 import { cn } from "@/lib/utils"; // Utilitas shadcn
 import { format } from "date-fns";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Star } from 'lucide-react';
+import { NotebookPen, Star } from 'lucide-react';
 // Import Schedule dari lokasi yang benar
 import { Schedule } from '@/app/visit-dokter/page'; 
 
@@ -45,9 +44,9 @@ export function TimelineItem({ schedule, isFocused = false, onClick }: TimelineI
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
             onClick={() => onClick(schedule)} // Event klik memicu edit
             className={cn(
-                "w-full p-1.5 rounded-xl border-0 cursor-pointer transition-all duration-300 relative",
+                "w-auto p-1.5 rounded-xl border-0 cursor-pointer transition-all duration-300 relative",
                 styles,
-                isFocused ? 'scale-[1.03] ring-4 ring-white/20' : 'hover:shadow-2xl', 
+                isFocused ? 'scale-[1.03] ring-1 ring-white/20' : 'hover:shadow-2xl', 
                 schedule.status === 'Terjadwal' ? 'min-h-[60px]' : 'min-h-[30px]' 
             )}
         >
@@ -71,11 +70,11 @@ export function TimelineItem({ schedule, isFocused = false, onClick }: TimelineI
             </div>
 
             {/* Konten Tambahan (Hanya muncul saat event penting) */}
-            {schedule.status === 'Terjadwal' && (
+            {schedule.status === 'Selesai' && (
                 <div className="flex justify-between items-end mt-2 pt-1 border-t border-white/30">
-                    <div className="flex -space-x-2">
-                        {/* Placeholder Avatars */}
-                        <Avatar className="border-2 border-white w-7 h-7"><AvatarFallback className="text-xs">DS</AvatarFallback></Avatar>
+                    <div className="flex -space-x-2 gap-2 items-center">
+                        <NotebookPen className="w-3 h-3 text-white" />
+                        {schedule.note}
                     </div>
                     <div className="p-1.5 bg-white/20 rounded-full">
                         <Star className="w-3 h-3 text-white" />

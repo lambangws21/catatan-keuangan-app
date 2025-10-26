@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import ScheduleForm from "@/components/visit-dokter/form-input"; 
 import DailyTimelineView from "@/components/visit-dokter/daily-timeline-view"; 
 import ScheduleSidebar from "@/components/visit-dokter/schedule-sidebar"; 
+import {toast} from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"; 
 // format dihapus
 
@@ -18,7 +19,8 @@ export interface Schedule {
   namaDokter: string;
   rumahSakit: string;
   waktuVisit: string;
-  status: string; // 'To Do', 'In Progress', 'Done', dll.
+  note: string;
+  status: string;
 }
 
 export interface Doctor {
@@ -59,6 +61,32 @@ export default function SchedulesPage() {
       setIsLoading(false);
     }
   }, []);
+
+  // 💡 FUNGSI DELETE YANG HILANG
+  const handleDeleteSchedule = async (scheduleId: string) => {
+    try {
+      const response = await fetch(`/api/visit-dokter/${scheduleId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Gagal menghapus jadwal.");
+      }
+
+      // Setelah berhasil menghapus, muat ulang data jadwal
+      await fetchData(); 
+      toast.success("Jadwal berhasil dihapus!");
+      
+    } catch (error) {
+      console.error("Error deleting schedule:", error);
+      // Gunakan toast jika diimpor, jika tidak, gunakan alert
+      toast.error(`Gagal menghapus: ${(error as Error).message}`); 
+    }
+  };
 
   useEffect(() => {
     fetchData();
@@ -111,9 +139,9 @@ export default function SchedulesPage() {
             {/* Kolom Kiri: Daily Timeline */}
             <div className="flex-1 lg:w-2/3">
                 <DailyTimelineView
-                    schedulesData={schedules}
-                    onDataChange={fetchData}
-                    onEditSchedule={handleEdit} 
+                   schedulesData={schedules}
+                   onDataChange={fetchData}
+                   onEditSchedule={handleEdit}
                 />
             </div>
 
@@ -122,7 +150,7 @@ export default function SchedulesPage() {
                 <ScheduleSidebar 
                     schedules={schedules} 
                     onEdit={handleEdit} 
-                    onDelete={fetchData}
+                    onDelete={handleDeleteSchedule}
                 />
             </div>
         </div>

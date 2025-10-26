@@ -16,11 +16,11 @@ interface SidebarProps {
 // Disesuaikan agar mirip dengan gambar Anda
 const getStatusCardStyle = (status: VisitStatus) => {
   switch (status) {
-    case 'In Progress': // Biru (seperti "Meeting")
+    case 'Terjadwal': // Biru (seperti "Meeting")
       return 'bg-primary text-primary-foreground shadow-lg';
-    case 'Done': // Hijau (seperti "Workout")
+    case 'Selesai': // Hijau (seperti "Workout")
       return 'bg-green-600 text-white shadow-lg';
-    case 'To Do': // Merah (seperti "Deadline")
+    case 'Dibatalkan': // Merah (seperti "Deadline")
     default:
       return 'bg-red-500 text-white shadow-lg';
   }

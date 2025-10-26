@@ -2,7 +2,7 @@
 
 import { useState, FormEvent, useEffect } from "react";
 import { toast } from "sonner";
-import { Loader2, Plus, Edit, Stethoscope, Hospital, Clock, ListChecks } from "lucide-react";
+import { Loader2, Plus, Edit, Stethoscope, Hospital, Clock, ListChecks, Notebook } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,7 @@ export interface ScheduleData {
     namaDokter: string;
     rumahSakit: string;
     waktuVisit: string;
+    note: string;
     status: string;
 }
 
@@ -65,6 +66,7 @@ const formatDateTimeForInput = (isoString: string) => {
 const initialFormData: ScheduleData = {
     namaDokter: "",
     rumahSakit: "",
+    note: "",
     // Memberikan nilai awal waktu saat ini dalam format input
     waktuVisit: formatDateTimeForInput(new Date().toISOString()), 
     status: "Terjadwal"
@@ -226,6 +228,21 @@ export default function ScheduleForm({ onFormSubmit, initialData, doctorsList = 
                         type="datetime-local" 
                         value={formData.waktuVisit} 
                         onChange={handleChange} 
+                        required 
+                        className="pl-10"
+                    />
+                </div>
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="note">Catatan</Label>
+                <div className="relative">
+                    <Notebook className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input 
+                        id="note" 
+                        name="note" 
+                        value={formData.note} 
+                        onChange={handleChange} 
+                        placeholder="isi catatan dari dokter"
                         required 
                         className="pl-10"
                     />
