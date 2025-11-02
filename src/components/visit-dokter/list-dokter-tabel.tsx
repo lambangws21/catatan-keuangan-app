@@ -117,7 +117,7 @@ export default function DoctorList({ doctorsData, isLoading, onDataChange }: Doc
                 <p className="text-sm">Daftar dokter yang Anda tambahkan akan muncul di sini.</p>
             </div>
         ) : (
-            <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
+            <div className="overflow-x-auto max-h-[700px] overflow-y-auto">
             <Table>
                 <TableHeader><TableRow className="border-gray-700 hover:bg-gray-800 sticky top-0 bg-gray-800 z-10"><TableHead>Nama Dokter</TableHead><TableHead>Rumah Sakit</TableHead><TableHead className="text-center">Aksi</TableHead></TableRow></TableHeader>
                 <motion.tbody variants={containerVariants} initial="hidden" animate="visible">

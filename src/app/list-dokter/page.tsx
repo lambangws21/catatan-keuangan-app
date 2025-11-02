@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Loader2 } from "lucide-react";
 import DoctorList from "@/components/visit-dokter/list-dokter-tabel";
 import DoctorForm from "@/components/visit-dokter/form-input-dokter";
+import NurseLister from "@/components/nurse-list/nurse-lister";
 
 // Tipe data untuk dokter
 export interface Doctor {
@@ -37,6 +38,7 @@ export default function DoctorsPage() {
   }, [fetchDoctors]);
 
   return (
+    // 'space-y-8' akan memberi jarak antara header dan kontainer flex di bawah
     <div className="space-y-8">
       <header className="flex flex-col md:flex-row justify-between items-center gap-4">
         <div>
@@ -46,15 +48,37 @@ export default function DoctorsPage() {
         <DoctorForm onDoctorAdded={fetchDoctors} />
       </header>
       
-      {isLoading ? (
-        <div className="flex justify-center items-center p-16"><Loader2 className="h-8 w-8 animate-spin text-cyan-400" /></div>
-      ) : (
-        <DoctorList
-          doctorsData={doctors}
-          isLoading={isLoading}
-          onDataChange={fetchDoctors}
-        />
-      )}
+      {/* PERUBAHAN DIMULAI DI SINI:
+        - Kita buat kontainer flex baru
+        - 'flex-col' untuk mobile (bertumpuk)
+        - 'md:flex-row' untuk desktop (berdampingan)
+        - 'gap-8' untuk memberi jarak antar komponen
+      */}
+      <div className="flex flex-col md:flex-row gap-8">
+        
+        {/* Kolom 1: Daftar Dokter (60% lebar di desktop) */}
+        <div className="w-full md:w-3/5">
+          {isLoading ? (
+            <div className="flex justify-center items-center p-16">
+              <Loader2 className="h-8 w-8 animate-spin text-cyan-400" />
+            </div>
+          ) : (
+            <DoctorList
+              doctorsData={doctors}
+              isLoading={isLoading}
+              onDataChange={fetchDoctors}
+            />
+          )}
+        </div>
+
+        {/* Kolom 2: Daftar Perawat (40% lebar di desktop) */}
+        <div className="w-full md:w-2/5">
+          <NurseLister />
+        </div>
+        
+      </div>
+      {/* PERUBAHAN SELESAI */}
+      
     </div>
   );
 }
