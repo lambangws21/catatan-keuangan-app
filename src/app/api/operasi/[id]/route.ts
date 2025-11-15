@@ -7,10 +7,10 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
     const { id } = await context.params;
     const body = await request.json();
     // Sesuaikan dengan struktur data 'operations'
-    const { date, dokter, tindakanOperasi, rumahSakit, jumlah, klaim } = body;
+    const { date, dokter, tindakanOperasi, rumahSakit, jumlah, klaim, namaPerawat } = body;
 
     // Sesuaikan validasi
-    if (!date || !dokter || !tindakanOperasi || !rumahSakit || typeof jumlah !== 'number' || isNaN(jumlah)) {
+    if (!date || !dokter || !tindakanOperasi || !rumahSakit || !rumahSakit || typeof jumlah !== 'number' || isNaN(jumlah)) {
       return NextResponse.json(
         { error: 'Data tidak valid. Pastikan semua field terisi dengan benar.' },
         { status: 400 }
@@ -33,6 +33,7 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
       rumahSakit,
       jumlah: Number(jumlah),
       klaim,
+      namaPerawat,
     });
 
     return NextResponse.json({ id, message: 'Data operasi berhasil diperbarui' }, { status: 200 });

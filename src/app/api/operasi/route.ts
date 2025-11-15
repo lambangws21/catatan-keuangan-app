@@ -40,10 +40,10 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     // Gunakan field yang sesuai dengan data 'operations'
-    const { date, dokter, tindakanOperasi, rumahSakit, jumlah, klaim } = body;
+    const { date, dokter, tindakanOperasi, rumahSakit, jumlah,namaPerawat, klaim } = body;
 
     // Validasi field yang wajib diisi
-    if (!date || !dokter || !tindakanOperasi || !rumahSakit || jumlah === undefined) {
+    if (!date || !dokter || !tindakanOperasi || !rumahSakit || !namaPerawat || jumlah === undefined) {
       return NextResponse.json({ error: 'Semua field wajib diisi.' }, { status: 400 });
     }
 
@@ -55,6 +55,7 @@ export async function POST(request: Request) {
       rumahSakit,
       jumlah: Number(jumlah),
       klaim,
+      namaPerawat,
       timestamp: new Date(),
     });
 

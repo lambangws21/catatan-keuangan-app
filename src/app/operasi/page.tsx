@@ -24,6 +24,7 @@ export interface Operation {
   rumahSakit: string;
   jumlah: number; 
   klaim: string;
+  namaPerawat: string;
 }
 
 // 🔹 Helper function untuk 'escape' data CSV
@@ -124,14 +125,15 @@ export default function OperationsPage() {
       const doc = new jsPDF();
       
       // Tentukan kolom dan baris untuk tabel
-      const tableCols = ["Tanggal", "Dokter", "Tindakan", "Rumah Sakit", "Jumlah", "Klaim"];
+      const tableCols = ["Tanggal", "Dokter", "Tindakan", "Rumah Sakit", "Jumlah", "Klaim", "Petugas Kamar Operasi"];
       const tableRows = operations.map(op => [
         op.date,
         op.dokter,
         op.tindakanOperasi, // Disingkat agar muat
         op.rumahSakit,
         op.jumlah,
-        op.klaim
+        op.klaim,
+        op.namaPerawat
       ]);
 
       // Tambahkan judul
