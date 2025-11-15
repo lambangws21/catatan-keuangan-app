@@ -27,7 +27,7 @@ export default function SidebarPanel({ selectedEvent, onUpdate }: SidebarPanelPr
 
   if (!selectedEvent) {
     return (
-      <div className="flex items-center justify-center h-full text-gray-500">
+      <div className="flex items-center justify-center h-full text-muted-foreground">
         Pilih jadwal di kalender untuk melihat detail
       </div>
     );
@@ -54,20 +54,28 @@ export default function SidebarPanel({ selectedEvent, onUpdate }: SidebarPanelPr
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 text-foreground">
+      {/* Title */}
       <h2 className="text-lg font-semibold">{selectedEvent.title}</h2>
 
+      {/* STATUS */}
       <div>
         <Label>Status</Label>
-        <RadioGroup value={status} onValueChange={setStatus} className="mt-2 space-y-2">
+        <RadioGroup
+          value={status}
+          onValueChange={setStatus}
+          className="mt-2 space-y-2"
+        >
           <div className="flex items-center space-x-2">
             <RadioGroupItem value="todo" id="todo" />
             <Label htmlFor="todo">To Do</Label>
           </div>
+
           <div className="flex items-center space-x-2">
             <RadioGroupItem value="inprogress" id="inprogress" />
             <Label htmlFor="inprogress">In Progress</Label>
           </div>
+
           <div className="flex items-center space-x-2">
             <RadioGroupItem value="done" id="done" />
             <Label htmlFor="done">Done</Label>
@@ -75,12 +83,15 @@ export default function SidebarPanel({ selectedEvent, onUpdate }: SidebarPanelPr
         </RadioGroup>
       </div>
 
+      {/* PROGRESS */}
       <div>
         <Label>Progress</Label>
+
         <div className="flex items-center gap-2 mt-2">
           <Progress value={progress} className="w-[80%]" />
-          <span className="text-sm">{progress}%</span>
+          <span className="text-sm text-muted-foreground">{progress}%</span>
         </div>
+
         <input
           type="range"
           min="0"
@@ -88,14 +99,22 @@ export default function SidebarPanel({ selectedEvent, onUpdate }: SidebarPanelPr
           step="10"
           value={progress}
           onChange={(e) => setProgress(Number(e.target.value))}
-          className="w-full mt-2"
+          className="
+            w-full mt-2
+            accent-primary 
+            bg-muted 
+            rounded-lg 
+            cursor-pointer
+          "
         />
       </div>
 
+      {/* BUTTONS */}
       <div className="flex gap-2">
         <Button className="w-full" onClick={handleSave}>
           Simpan
         </Button>
+
         <Button variant="destructive" className="w-full" onClick={handleDelete}>
           Hapus
         </Button>

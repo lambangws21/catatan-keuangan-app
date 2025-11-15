@@ -1,272 +1,639 @@
 "use client";
 
-import { useState } from 'react';
-import { Schedule } from '@/app/visit-dokter/page'; // Mengganti ke schedules/page untuk konsistensi tipe
-import { TimelineItem } from '@/components/visit-dokter/timeline-item';
-import { format, isSameDay, startOfWeek, addDays, setHours, setMinutes, differenceInMinutes, addMinutes } from 'date-fns'; 
-import { id } from 'date-fns/locale';
-import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+  useCallback,
+  useRef,
+} from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  format,
+  isSameDay,
+  addDays,
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  differenceInMinutes,
+  setHours,
+  setMinutes,
+  addMinutes,
+} from "date-fns";
+import { id as LOCALE_ID } from "date-fns/locale";
+import { toast } from "sonner";
+import { useTheme } from "next-themes";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
+import { ChevronLeft, ChevronRight, Search as SearchIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { TimelineItem } from "@/components/visit-dokter/timeline-item";
+import {
+  Select,
+  SelectTrigger,
+  SelectItem,
+  SelectContent,
+  SelectValue,
+} from "@/components/ui/select";
 
-interface DailyTimelineViewProps {
-    schedulesData: Schedule[];
-    onDataChange: () => void; // Untuk refresh data jika diperlukan
-    onEditSchedule: (schedule: Schedule) => void; // Fungsi untuk memicu edit di komponen induk
+import type { Schedule } from "@/types/visit-dokter";
+
+/* =============================
+   TYPES
+============================= */
+
+// export interface Schedule {
+//   id: string;
+//   waktuVisit: string;
+//   dokter?: string;
+//   namaDokter?: string;
+//   pasien?: string;
+//   status?: string;
+//   rumahSakit?: string;
+//   note?: string;
+// }
+
+// export interface Schedule {
+//   id: string;
+//   waktuVisit: string;
+
+//   dokter?: string;
+//   namaDokter?: string;
+//   pasien?: string;
+
+//   status?: string; // FIXED → hilangkan null
+//   rumahSakit?: string;
+//   note?: string;
+
+//   [key: string]: unknown;
+// }
+
+export interface TimelineEvent extends Schedule {
+  startTime: Date;
+  endTime: Date;
+  eventSlot: number;
+  slotWidth: number;
+  slotOffset: number;
 }
+
+/* =============================
+   PROPS
+============================= */
+
+interface Props {
+    schedulesData: Schedule[];               
+    onDataChange: () => Promise<void>;       
+    onEditSchedule?: (s: Schedule) => void;  
+    apiEndpoint?: string;
+  }
+  
+
+/* =============================
+   CONSTANTS
+============================= */
 
 const HOURS_START = 8;
 const HOURS_END = 20;
-const totalHours = HOURS_END - HOURS_START;
+const PIXELS_PER_HOUR = 60;
+const OVERLAP_TOLERANCE_MINUTES = 30;
+const MAX_SLOTS = 2;
+const CACHE_KEY = "schedules_cache_v1";
 
-// Konfigurasi Slotting/Overlap
-const OVERLAP_TOLERANCE_MINUTES = 30; // Jika event berjarak kurang dari 30 menit, dianggap tumpang tindih
-const MAX_SLOTS = 2; // Maksimal dua event yang tumpang tindih akan ditampilkan berdampingan
+/* =============================
+   CACHING
+============================= */
 
-// --- Logic Collision Detection ---
-interface ScheduledEvent extends Schedule {
-    startTime: Date;
-    endTime: Date;
-    eventSlot: number; // 0 (default), 1 (offset)
-    slotWidth: number; // Lebar event (persentase)
-    slotOffset: number; // Offset dari kiri (persentase)
+function readCache(): Schedule[] | null {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed.data ?? null;
+  } catch {
+    return null;
+  }
 }
 
-function assignSlotsToSchedules(schedules: Schedule[]): ScheduledEvent[] {
-    if (!schedules.length) return [];
+function writeCache(data: Schedule[]) {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ data }));
+  } catch {}
+}
 
-    const processedEvents: ScheduledEvent[] = schedules.map(s => {
-        const startTime = new Date(s.waktuVisit);
-        // Durasi default 60 menit
-        const endTime = addMinutes(startTime, 60); 
-        return {
-            ...s,
-            startTime,
-            endTime,
-            eventSlot: 0,
-            slotWidth: 100,
-            slotOffset: 0,
-        };
-    });
+/* =============================
+   FETCH API
+============================= */
 
-    // Reset slots and assign initial width/offset (assuming no conflict)
-    processedEvents.forEach(event => {
-        event.eventSlot = 0;
-        event.slotWidth = 100;
-        event.slotOffset = 0;
-    });
+async function fetchSchedules(api: string): Promise<Schedule[]> {
+  const res = await fetch(api);
+  if (!res.ok) throw new Error("Fetch gagal");
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}
 
-    for (let i = 0; i < processedEvents.length; i++) {
-        const current = processedEvents[i];
-        const conflicts = [current];
+/* =============================
+   SLOT ASSIGNMENT
+============================= */
 
-        for (let j = i + 1; j < processedEvents.length; j++) {
-            const next = processedEvents[j];
-            
-            // Cek apakah event tumpang tindih (atau sangat berdekatan)
-            const diffStart = differenceInMinutes(current.startTime, next.startTime);
+function assignSlotsToSchedules(schedules: Schedule[]): TimelineEvent[] {
+  const result: TimelineEvent[] = schedules.map((s) => {
+    const startTime = new Date(s.waktuVisit);
+    const endTime = addMinutes(startTime, 60);
 
-            if (
-                // Event saat ini dimulai sebelum event berikutnya selesai, DAN
-                current.startTime < next.endTime && 
-                // Event saat ini selesai setelah event berikutnya dimulai
-                current.endTime > next.startTime
-            ) {
-                conflicts.push(next);
-            } else if (Math.abs(diffStart) < OVERLAP_TOLERANCE_MINUTES) {
-                 // Kasus event yang sangat berdekatan (mis. jam 10:00 dan 10:15)
-                conflicts.push(next);
-            }
-        }
+    return {
+      ...s,
+      startTime,
+      endTime,
+      eventSlot: 0,
+      slotWidth: 100,
+      slotOffset: 0,
+    };
+  });
 
-        // Jika ada bentrokan, tetapkan slot dan lebar baru
-        if (conflicts.length > 1) {
-            const numSlots = Math.min(conflicts.length, MAX_SLOTS);
-            const slotWidth = 100 / numSlots;
+  for (let i = 0; i < result.length; i++) {
+    const current = result[i];
+    const conflicts: TimelineEvent[] = [current];
 
-            conflicts.forEach((event, index) => {
-                if (index < MAX_SLOTS) {
-                    event.eventSlot = index;
-                    event.slotWidth = slotWidth;
-                    event.slotOffset = index * slotWidth;
-                }
-            });
-        }
+    for (let j = i + 1; j < result.length; j++) {
+      const next = result[j];
+
+      const overlap =
+        current.startTime < next.endTime && current.endTime > next.startTime;
+
+      const close =
+        Math.abs(differenceInMinutes(current.startTime, next.startTime)) <
+        OVERLAP_TOLERANCE_MINUTES;
+
+      if (overlap || close) conflicts.push(next);
     }
 
-    return processedEvents;
+    if (conflicts.length > 1) {
+      const width = 100 / Math.min(conflicts.length, MAX_SLOTS);
+
+      conflicts.forEach((ev, idx) => {
+        if (idx < MAX_SLOTS) {
+          ev.eventSlot = idx;
+          ev.slotWidth = width;
+          ev.slotOffset = idx * width;
+        }
+      });
+    }
+  }
+
+  return result;
 }
 
+/* =============================
+   MINI CALENDAR
+============================= */
 
-// --- Komponen Utama ---
-export default function DailyTimelineView({ schedulesData, onEditSchedule }: DailyTimelineViewProps) {
-    const [currentDate, setCurrentDate] = useState(new Date());
+function getMonthDays(date: Date) {
+  return eachDayOfInterval({
+    start: startOfMonth(date),
+    end: endOfMonth(date),
+  });
+}
 
-    // Hitung tanggal untuk 7 hari (Mon - Sun)
-    const startOfThisWeek = startOfWeek(currentDate, { weekStartsOn: 1 });
-    const weekDays = Array.from({ length: 7 }, (_, i) => addDays(startOfThisWeek, i));
+/* =============================
+   DEBOUNCE
+============================= */
 
-    // Filter jadwal dan tetapkan slot (BARU)
-    const todaySchedules = assignSlotsToSchedules(
-        schedulesData.filter(s => isSameDay(new Date(s.waktuVisit), currentDate))
-    ).sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
+function useDebouncedValue<T>(value: T, ms = 180) {
+  const [v, setV] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setV(value), ms);
+    return () => clearTimeout(t);
+  }, [value, ms]);
 
+  return v;
+}
 
-    const goToPreviousDay = () => setCurrentDate(addDays(currentDate, -1));
-    const goToNextDay = () => setCurrentDate(addDays(currentDate, 1));
-    const goToToday = () => setCurrentDate(new Date());
+/* =============================
+   MAIN COMPONENT
+============================= */
 
-    // --- Layout Waktu dan Posisi ---
+export default function DailyTimelineView({
+    schedulesData,
+    onEditSchedule,
+    apiEndpoint = "/api/visit-dokter",
+  }: Props) {
+  const { theme } = useTheme();
+  const [schedules, setSchedules] = useState<Schedule[]>(schedulesData);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [calendarMonth, setCalendarMonth] = useState(new Date());
+ 
 
-    const hourLabels = Array.from({ length: totalHours + 1 }, (_, i) => {
-        const hour = HOURS_START + i;
-        // PERBAIKAN: Menggunakan format 'H:00' untuk format 24 jam (8:00, 14:00, 17:00)
-        return format(setMinutes(setHours(new Date(), hour), 0), 'H:00'); 
-    });
+  const [loading, setLoading] = useState(false);
+  const [doctorFilter, setDoctorFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
-    const PIXELS_PER_HOUR = 60; 
-    const timelineHeight = totalHours * PIXELS_PER_HOUR;
+  const debouncedQuery = useDebouncedValue(searchQuery);
+  const WEEK_DAYS = ["M", "T", "W", "T", "F", "S", "S"];
 
-    const getTopPosition = (date: Date) => {
-        const hours = date.getHours();
-        const minutes = date.getMinutes();
-        
-        if (hours < HOURS_START || hours > HOURS_END) return -999; 
+  /* Load cache + revalidate */
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      setLoading(true);
 
-        const totalMinutesFromStart = (hours - HOURS_START) * 60 + minutes;
-        
-        return (totalMinutesFromStart / (totalHours * 60)) * timelineHeight;
+      const cache = readCache();
+      if (cache && mounted) setSchedules(cache);
+
+      try {
+        const fresh = await fetchSchedules(apiEndpoint);
+        if (!mounted) return;
+        setSchedules(fresh);
+        writeCache(fresh);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+    return () => {
+      mounted = false;
     };
+  }, [apiEndpoint]);
 
-    return (
-        <div className="bg-slate-200/20 rounded-xl p-1.5 shadow-xl">
-            
-            {/* Header Kalender Mini dan Navigasi */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-7">
-                
-                {/* Tanggal Utama */}
-                <div className="mb-4 md:mb-0">
-                    <p className="text-sm text-muted-foreground">{format(currentDate, 'EEEE, d MMMM yyyy', { locale: id })}</p>
-                    <h2 className="text-3xl font-extrabold text-foreground">
-                        {isSameDay(currentDate, new Date()) ? "Today" : format(currentDate, 'EEEE', { locale: id })}
-                    </h2>
-                </div>
-                
-                {/* Navigasi Hari */}
-                <div className="flex items-center gap-2">
-                    <Button variant="outline" size="icon" onClick={goToPreviousDay}>
-                        <ChevronLeft className="w-5 h-5" />
-                    </Button>
-                    <Button variant="outline" onClick={goToToday} disabled={isSameDay(currentDate, new Date())}>
-                        Hari Ini
-                    </Button>
-                    <Button variant="outline" size="icon" onClick={goToNextDay}>
-                        <ChevronRight className="w-5 h-5" />
-                    </Button>
-                </div>
-            </div>
+  /* Dokter List */
+  const doctorList = useMemo(() => {
+    const setDoc = new Set<string>();
+    schedules.forEach((s) => {
+      const name = (s.namaDokter || s.dokter || "Tidak diketahui").trim();
+      if (name) setDoc.add(name);
+    });
+    return [...setDoc];
+  }, [schedules]);
 
-            {/* Header Hari-Hari (Mon, Tue,...) - PENYESUAIAN FONT */}
-            <div className="flex justify-around items-center mb-8 text-center border-b border-border/50 pb-4">
-                {weekDays.map(day => (
-                    <div 
-                        key={day.toISOString()} 
-                        className="flex flex-col items-center flex-1 cursor-pointer mx-1"
-                        onClick={() => setCurrentDate(day)}
-                    >
-                        <span className="text-xs font-medium uppercase text-muted-foreground">{format(day, 'E', { locale: id })}</span>
-                        <span className={cn(
-                            "text-lg font-bold mt-1 h-7 w-7 flex items-center justify-center rounded-full transition-colors", 
-                            isSameDay(day, currentDate) && "bg-primary text-primary-foreground",
-                            isSameDay(day, new Date()) && !isSameDay(day, currentDate) && "text-primary border border-primary/50"
-                        )}>
-                            {format(day, 'd')}
-                        </span>
-                    </div>
-                ))}
-            </div>
-
-
-            {/* Konten Timeline */}
-            <div className="relative flex">
-                
-                {/* Kolom Label Jam (w-16 untuk ruang ekstra) */}
-                <div className="w-10 flex-shrink-0 text-right pr-16">
-                    {hourLabels.map((label) => (
-                        <div 
-                            key={label} 
-                            className="text-[12px] text-muted-foreground pt-5 relative" 
-                            style={{ height: `${PIXELS_PER_HOUR}px`, top: `-${PIXELS_PER_HOUR / 2}px` }} 
-                        >
-                            {label}
-                        </div>
-                    ))}
-                </div>
-
-                {/* Kolom Jadwal */}
-                <div 
-                    className="flex-1 relative border-l border-border/50 bg-slate-100/20" // Border vertikal di sini
-                    style={{ minHeight: `${timelineHeight}px` }}
-                >
-                    {/* Garis Jam Horisontal */}
-                    {Array.from({ length: totalHours }, (_, i) => (
-                        <div 
-                            key={i} 
-                            className="absolute left-0 w-full border-t border-border/20" 
-                            style={{ top: `${(i + 1) * PIXELS_PER_HOUR}px` }}
-                        >
-                        </div>
-                    ))}
-
-                    {/* Marker Waktu Saat Ini */}
-                    {isSameDay(currentDate, new Date()) && (
-                        <div 
-                            className="absolute left-0 w-full h-0.5 bg-red-500 z-20 transition-all duration-1000"
-                            style={{ top: `${getTopPosition(new Date())}px` }}
-                        >
-                            <div className="absolute left-[-6px] top-[-3px] w-3 h-3 rounded-full bg-red-500"></div>
-                        </div>
-                    )}
-                    
-                    {/* Event Items */}
-                    {todaySchedules.map((schedule) => {
-                        const startTime = schedule.startTime; // Mengambil dari object yang sudah di-preprocess
-                        const durationMinutes = differenceInMinutes(schedule.endTime, schedule.startTime); 
-                        
-                        const eventTop = getTopPosition(startTime);
-                        if (eventTop < 0 || eventTop > timelineHeight) return null;
-
-                        const heightPx = (durationMinutes / 60) * PIXELS_PER_HOUR;
-                        
-                        const isFocused = schedule.status === 'Terjadwal'; 
-                        
-                        return (
-                            <div
-                                key={schedule.id}
-                                // Menerapkan offset dan lebar berdasarkan slot
-                                className="absolute z-10" 
-                                style={{
-                                    top: `${eventTop}px`,
-                                    height: `${heightPx}px`,
-                                    // Menerapkan lebar dan offset yang diperhitungkan
-                                    left: `${schedule.slotOffset}%`, 
-                                    width: `${schedule.slotWidth}%`,
-                                    padding: '2px', // Padding agar kartu tidak menyentuh garis
-                                }}
-                            >
-                                <TimelineItem schedule={schedule} isFocused={isFocused} onClick={onEditSchedule} /> 
-                            </div>
-                        );
-                    })}
-
-                    {todaySchedules.length === 0 && (
-                        <div className="text-center text-muted-foreground p-10 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                            Tidak ada jadwal visit pada tanggal ini.
-                        </div>
-                    )}
-
-                </div>
-            </div>
-        </div>
+  /* Filtering */
+  const filteredForDay = useMemo(() => {
+    const base = schedules.filter((s) =>
+      isSameDay(new Date(s.waktuVisit), currentDate)
     );
+
+    const byDoctor =
+      doctorFilter === "all"
+        ? base
+        : base.filter((s) => (s.namaDokter || s.dokter) === doctorFilter);
+
+    if (!debouncedQuery) return byDoctor;
+
+    const q = debouncedQuery.toLowerCase();
+
+    return byDoctor.filter((s) => {
+      return (
+        (s.pasien?.toLowerCase().includes(q) ?? false) ||
+        (s.namaDokter?.toLowerCase().includes(q) ?? false) ||
+        (s.dokter?.toLowerCase().includes(q) ?? false) ||
+        (s.status?.toLowerCase().includes(q) ?? false) ||
+        (s.waktuVisit?.toLowerCase().includes(q) ?? false)
+      );
+    });
+  }, [schedules, currentDate, doctorFilter, debouncedQuery]);
+
+  /* Slotting + Sort */
+  const todaySchedules = useMemo(() => {
+    const assigned = assignSlotsToSchedules(filteredForDay);
+    return assigned.sort(
+      (a, b) => a.startTime.getTime() - b.startTime.getTime()
+    );
+  }, [filteredForDay]);
+
+  /* Timeline Helpers */
+  const totalHours = HOURS_END - HOURS_START;
+  const hourLabels = Array.from({ length: totalHours + 1 }, (_, i) => {
+    const h = HOURS_START + i;
+    return format(setMinutes(setHours(new Date(), h), 0), "H:00");
+  });
+
+  const timelineHeight = totalHours * PIXELS_PER_HOUR;
+
+  const getTopPosition = (date: Date) => {
+    const h = date.getHours();
+    const m = date.getMinutes();
+    if (h < HOURS_START || h > HOURS_END) return -999;
+    const minutesFromStart = (h - HOURS_START) * 60 + m;
+    return (minutesFromStart / (totalHours * 60)) * timelineHeight;
+  };
+
+  /* Revalidate */
+  const revalidate = useCallback(async () => {
+    try {
+      setLoading(true);
+      const fresh = await fetchSchedules(apiEndpoint);
+      setSchedules(fresh);
+      writeCache(fresh);
+      toast.success("Jadwal diperbarui");
+    } catch {
+      toast.error("Gagal memuat jadwal");
+    } finally {
+      setLoading(false);
+    }
+  }, [apiEndpoint]);
+
+  /* PDF EXPORT */
+  const handleExportPDF = useCallback(async () => {
+    try {
+      toast.loading("Mempersiapkan PDF...", { id: "pdf" });
+
+      const element = document.getElementById("timeline-export-area");
+      if (!element) return toast.error("Area tidak ditemukan");
+
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        backgroundColor: theme === "dark" ? "#0f172a" : "#ffff",
+      });
+
+      const img = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "pt", "a4");
+
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const imgWidth = pageWidth - 40;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      pdf.setFontSize(16);
+      pdf.text(
+        `Laporan Visit — ${format(currentDate, "d MMM yyyy", {
+          locale: LOCALE_ID,
+        })}`,
+        20,
+        40
+      );
+
+      pdf.addImage(img, "PNG", 20, 60, imgWidth, imgHeight);
+      pdf.save(`visit-${format(currentDate, "yyyy-MM-dd")}.pdf`);
+
+      toast.success("PDF berhasil dibuat!", { id: "pdf" });
+    } catch {
+      toast.error("Gagal export PDF");
+    }
+  }, [theme, currentDate]);
+
+  /* Search debounce UI */
+  const searchRef = useRef<number | null>(null);
+  const onSearchChange = (v: string) => {
+    setSearchQuery(v);
+    if (searchRef.current) clearTimeout(searchRef.current);
+    searchRef.current = window.setTimeout(() => {}, 120);
+  };
+
+  /* Mini Calendar */
+  const monthDays = useMemo(() => getMonthDays(calendarMonth), [calendarMonth]);
+
+  return (
+    <div
+      className={cn(
+        "rounded-xl p-5 transition-all duration-300",
+        theme === "dark"
+          ? "bg-gradient-to-br from-slate-900/70 via-slate-800/40 to-slate-900/30 border border-white/10 shadow-xl"
+          : "bg-slate-600/80 border border-gray-200 shadow-lg"
+      )}
+    >
+      {/* HEADER */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+        <div>
+          <p className="text-sm text-muted-foreground">
+            {format(currentDate, "EEEE, d MMMM yyyy", { locale: LOCALE_ID })}
+          </p>
+          <h2 className="text-3xl font-bold">
+            {isSameDay(currentDate, new Date())
+              ? "Hari Ini"
+              : format(currentDate, "EEEE", { locale: LOCALE_ID })}
+          </h2>
+        </div>
+
+        {/* CONTROLS */}
+        <div className="flex items-center gap-3 w-full md:w-auto flex-wrap">
+          {/* Mini calendar month navigation */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setCalendarMonth(addDays(calendarMonth, -30))}
+            >
+              <ChevronLeft />
+            </Button>
+            <div className="text-sm px-3 py-1 rounded-full bg-slate-400/10 dark:bg-slate-700/40">
+              {format(calendarMonth, "MMMM yyyy", { locale: LOCALE_ID })}
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setCalendarMonth(addDays(calendarMonth, 30))}
+            >
+              <ChevronRight />
+            </Button>
+          </div>
+
+          {/* Doctor filter */}
+          <Select value={doctorFilter} onValueChange={setDoctorFilter} >
+            <SelectTrigger className="w-[180px] rounded-full bg-slate-200">
+              <SelectValue placeholder="Filter dokter" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Semua Dokter</SelectItem>
+              {doctorList.map((d, i) => (
+                <SelectItem key={i} value={d} className="bg-white mt-1">
+                  {d}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Search */}
+          <div className="relative">
+            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => onSearchChange(e.target.value)}
+              placeholder="Cari pasien/dokter/jam..."
+              className="pl-10 w-[220px] rounded-full"
+            />
+          </div>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setCurrentDate(addDays(currentDate, -1))}
+          >
+            <ChevronLeft />
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => setCurrentDate(new Date())}
+          >
+            Hari Ini
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setCurrentDate(addDays(currentDate, 1))}
+          >
+            <ChevronRight />
+          </Button>
+
+          {/* Refresh + Export PDF */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={revalidate}
+            disabled={loading}
+          >
+            ⟳
+          </Button>
+          <Button
+            variant="outline"
+            className="rounded-full"
+            onClick={handleExportPDF}
+          >
+            Export PDF
+          </Button>
+        </div>
+      </div>
+
+      {/* MAIN GRID */}
+      <div className="grid grid-cols-1 lg:grid-cols-6 gap-4 mt-6">
+        {/* MINI CALENDAR */}
+        <div className="col-span-1 border rounded-lg p-3 dark:border-slate-700/30">
+          <div className="text-sm font-medium mb-2">Mini Calendar</div>
+
+          {/* Header */}
+          <div className="grid grid-cols-7 text-center text-[11px] text-muted-foreground">
+            {WEEK_DAYS.map((d, i) => (
+              <div key={i}>{d}</div>
+            ))}
+          </div>
+
+          {/* Days */}
+          <div className="grid grid-cols-7 gap-1 mt-2">
+            {monthDays.map((day) => {
+              const active = isSameDay(day, currentDate);
+              const today = isSameDay(day, new Date());
+              const count = schedules.filter((s) =>
+                isSameDay(new Date(s.waktuVisit), day)
+              ).length;
+
+              return (
+                <button
+                  key={day.toISOString()}
+                  onClick={() => setCurrentDate(day)}
+                  className={cn(
+                    "py-1 rounded flex flex-col items-center text-[10px]",
+                    active
+                      ? "bg-cyan-500 text-white shadow"
+                      : "hover:bg-slate-200 dark:hover:bg-slate-700/40",
+                    today && !active ? "border border-cyan-400/40" : ""
+                  )}
+                >
+                  <span>{format(day, "d")}</span>
+                  <span className="text-[10px]">{count || ""}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <p className="mt-3 text-xs text-muted-foreground text-center">
+            Klik tanggal untuk melihat visit
+          </p>
+        </div>
+
+        {/* TIMELINE */}
+        <div className="col-span-1 lg:col-span-5">
+          <div
+            id="timeline-export-area"
+            className="relative flex border rounded-lg overflow-hidden dark:border-slate-700/40"
+          >
+            {/* Hour Labels */}
+            <div className="w-20 py-2">
+              {hourLabels.map((label) => (
+                <div
+                  key={label}
+                  className="h-[60px] flex items-start justify-end pr-3 text-xs text-muted-foreground"
+                >
+                  {label}
+                </div>
+              ))}
+            </div>
+
+            {/* Timeline */}
+            <div
+              className="flex-1 relative bg-transparent"
+              style={{ minHeight: `${timelineHeight}px` }}
+            >
+              {Array.from({ length: totalHours }, (_, i) => (
+                <div
+                  key={i}
+                  className="absolute left-0 w-full border-t border-slate-300/20 dark:border-slate-700/20"
+                  style={{ top: `${(i + 1) * PIXELS_PER_HOUR}px` }}
+                />
+              ))}
+
+              {/* Current Time Marker */}
+              {isSameDay(currentDate, new Date()) && (
+                <div
+                  className="absolute left-0 w-full h-[2px] bg-red-500"
+                  style={{ top: `${getTopPosition(new Date())}px` }}
+                >
+                  <div className="absolute -left-2 -top-2 w-4 h-4 bg-red-500 rounded-full animate-pulse" />
+                </div>
+              )}
+
+              {/* Events */}
+              <AnimatePresence>
+                {todaySchedules.map((event) => {
+                  const top = getTopPosition(event.startTime);
+                  if (top < 0 || top > timelineHeight) return null;
+
+                  const height =
+                    (differenceInMinutes(event.endTime, event.startTime) / 60) *
+                    PIXELS_PER_HOUR;
+
+                  return (
+                    <motion.div
+                      key={event.id}
+                      initial={{ opacity: 0, y: -6, scale: 0.97 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 6, scale: 0.97 }}
+                      transition={{ duration: 0.2 }}
+                      style={{
+                        top,
+                        height,
+                        left: `${event.slotOffset}%`,
+                        width: `${event.slotWidth}%`,
+                        position: "absolute",
+                        padding: "6px",
+                      }}
+                    >
+                      {/* FIX: always provide required fields */}
+                      <TimelineItem
+                        schedule={{
+                          ...event,
+                          namaDokter:
+                            event.namaDokter ??
+                            event.dokter ??
+                            "Dokter Tidak Diketahui",
+                          rumahSakit: event.rumahSakit ?? "-",
+                          note: event.note ?? "",
+                          status: event.status ?? "Tidak diketahui", // ✔ FIX
+                        }}
+                        onClick={() => onEditSchedule?.(event)}
+                      />
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
+
+              {todaySchedules.length === 0 && (
+                <div className="absolute inset-0 flex justify-center items-center text-muted-foreground">
+                  Tidak ada jadwal visit.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
