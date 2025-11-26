@@ -7,4 +7,16 @@ export interface Schedule {
   status?: string;
   dokter?: string;
   pasien?: string;
+  repeat?: "once" | "monthly";
+}
+
+export interface TimelineItem {
+  id: string;
+  title: string;
+  subtitle?: string;
+  time: string;
+  date: string;
+  icon?: string;
+  members?: string[]; // avatar atau emoji
+  highlight?: boolean; // card biru seperti "Meeting"
 }

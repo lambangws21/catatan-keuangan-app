@@ -30,55 +30,62 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 
-// 🔥 Import tipe global Schedule
-import type { Schedule } from "@/types/visit-dokter";
-
-// Tipe dokter
+// Tipe data dokter (dari list dokter)
 interface Doctor {
   id: string;
   namaDokter: string;
   rumahSakit: string;
 }
 
-// Form menggunakan Schedule dari global types
-export type ScheduleData = Schedule;
+export interface ScheduleData {
+  namaDokter: string;
+  rumahSakit: string;
+  waktuVisit: string;
+  note: string;
+  status: string;
+  repeat: string;
+}
 
+// Definisikan props
 interface ScheduleFormProps {
   onFormSubmit: () => Promise<void>;
-  initialData?: Schedule; // langsung pakai Schedule, tidak perlu & { id: string }
+  initialData?: ScheduleData & { id: string };
   doctorsList?: Doctor[];
 }
 
-// Convert ISO -> datetime-local
+/**
+ * Mengubah ISO string menjadi format YYYY-MM-DDTHH:MM yang diperlukan
+ * oleh input type="datetime-local" (format 24 jam).
+ * @param isoString String tanggal dan waktu (misal: "2025-10-26T05:29:38.000Z")
+ * @returns String format lokal yang dibutuhkan input (misal: "2025-10-26T12:29")
+ */
 const formatDateTimeForInput = (isoString: string) => {
   if (!isoString) return "";
 
   try {
     const date = new Date(isoString);
-
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
     const hours = String(date.getHours()).padStart(2, "0");
     const minutes = String(date.getMinutes()).padStart(2, "0");
 
+    // Ini adalah format YYYY-MM-DDTHH:MM yang dibutuhkan input
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   } catch {
-    return isoString.slice(0, 16);
+    return isoString.slice(0, 16); // Fallback
   }
 };
 
-// 🟦 FIX: initialFormData harus memuat semua field minimal string
 const initialFormData: ScheduleData = {
-  id: "",
   namaDokter: "",
   rumahSakit: "",
-  waktuVisit: formatDateTimeForInput(new Date().toISOString()),
   note: "",
+  waktuVisit: formatDateTimeForInput(new Date().toISOString()),
   status: "Terjadwal",
-  dokter: "",
-  pasien: "",
+  repeat: "once",
 };
 
 export default function ScheduleForm({
@@ -87,107 +94,107 @@ export default function ScheduleForm({
   doctorsList = [],
 }: ScheduleFormProps) {
   const [isOpen, setIsOpen] = useState(false);
-
-  // 🟦 hilangkan undefined → selalu string
-  const [formData, setFormData] = useState<ScheduleData>({
-    ...initialFormData,
-  });
-
+  const [formData, setFormData] = useState<ScheduleData>(initialFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isEditMode = !!initialData;
 
-  // Reset atau load initialData
   useEffect(() => {
-    if (isOpen) {
-      if (isEditMode && initialData) {
-        setFormData({
-          id: initialData.id ?? "",
-          namaDokter: initialData.namaDokter ?? "",
-          rumahSakit: initialData.rumahSakit ?? "",
-          note: initialData.note ?? "",
-          status: initialData.status ?? "Terjadwal",
-          waktuVisit: formatDateTimeForInput(initialData.waktuVisit),
-          dokter: initialData.dokter ?? "",
-          pasien: initialData.pasien ?? "",
-        });
-      } else {
-        setFormData({
-          ...initialFormData,
-          waktuVisit: formatDateTimeForInput(new Date().toISOString()),
-        });
-      }
+    if (isEditMode && initialData && isOpen) {
+      setFormData({
+        ...initialData,
+        // Penting: Mengubah ISO String dari backend ke format input datetime-local
+        waktuVisit: formatDateTimeForInput(initialData.waktuVisit),
+      });
+    } else if (!isEditMode && isOpen) {
+      // Mengatur ulang ke waktu saat ini saat membuat baru
+      setFormData({
+        ...initialFormData,
+        waktuVisit: formatDateTimeForInput(new Date().toISOString()),
+      });
     }
   }, [initialData, isEditMode, isOpen]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value ?? "",
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleStatusChange = (value: string) => {
     setFormData((prev) => ({ ...prev, status: value }));
   };
 
-  const handleDoctorChange = (value: string) => {
-    const selected = doctorsList.find((d) => d.namaDokter === value);
-
-    if (selected) {
+  // Handler untuk auto-fill saat dokter dipilih
+  const handleDoctorChange = (doctorName: string) => {
+    const selectedDoctor = doctorsList.find(
+      (doc) => doc.namaDokter === doctorName
+    );
+    if (selectedDoctor) {
       setFormData((prev) => ({
         ...prev,
-        namaDokter: selected.namaDokter,
-        rumahSakit: selected.rumahSakit,
+        namaDokter: selectedDoctor.namaDokter,
+        rumahSakit: selectedDoctor.rumahSakit,
       }));
-    } else {
-      setFormData((prev) => ({ ...prev, namaDokter: value }));
     }
   };
 
-  // Submit handler
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+
     setIsSubmitting(true);
 
-    const dataToSend: Schedule = {
-      ...formData,
-      waktuVisit: new Date(formData.waktuVisit).toISOString(),
-    };
+    const dataToSend = { ...formData };
+    try {
+      const localDate = new Date(formData.waktuVisit);
+
+      if (isNaN(localDate.getTime())) {
+        throw new Error("Format waktu tidak valid.");
+      }
+
+      // Hasilnya adalah format 24 jam universal (UTC) yang ideal untuk database.
+      dataToSend.waktuVisit = localDate.toISOString();
+    } catch (error) {
+      toast.error(`Kesalahan Waktu: ${(error as Error).message}`);
+      setIsSubmitting(false);
+      return; // Hentikan submit jika ada error waktu
+    }
+    // 🌟 AKHIR PERUBAHAN UTAMA 🌟
 
     try {
       const url = isEditMode
-        ? `/api/visit-dokter/${formData.id}`
+        ? `/api/visit-dokter/${initialData?.id}`
         : "/api/visit-dokter";
-
       const method = isEditMode ? "PUT" : "POST";
 
-      const res = await fetch(url, {
-        method,
+      const response = await fetch(url, {
+        method: method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(dataToSend),
       });
 
-      if (!res.ok) throw new Error("Gagal menyimpan data");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Gagal menyimpan data");
+      }
 
       await onFormSubmit();
-      toast.success(isEditMode ? "Jadwal diperbarui!" : "Jadwal disimpan!");
+      toast.success(
+        `Jadwal berhasil ${isEditMode ? "diperbarui" : "disimpan"}!`
+      );
       setIsOpen(false);
-    } catch (err) {
-      toast.error((err as Error).message);
+    } catch (error) {
+      toast.error((error as Error).message);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const TriggerButton = isEditMode ? (
-    <Button variant="ghost" size="icon">
+    <Button variant="ghost" size="icon" aria-label="Edit Jadwal">
       <Edit className="h-4 w-4 text-yellow-500" />
     </Button>
   ) : (
-    <Button className="bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-full p-3 md:px-4 md:py-2">
+    <Button className="bg-cyan-600 hover:bg-cyan-700 text-white font-bold md:rounded-lg rounded-full p-3 md:px-4 md:py-2 transition-all">
       <Plus className="h-5 w-5 md:mr-2" />
       <span className="hidden md:inline">Jadwal Baru</span>
     </Button>
@@ -196,29 +203,25 @@ export default function ScheduleForm({
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>{TriggerButton}</DialogTrigger>
-
-      <DialogContent className="sm:max-w-[425px] bg-gray-800/80 backdrop-blur-md border-gray-700 text-white p-8">
+      <DialogContent className="sm:max-w-[425px] overflow-hidden bg-gray-800/80 backdrop-blur-md border-gray-700 text-white p-8">
         <DialogHeader>
           <DialogTitle className="text-cyan-400">
-            {isEditMode ? "Edit Jadwal Visit" : "Input Jadwal Visit"}
+            {isEditMode ? "Edit" : "Input"} Jadwal Visit
           </DialogTitle>
         </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="grid gap-4 py-4">
-          {/* Dokter */}
+        <form onSubmit={handleSubmit} className="grid gap-4 py-4 overflow-auto">
           <div className="space-y-2">
-            <Label>Pilih Dokter</Label>
+            <Label htmlFor="namaDokter">Pilih Dokter</Label>
             <div className="relative">
               <Stethoscope className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-
               <Select
                 onValueChange={handleDoctorChange}
-                value={formData.namaDokter ?? ""}
+                value={formData.namaDokter}
               >
                 <SelectTrigger className="w-full pl-10">
-                  <SelectValue placeholder="Pilih dokter" />
+                  <SelectValue placeholder="Pilih dari daftar dokter..." />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-gray-700 text-white border-gray-600">
                   {doctorsList.map((doc) => (
                     <SelectItem key={doc.id} value={doc.namaDokter}>
                       {doc.namaDokter} ({doc.rumahSakit})
@@ -229,72 +232,103 @@ export default function ScheduleForm({
             </div>
           </div>
 
-          {/* Rumah Sakit */}
           <div className="space-y-2">
-            <Label>Rumah Sakit</Label>
+            <Label htmlFor="rumahSakit">Rumah Sakit</Label>
             <div className="relative">
               <Hospital className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
+                id="rumahSakit"
                 name="rumahSakit"
-                value={formData.rumahSakit ?? ""}
-                readOnly
+                value={formData.rumahSakit}
+                onChange={handleChange}
+                placeholder="Akan terisi otomatis"
+                required
                 className="pl-10"
+                readOnly
               />
             </div>
           </div>
-
-          {/* Waktu Visit */}
           <div className="space-y-2">
-            <Label>Waktu Visit</Label>
+            <Label htmlFor="waktuVisit">Waktu Visit (Format 24 Jam)</Label>
             <div className="relative">
               <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
-                type="datetime-local"
+                id="waktuVisit"
                 name="waktuVisit"
-                value={formData.waktuVisit ?? ""}
+                type="datetime-local"
+                value={formData.waktuVisit}
                 onChange={handleChange}
                 required
                 className="pl-10"
               />
             </div>
           </div>
-
-          {/* Note */}
           <div className="space-y-2">
-            <Label>Catatan</Label>
+            <Label htmlFor="note">Catatan / Note</Label>
+
             <div className="relative">
-              <Notebook className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
+              <Notebook className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+
+              <Textarea
+                id="note"
                 name="note"
-                value={formData.note ?? ""}
-                onChange={handleChange}
+                value={formData.note}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, note: e.target.value }))
+                }
+                placeholder="Tulis catatan visit dokter secara lengkap..."
+                rows={6}
+                maxLength={3000} // ✅ Bisa sampai 3000 karakter atau lebih
+                className="pl-10 resize-none bg-gray-900/50 border-gray-600 text-white focus:ring-cyan-500 focus:border-cyan-500"
                 required
-                className="pl-10"
               />
+            </div>
+
+            {/* Counter karakter */}
+            <div className="text-right text-xs text-gray-400">
+              {formData.note.length} / 3000 karakter
             </div>
           </div>
 
-          {/* Status */}
           <div className="space-y-2">
-            <Label>Status</Label>
+            <Label htmlFor="status">Status</Label>
             <div className="relative">
               <ListChecks className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-
               <Select
-                value={formData.status ?? "Terjadwal"}
+                value={formData.status}
                 onValueChange={handleStatusChange}
               >
-                <SelectTrigger className="pl-10">
-                  <SelectValue />
+                <SelectTrigger className="w-full pl-10">
+                  <SelectValue placeholder="Pilih status" />
                 </SelectTrigger>
-
-                <SelectContent>
+                <SelectContent className="bg-gray-700/90 text-white border-gray-600">
                   <SelectItem value="Terjadwal">Terjadwal</SelectItem>
                   <SelectItem value="Selesai">Selesai</SelectItem>
                   <SelectItem value="Dibatalkan">Dibatalkan</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Pengulangan Jadwal</Label>
+            <Select
+              value={formData.repeat ?? "once"}
+              onValueChange={(val) =>
+                setFormData((p) => ({
+                  ...p,
+                  repeat: val as "once" | "monthly",
+                }))
+              }
+            >
+              <SelectTrigger className="pl-10 bg-card border-border">
+                <SelectValue />
+              </SelectTrigger>
+
+              <SelectContent className="bg-popover border-border bg-white">
+                <SelectItem value="once">Sekali saja</SelectItem>
+                <SelectItem value="monthly">Ulang Setiap Bulan</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <DialogFooter>
