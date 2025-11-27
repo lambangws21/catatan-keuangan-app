@@ -3,101 +3,88 @@
 import { useMemo } from "react";
 import { motion } from "framer-motion";
 import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Tooltip,
-  BarChart,
-  Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
-  LineChart,
-  Line,
+  ResponsiveContainer,
+  Tooltip,
+  Area,
 } from "recharts";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Brain, TrendingUp } from "lucide-react";
 import { useTheme } from "next-themes";
 
-// ========================
-// TYPES
-// ========================
-interface Transaction {
+/* ================= TYPES ================= */
+
+export interface Transaction {
   tanggal: string;
   jenisBiaya: string;
   jumlah: number;
 }
 
-interface Saldo {
-  jumlah: number;
-}
-
-interface CustomTooltipPayload {
-  name: string;
+interface TrendItem {
+  day: string;
   value: number;
 }
 
-interface CustomTooltipProps {
-  active?: boolean;
-  payload?: CustomTooltipPayload[];
-}
+/* ================= COMPONENT ================= */
 
-// ========================
-// COMPONENT
-// ========================
-export default function FinancialChart({
+export default function FinancialChartTitan({
   transactions,
 }: {
   transactions: Transaction[];
-  saldoData?: Saldo[]; // optional agar tidak error unused
 }) {
   const { theme } = useTheme();
   const isDark = theme === "dark";
 
-  // =============================
-  // TRANSFORM DATA
-  // =============================
-  const expenseByCategory = useMemo(() => {
+  /* ===== DATA TRANSFORM ===== */
+
+  const dailyTrend = useMemo<TrendItem[]>(() => {
     const map = new Map<string, number>();
+
     transactions.forEach((t) => {
-      map.set(t.jenisBiaya, (map.get(t.jenisBiaya) || 0) + t.jumlah);
+      const day = new Date(t.tanggal).getDate().toString().padStart(2, "0");
+      map.set(day, (map.get(day) ?? 0) + t.jumlah);
     });
-    return Array.from(map, ([name, value]) => ({ name, value }));
+
+    return Array.from(map, ([day, value]) => ({ day, value })).sort(
+      (a, b) => Number(a.day) - Number(b.day)
+    );
   }, [transactions]);
 
-  const dailyTrend = useMemo(() => {
-    const map = new Map<string, number>();
-    transactions.forEach((t) => {
-      const d = new Date(t.tanggal).getDate();
-      map.set(String(d), (map.get(String(d)) || 0) + t.jumlah);
-    });
-    return Array.from(map, ([day, value]) => ({ day, value }));
-  }, [transactions]);
+  const highestPoint = useMemo(() => {
+    return dailyTrend.reduce(
+      (max, item) => (item.value > max.value ? item : max),
+      { day: "0", value: 0 }
+    );
+  }, [dailyTrend]);
 
-  const COLORS = [
-    "#06b6d4",
-    "#8b5cf6",
-    "#ec4899",
-    "#f59e0b",
-    "#10b981",
-    "#3b82f6",
-  ];
+  const totalExpense = useMemo(
+    () => dailyTrend.reduce((a, b) => a + b.value, 0),
+    [dailyTrend]
+  );
 
-  const tooltipBg = isDark
-    ? "bg-gray-800 text-white"
-    : "bg-white text-black";
+  /* ===== TOOLTIP ===== */
 
-  // =============================
-  // CUSTOM TOOLTIP FIXED
-  // =============================
-  const CustomTooltip = ({ active, payload }: CustomTooltipProps) => {
-    if (active && payload && payload.length > 0) {
-      const item = payload[0];
+  const CustomTooltip = ({
+    active,
+    payload,
+  }: {
+    active?: boolean;
+    payload?: { value?: number; payload?: TrendItem }[];
+  }) => {
+    if (active && payload?.length) {
+      const item = payload[0].payload;
       return (
-        <div className={`p-2 rounded-md shadow-md ${tooltipBg}`}>
-          <p className="font-semibold">{item.name}</p>
-          <p className="opacity-80">
-            Rp {new Intl.NumberFormat("id-ID").format(item.value)}
+        <div
+          className={`p-3 rounded-lg shadow-lg ${
+            isDark ? "bg-gray-800 text-white" : "bg-white text-black"
+          }`}
+        >
+          <p className="font-semibold">Tanggal: {item?.day}</p>
+          <p className="text-cyan-400 font-bold">
+            Rp {new Intl.NumberFormat("id-ID").format(item?.value || 0)}
           </p>
         </div>
       );
@@ -105,118 +92,86 @@ export default function FinancialChart({
     return null;
   };
 
-  // =============================
-  // RENDER
-  // =============================
   return (
     <motion.div
-      className="p-6 rounded-xl shadow-lg border border-border bg-card"
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
+      className="p-8 rounded-xl h-[635px] border-1 border-slate-700 bg-card shadow-2xl space-y-6"
     >
-      <h3 className="text-xl font-semibold mb-4 text-cyan-400">
-        Grafik Keuangan
-      </h3>
+      {/* HEADER */}
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold text-cyan-400 flex items-center gap-2">
+          <Brain /> Financial Graph
+        </h2>
 
-      <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="w-fit mb-4">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="expense">Pengeluaran</TabsTrigger>
-          <TabsTrigger value="trend">Trend Harian</TabsTrigger>
-        </TabsList>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <TrendingUp size={18} />
+          Analisis Tren Pengeluaran
+        </div>
+      </div>
 
-        {/* ==================== OVERVIEW ==================== */}
-        <TabsContent value="overview">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* PIE */}
-            <div className="h-[260px]">
-              <ResponsiveContainer>
-                <PieChart>
-                  <Pie
-                    data={expenseByCategory}
-                    dataKey="value"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    label={{ fill: isDark ? "#fff" : "#fff" }}
-                  >
-                    {expenseByCategory.map((_, i) => (
-                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<CustomTooltip />} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
+      {/* KPI PANEL */}
+      <div className="grid grid-cols-3 gap-4">
+        <div className="bg-muted p-4 rounded-lg">
+          <p className="text-xs text-muted-foreground">Total Bulan Ini</p>
+          <h3 className="text-lg font-bold">
+            Rp {new Intl.NumberFormat("id-ID").format(totalExpense)}
+          </h3>
+        </div>
 
-            {/* BAR */}
-            <div className="h-[260px]">
-              <ResponsiveContainer>
-                <BarChart data={expenseByCategory}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#5554" />
-                  <XAxis
-                    dataKey="name"
-                    stroke={isDark ? "#ccc" : "#444"}
-                  />
-                  <YAxis stroke={isDark ? "#ccc" : "#444"} />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Bar dataKey="value">
-                    {expenseByCategory.map((_, i) => (
-                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </TabsContent>
+        <div className="bg-muted p-4 rounded-lg">
+          <p className="text-xs text-muted-foreground">Hari Tertinggi</p>
+          <h3 className="text-lg font-bold text-rose-500">
+            Tanggal {highestPoint.day}
+          </h3>
+        </div>
 
-        {/* ==================== EXPENSE ==================== */}
-        <TabsContent value="expense">
-          <div className="h-[300px]">
-            <ResponsiveContainer>
-              <PieChart>
-                <Pie
-                  data={expenseByCategory}
-                  dataKey="value"
-                  innerRadius={50}
-                  outerRadius={90}
-                  paddingAngle={2}
-                >
-                  {expenseByCategory.map((_, i) => (
-                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip content={<CustomTooltip />} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </TabsContent>
+        <div className="bg-muted p-4 rounded-lg">
+          <p className="text-xs text-muted-foreground">Pengeluaran Maks</p>
+          <h3 className="text-lg font-bold text-emerald-400">
+            Rp {new Intl.NumberFormat("id-ID").format(highestPoint.value)}
+          </h3>
+        </div>
+      </div>
 
-        {/* ==================== TREND ==================== */}
-        <TabsContent value="trend">
-          <div className="h-[300px]">
-            <ResponsiveContainer>
-              <LineChart data={dailyTrend}>
-                <XAxis
-                  dataKey="day"
-                  stroke={isDark ? "#ccc" : "#444"}
-                />
-                <YAxis stroke={isDark ? "#ccc" : "#444"} />
-                <CartesianGrid strokeDasharray="3 3" stroke="#4444" />
-                <Tooltip content={<CustomTooltip />} />
-                <Line
-                  type="monotone"
-                  dataKey="value"
-                  stroke="#06b6d4"
-                  strokeWidth={2}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </TabsContent>
-      </Tabs>
+      {/* MAIN GRAPH */}
+      <div className="h-[380px]">
+        <ResponsiveContainer>
+          <LineChart data={dailyTrend}>
+            <defs>
+              <linearGradient id="colorTitan" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#22d3ee" stopOpacity={0.8} />
+                <stop offset="95%" stopColor="#22d3ee" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+
+            <CartesianGrid strokeDasharray="3 3" stroke="#4444" />
+            <XAxis dataKey="day" tick={{ fill: isDark ? "#ccc" : "#333" }} />
+            <YAxis tick={{ fill: isDark ? "#ccc" : "#333" }} />
+            <Tooltip content={<CustomTooltip />} />
+
+            <Area
+              type="monotone"
+              dataKey="value"
+              stroke="#22d3ee"
+              fillOpacity={1}
+              fill="url(#colorTitan)"
+            />
+
+            <Line
+              type="monotone"
+              dataKey="value"
+              stroke="#22d3ee"
+              strokeWidth={3}
+              dot={{
+                r: 5,
+                fill: "#22d3ee",
+                stroke: "#0f172a",
+              }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
     </motion.div>
   );
 }

@@ -1,6 +1,4 @@
-"use client";
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   PieChart,
@@ -8,279 +6,157 @@ import {
   Cell,
   ResponsiveContainer,
   Tooltip,
-  // BarChart,
-  // Bar,
-  // XAxis,
-  // YAxis,
-  // CartesianGrid,
-  Sector,
 } from "recharts";
-import type { TooltipProps } from "recharts";
+import { Pause, Play, Zap } from "lucide-react";
 
-interface ChartData extends Record<string, unknown> {
+interface ChartData {
   name: string;
   value: number;
+  [key: string]: string | number;
 }
 
 interface ChartProps {
   data: ChartData[];
 }
 
-interface ActiveShapeProps {
-  cx: number;
-  cy: number;
-  midAngle: number;
-  innerRadius: number;
-  outerRadius: number;
-  startAngle: number;
-  endAngle: number;
-  fill: string;
-  payload: { name: string };
-  percent: number;
-  value: number;
-}
-
-interface CustomTooltipProps extends TooltipProps<number, string> {
-  payload?: {
-    name: string;
-    value: number;
-    payload: ChartData;
-  }[];
-}
-
-const COLORS = [
-  "#06b6d4",
-  "#8b5cf6",
-  "#ec4899",
-  "#f59e0b",
-  "#10b981",
-  "#3b82f6",
-];
+const COLORS = ["#06b6d4", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981"];
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat("id-ID", {
     style: "currency",
     currency: "IDR",
-    minimumFractionDigits: 0,
   }).format(value);
 
-const renderActiveShape = (props: unknown) => {
-  const {
-    cx,
-    cy,
-    midAngle,
-    innerRadius,
-    outerRadius,
-    startAngle,
-    endAngle,
-    fill,
-    payload,
-    percent,
-    value,
-  } = props as ActiveShapeProps;
-
-  const RADIAN = Math.PI / 180;
-  const sin = Math.sin(-RADIAN * midAngle);
-  const cos = Math.cos(-RADIAN * midAngle);
-  const sx = cx + (outerRadius + 10) * cos;
-  const sy = cy + (outerRadius + 10) * sin;
-  const mx = cx + (outerRadius + 30) * cos;
-  const my = cy + (outerRadius + 30) * sin;
-  const ex = mx + (cos >= 0 ? 1 : -1) * 22;
-  const ey = my;
-  const anchor = cos >= 0 ? "start" : "end";
-
-  return (
-    <g>
-      <text
-        x={cx}
-        y={cy}
-        dy={8}
-        textAnchor="middle"
-        fill={fill}
-        fontSize={16}
-        fontWeight="bold"
-      >
-        {payload.name}
-      </text>
-
-      <Sector
-        cx={cx}
-        cy={cy}
-        innerRadius={innerRadius}
-        outerRadius={outerRadius}
-        startAngle={startAngle}
-        endAngle={endAngle}
-        fill={fill}
-      />
-
-      <Sector
-        cx={cx}
-        cy={cy}
-        innerRadius={outerRadius + 6}
-        outerRadius={outerRadius + 10}
-        startAngle={startAngle}
-        endAngle={endAngle}
-        fill={fill}
-      />
-
-      <path
-        d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`}
-        stroke={fill}
-        fill="none"
-      />
-      <circle cx={ex} cy={ey} r={2} fill={fill} />
-
-      <text
-        x={ex + (cos >= 0 ? 12 : -12)}
-        y={ey}
-        textAnchor={anchor}
-        fill="#fff"
-      >
-        {formatCurrency(value)}
-      </text>
-
-      <text
-        x={ex + (cos >= 0 ? 12 : -12)}
-        y={ey}
-        dy={18}
-        textAnchor={anchor}
-        fill="#999"
-      >
-        ({(percent * 100).toFixed(2)}%)
-      </text>
-    </g>
-  );
-};
-
-const CustomTooltip = ({ active, payload }: CustomTooltipProps) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="bg-gray-700/90 dark:bg-gray-800/90 backdrop-blur-sm p-3 rounded-md border border-gray-600 dark:border-gray-500">
-        <p className="text-cyan-400 font-semibold">{payload[0].name}</p>
-        <p className="text-white">{formatCurrency(payload[0].value!)}</p>
-      </div>
-    );
-  }
-  return null;
-};
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1 },
-};
-
-const itemVariants = {
-  hidden: { y: 20, opacity: 0 },
-  visible: { y: 0, opacity: 1 },
-};
-
-export default function ExpenseChart({ data }: ChartProps) {
+export default function ExpenseChartPro({ data }: ChartProps) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [intervalSpeed, setIntervalSpeed] = useState(7000);
 
-  // const onPieEnter = (_: unknown, index: number) => setActiveIndex(index);
+  useEffect(() => {
+    if (!isPlaying || !data.length) return;
+    const loop = setInterval(() => {
+      setActiveIndex((prev) => (prev + 1) % data.length);
+    }, intervalSpeed);
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const isDark =
-    typeof window !== "undefined" &&
-    window.matchMedia("(prefers-color-scheme: dark)").matches;
+    return () => clearInterval(loop);
+  }, [isPlaying, intervalSpeed, data]);
+
+  const totalValue = data.reduce((a, b) => a + b.value, 0);
+  const activeItem = data[activeIndex];
 
   return (
-    <motion.div
-      className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700"
-      initial="hidden"
-      animate="visible"
-      variants={containerVariants}
-    >
-      <motion.h3
-        className="text-xl font-semibold mb-4 text-cyan-500 dark:text-cyan-300"
-        variants={itemVariants}
-      >
-        Distribusi Pengeluaran
-      </motion.h3>
+    <div className="bg-white dark:bg-gray-900 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xl space-y-4">
 
-      <motion.div
-        className="grid grid-cols-1 lg:grid-cols-2 gap-8"
-        variants={itemVariants}
-      >
-        {/* PIE CHART */}
-        <motion.div
-          style={{ width: "100%", height: 300 }}
-          variants={itemVariants}
-        >
+      {/* HEADER */}
+      <div className="flex justify-between items-center">
+        <h3 className="text-xl font-bold text-cyan-500 flex items-center gap-2">
+          <Zap className="w-5 h-5" />
+          Distribusi Pengeluaran
+        </h3>
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsPlaying(!isPlaying)}
+            className="p-2 rounded-full bg-cyan-600 text-white hover:scale-110 transition"
+          >
+            {isPlaying ? <Pause size={16} /> : <Play size={16} />}
+          </button>
+
+          <input
+            type="range"
+            min="1000"
+            max="10000"
+            step="500"
+            value={intervalSpeed}
+            onChange={(e) => setIntervalSpeed(Number(e.target.value))}
+            className="accent-cyan-500"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        {/* PIE */}
+        <div style={{ width: "100%", height: 300 }}>
           <ResponsiveContainer>
             <PieChart>
               <Pie
                 data={data}
                 cx="50%"
                 cy="50%"
+                outerRadius={100}
                 innerRadius={60}
-                outerRadius={80}
+                paddingAngle={3}
                 dataKey="value"
+                onMouseEnter={(_, index) => setActiveIndex(index)}
               >
-                {data.map((entry, index) => (
+                {data.map((_, index) => (
                   <Cell
-                    key={`cell-${index}`}
+                    key={index}
                     fill={COLORS[index % COLORS.length]}
-                    onMouseEnter={() => setActiveIndex(index)}
+                    stroke={index === activeIndex ? "#fff" : "none"}
+                    strokeWidth={index === activeIndex ? 2 : 0}
                   />
                 ))}
               </Pie>
-
-              <Tooltip content={<CustomTooltip />} />
+              <Tooltip formatter={(val: number) => formatCurrency(val)} />
             </PieChart>
           </ResponsiveContainer>
-        </motion.div>
+        </div>
 
-        {/* BAR CHART */}
-        <motion.div
-          style={{ width: "100%", height: 300 }}
-          variants={itemVariants}
-        >
-         <ResponsiveContainer>
-  <PieChart>
-    <Pie
-      data={data}
-      cx="50%"
-      cy="50%"
-      innerRadius={60}
-      outerRadius={80}
-      dataKey="value"
-      onMouseEnter={(_, index) => setActiveIndex(index)}
-    >
-      {data.map((entry, index) => (
-        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-      ))}
-    </Pie>
+        {/* DETAIL PANEL */}
+        <div className="flex flex-col justify-center gap-4">
+          <motion.div
+            key={activeItem?.name}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-gray-100 dark:bg-gray-800 p-5 rounded-lg"
+          >
+            <h4 className="text-lg font-semibold text-cyan-400">
+              {activeItem?.name}
+            </h4>
 
-    {/* Active Shape Overlay */}
-    {typeof activeIndex === "number" && data[activeIndex] && (
-      <g>
-        {renderActiveShape({
-          ...data[activeIndex],
-          cx: 200, // auto-center fallback
-          cy: 150,
-          innerRadius: 60,
-          outerRadius: 80,
-          startAngle: 0,
-          endAngle: 360,
-          midAngle: 0,
-          fill: COLORS[activeIndex % COLORS.length],
-          percent:
-            data[activeIndex].value /
-            data.reduce((a, b) => a + b.value, 0),
-          value: data[activeIndex].value,
-          payload: data[activeIndex],
-        })}
-      </g>
-    )}
+            <p className="text-2xl font-bold dark:text-white text-slate-900">
+              {formatCurrency(activeItem?.value || 0)}
+            </p>
 
-    <Tooltip content={<CustomTooltip />} />
-  </PieChart>
-</ResponsiveContainer>
+            <p className="text-sm text-gray-400">
+              {((activeItem?.value / totalValue) * 100).toFixed(2)}%
+              dari total
+            </p>
 
-        </motion.div>
-      </motion.div>
-    </motion.div>
+            <div className="mt-3 w-full bg-gray-700 rounded-full h-2 overflow-hidden">
+              <div
+                className="h-full bg-cyan-500 transition-all"
+                style={{
+                  width: `${(activeItem?.value / totalValue) * 100}%`,
+                }}
+              />
+            </div>
+          </motion.div>
+
+          {/* LEGEND */}
+          <div className="grid grid-cols-2 gap-2">
+            {data.map((item, i) => (
+              <button
+                key={i}
+                onClick={() => setActiveIndex(i)}
+                className={`flex items-center gap-2 text-sm p-2 rounded-md transition ${
+                  activeIndex === i
+                    ? "bg-cyan-600 text-white"
+                    : "bg-muted hover:bg-muted/80"
+                }`}
+              >
+                <span
+                  className="w-3 h-3 rounded-full"
+                  style={{ background: COLORS[i % COLORS.length] }}
+                />
+                {item.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

@@ -374,7 +374,7 @@ export default function DashboardPage() {
       {/* Chart + PDF + Summary */}
       <div className={viewMode === "compact" ? "grid grid-cols-1 md:grid-cols-2 gap-4" : "grid grid-cols-1 gap-4"}>
         <div className={viewMode === "compact" ? "col-span-1" : ""}>
-          <FinancialChart transactions={filteredTransactions} saldoData={filteredSaldoData} />
+          <FinancialChart transactions={filteredTransactions}  />
         </div>
 
         <div className={viewMode === "compact" ? "col-span-1 flex flex-col gap-3" : "flex flex-col gap-3"}>
@@ -384,9 +384,7 @@ export default function DashboardPage() {
               <p className="text-sm text-gray-400">{months[selectedMonth].name} — {selectedYear}</p>
             </div>
             <FinancialReportPDF transactions={filteredTransactions} saldoData={filteredSaldoData} />
-          </div>
-
-          {/* keep original FinancialDashboard usage (no logic change) */}
+          </div> 
           <FinancialDashboard transactions={filteredTransactions} saldoData={filteredSaldoData} isLoading={isLoading} />
         </div>
       </div>
