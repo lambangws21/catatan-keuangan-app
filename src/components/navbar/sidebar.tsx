@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Wallet, GalleryHorizontal, Settings, Landmark, ChevronsLeft, HeartHandshakeIcon, StethoscopeIcon } from "lucide-react";
+import { Home, Wallet, GalleryHorizontal, Settings, Landmark, ChevronsLeft, HeartHandshakeIcon, StethoscopeIcon, DollarSign } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -23,6 +23,7 @@ export const navItems = [
   { href: "/gallery", icon: GalleryHorizontal, label: "Galeri Berkas" },
   { href: "/operasi", icon: StethoscopeIcon, label: "Operasi" },
   { href: "/visit-dokter", icon:HeartHandshakeIcon , label: "Visit Dokter" },
+  { href: "/prices", icon:DollarSign , label: "List harga" },
   { href: "/settings", icon: Settings, label: "Pengaturan" },
 ];
 
