@@ -104,7 +104,7 @@ export default function OperationsPage() {
       window.URL.revokeObjectURL(url);
 
       toast.success('✅ Export CSV berhasil!');
-    } catch (error) {
+    } catch  {
       toast.error('❌ Gagal export CSV');
     } finally {
       setIsExporting(false);
@@ -145,7 +145,7 @@ export default function OperationsPage() {
 
       doc.save(`laporan_operasi_${new Date().toISOString().split('T')[0]}.pdf`);
       toast.success('✅ Export PDF berhasil!');
-    } catch (error) {
+    } catch  {
       toast.error('❌ Gagal export PDF');
     } finally {
       setIsExporting(false);
