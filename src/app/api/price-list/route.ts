@@ -26,29 +26,76 @@ export interface PriceItem {
 // ========================
 // Helper fetch
 // ========================
-async function callGAS<T>(method: string, body?: unknown): Promise<T> {
-  const res = await fetch(GAS_URL, {
+// async function callGAS<T>(method: string, body?: unknown): Promise<T> {
+//   const res = await fetch(GAS_URL, {
+//     method,
+//     headers: { "Content-Type": "application/json" },
+//     body: method !== "GET" ? JSON.stringify(body) : undefined,
+//     cache: "no-store",
+//   });
+
+//   if (!res.ok) {
+//     throw new Error(`GAS Error ${res.status}`);
+//   }
+
+//   return res.json() as Promise<T>;
+// }
+async function callGAS<T>(method: string, sheet?: string, body?: unknown): Promise<T> {
+  const url =
+    method === "GET" && sheet
+      ? `${GAS_URL}?sheet=${sheet}`
+      : GAS_URL;
+
+  const res = await fetch(url, {
     method,
     headers: { "Content-Type": "application/json" },
     body: method !== "GET" ? JSON.stringify(body) : undefined,
     cache: "no-store",
   });
 
-  if (!res.ok) {
-    throw new Error(`GAS Error ${res.status}`);
-  }
-
+  if (!res.ok) throw new Error(`GAS Error ${res.status}`);
   return res.json() as Promise<T>;
 }
+
 
 // ========================
 // GET handler
 // ========================
-export async function GET() {
+// export async function GET() {
+//   try {
+//     const response = await callGAS<{ status: string; data: RawPriceRow[] }>(
+//       "GET"
+//     );
+
+//     const mapped: PriceItem[] = response.data.map((row) => ({
+//       no: row["No."],
+//       system: row["System"],
+//       product: row["PRODUCT"],
+//       type: row["TYPE"],
+//       qty: row["Qty"],
+//       hargaNett: row["Harga Nett"],
+//       hargaNettPPN: row["Harga Nett + PPN"],
+//     }));
+
+//     return NextResponse.json({ status: "success", data: mapped });
+//   } catch (error) {
+//     return NextResponse.json(
+//       { status: "error", message: (error as Error).message },
+//       { status: 500 }
+//     );
+//   }
+// }
+
+export async function GET(req: NextRequest) {
   try {
-    const response = await callGAS<{ status: string; data: RawPriceRow[] }>(
-      "GET"
-    );
+    const sheet = req.nextUrl.searchParams.get("sheet") || "Sheet1";
+
+    const response = await callGAS<{
+      status: string;
+      sheet: string;
+      sheets: string[];
+      data: RawPriceRow[];
+    }>("GET", sheet);
 
     const mapped: PriceItem[] = response.data.map((row) => ({
       no: row["No."],
@@ -60,7 +107,12 @@ export async function GET() {
       hargaNettPPN: row["Harga Nett + PPN"],
     }));
 
-    return NextResponse.json({ status: "success", data: mapped });
+    return NextResponse.json({
+      status: "success",
+      sheet: response.sheet,
+      sheets: response.sheets,
+      data: mapped,
+    });
   } catch (error) {
     return NextResponse.json(
       { status: "error", message: (error as Error).message },
@@ -71,79 +123,80 @@ export async function GET() {
 
 
 
+
 // ====================
 // POST → Tambah data baru
 // ====================
-export async function POST(req: NextRequest) {
-try {
-const body = (await req.json()) as PriceItem;
+// export async function POST(req: NextRequest) {
+// try {
+// const body = (await req.json()) as PriceItem;
 
 
-const result = await callGAS("POST", body);
+// const result = await callGAS("POST", body);
 
-return NextResponse.json({ status: "success", result });
-
-
-} catch (error) {
-return NextResponse.json(
-{ status: "error", message: (error as Error).message },
-{ status: 500 }
-);
-}
-}
-
-// ====================
-// PUT → Update data berdasarkan NO
-// ====================
-export async function PUT(req: NextRequest) {
-try {
-const body = (await req.json()) as PriceItem;
+// return NextResponse.json({ status: "success", result });
 
 
-if (!body.no) {
-  return NextResponse.json(
-    { status: "error", message: "Missing 'no' to update" },
-    { status: 400 }
-  );
-}
+// } catch (error) {
+// return NextResponse.json(
+// { status: "error", message: (error as Error).message },
+// { status: 500 }
+// );
+// }
+// }
 
-const result = await callGAS("PUT", body);
-
-return NextResponse.json({ status: "success", result });
-
-
-} catch (error) {
-return NextResponse.json(
-{ status: "error", message: (error as Error).message },
-{ status: 500 }
-);
-}
-}
-
-// ====================
-// DELETE → Hapus data berdasarkan NO
-// ====================
-export async function DELETE(req: NextRequest) {
-try {
-const { no } = await req.json();
+// // ====================
+// // PUT → Update data berdasarkan NO
+// // ====================
+// export async function PUT(req: NextRequest) {
+// try {
+// const body = (await req.json()) as PriceItem;
 
 
-if (!no) {
-  return NextResponse.json(
-    { status: "error", message: "Missing 'no' to delete" },
-    { status: 400 }
-  );
-}
+// if (!body.no) {
+//   return NextResponse.json(
+//     { status: "error", message: "Missing 'no' to update" },
+//     { status: 400 }
+//   );
+// }
 
-const result = await callGAS("DELETE", { no });
+// const result = await callGAS("PUT", body);
 
-return NextResponse.json({ status: "success", result });
+// return NextResponse.json({ status: "success", result });
 
 
-} catch (error) {
-return NextResponse.json(
-{ status: "error", message: (error as Error).message },
-{ status: 500 }
-);
-}
-}
+// } catch (error) {
+// return NextResponse.json(
+// { status: "error", message: (error as Error).message },
+// { status: 500 }
+// );
+// }
+// }
+
+// // ====================
+// // DELETE → Hapus data berdasarkan NO
+// // ====================
+// export async function DELETE(req: NextRequest) {
+// try {
+// const { no } = await req.json();
+
+
+// if (!no) {
+//   return NextResponse.json(
+//     { status: "error", message: "Missing 'no' to delete" },
+//     { status: 400 }
+//   );
+// }
+
+// const result = await callGAS("DELETE", { no });
+
+// return NextResponse.json({ status: "success", result });
+
+
+// } catch (error) {
+// return NextResponse.json(
+// { status: "error", message: (error as Error).message },
+// { status: 500 }
+// );
+// }
+// }

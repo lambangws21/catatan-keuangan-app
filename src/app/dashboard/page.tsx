@@ -351,14 +351,14 @@ export default function DashboardPage() {
           <div className="flex items-center gap-2">
             <Select value={String(selectedMonth)} onValueChange={(v) => setSelectedMonth(Number(v))}>
               <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white ">
                 {months.map(m => <SelectItem key={m.value} value={String(m.value)}>{m.name}</SelectItem>)}
               </SelectContent>
             </Select>
 
             <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
               <SelectTrigger className="w-[110px]"><SelectValue /></SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white ">
                 {years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
               </SelectContent>
             </Select>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Wallet, GalleryHorizontal, Settings, Landmark, ChevronsLeft, HeartHandshakeIcon, StethoscopeIcon, DollarSign } from "lucide-react";
+import { Home, Wallet, GalleryHorizontal, Settings, Landmark, ChevronsLeft, HeartHandshakeIcon, StethoscopeIcon, DollarSign, Database } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -24,6 +24,7 @@ export const navItems = [
   { href: "/operasi", icon: StethoscopeIcon, label: "Operasi" },
   { href: "/visit-dokter", icon:HeartHandshakeIcon , label: "Visit Dokter" },
   { href: "/prices", icon:DollarSign , label: "List harga" },
+  { href: "/stock-dasboard", icon: Database, label: "Stock" },
   { href: "/settings", icon: Settings, label: "Pengaturan" },
 ];
 
@@ -53,7 +54,7 @@ export default function Sidebar({ isCollapsed, toggleSidebar }: SidebarProps) {
     >
       <div className="flex h-16 items-center justify-center border-b border-gray-700 px-4">
         <Link href="/dashboard" className="flex items-center gap-2 font-semibold overflow-hidden">
-          <Wallet className="h-7 w-7 text-cyan-400 flex-shrink-0" />
+          <Wallet className="h-7 w-7 text-cyan-400 shrink-0" />
           <AnimatePresence>
             {!isCollapsed && (
               <motion.span
@@ -83,7 +84,7 @@ export default function Sidebar({ isCollapsed, toggleSidebar }: SidebarProps) {
                     pathname.startsWith(item.href) && "bg-cyan-600 text-white"
                     )}
                 >
-                    <item.icon className="h-5 w-5 flex-shrink-0" />
+                    <item.icon className="h-5 w-5 shrink-0" />
                     <AnimatePresence>
                       {!isCollapsed && (
                         <motion.span

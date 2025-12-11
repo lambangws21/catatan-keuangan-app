@@ -4,15 +4,23 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import ExpenseForm from "@/components/ExepenseForm";
 import TransactionManager from "@/components/transaction-manager";
-// Impor komponen UI untuk filter
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search } from "lucide-react";
 
-// Definisikan tipe data Transaction agar konsisten
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Search, Calendar } from "lucide-react";
+
+// =======================
+// ✅ TYPE DATA
+// =======================
 interface Transaction {
   id: string;
-  tanggal: string;
+  tanggal: string; // format YYYY-MM-DD
   jenisBiaya: string;
   keterangan: string;
   jumlah: number;
@@ -22,110 +30,175 @@ interface Transaction {
 
 export default function TransactionsPage() {
   const { user } = useAuth();
-  // State untuk menyimpan data mentah dari API
+
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
-  // State BARU untuk filter
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all"); // 'all' berarti tidak ada filter
 
-  // Fungsi untuk mengambil semua data transaksi dari API
+  // ✅ FILTER STATE
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+
+  // ✅ RANGE DATE FILTER
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+
+  // =======================
+  // ✅ FETCH DATA
+  // =======================
   const fetchTransactions = useCallback(async () => {
     if (!user) return;
+
     setIsLoading(true);
     try {
       const token = await user.getIdToken();
-      const response = await fetch('/api/transactions', {
-        headers: { 'Authorization': `Bearer ${token}` }
+      const response = await fetch("/api/transactions", {
+        headers: { Authorization: `Bearer ${token}` },
       });
-      if (!response.ok) throw new Error('Gagal mengambil data transaksi.');
+
+      if (!response.ok) throw new Error("Gagal mengambil data transaksi.");
+
       const data = await response.json();
       setAllTransactions(data);
     } catch (error) {
       console.error(error);
-      setAllTransactions([]); // Set ke array kosong jika gagal untuk menghindari error
+      setAllTransactions([]);
     } finally {
       setIsLoading(false);
     }
   }, [user]);
 
-  // Ambil data saat komponen pertama kali dimuat atau saat user berubah
   useEffect(() => {
     fetchTransactions();
   }, [fetchTransactions]);
-  
-  // Memoize daftar kategori unik untuk dropdown filter
+
+  // =======================
+  // ✅ PRESET: BULAN INI
+  // =======================
+  const setThisMonth = () => {
+    const now = new Date();
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+    setStartDate(firstDay.toISOString().split("T")[0]);
+    setEndDate(lastDay.toISOString().split("T")[0]);
+  };
+
+  // =======================
+  // ✅ UNIQUE KATEGORI
+  // =======================
   const uniqueCategories = useMemo(() => {
-    if (!Array.isArray(allTransactions)) return [];
-    // Buat Set untuk mendapatkan nilai unik, lalu ubah kembali ke array
-    const categories = new Set(allTransactions.map(tx => tx.jenisBiaya));
-    return ['all', ...Array.from(categories)];
+    const categories = new Set(allTransactions.map((tx) => tx.jenisBiaya));
+    return ["all", ...Array.from(categories)];
   }, [allTransactions]);
 
-  // Gunakan useMemo untuk menyaring data secara efisien
-  // Kalkulasi ini hanya akan berjalan jika data mentah atau filter berubah
+  // =======================
+  // ✅ FILTER DATA FINAL
+  // =======================
   const filteredTransactions = useMemo(() => {
-    if (!Array.isArray(allTransactions)) return [];
-    
     return allTransactions
-      .filter(tx => {
-        // Filter berdasarkan kategori
-        return selectedCategory === 'all' || tx.jenisBiaya === selectedCategory;
+      .filter((tx) => {
+        return (
+          selectedCategory === "all" || tx.jenisBiaya === selectedCategory
+        );
       })
-      .filter(tx => {
-        // Filter berdasarkan kata kunci pencarian (tidak case-sensitive)
-        return tx.keterangan.toLowerCase().includes(searchTerm.toLowerCase());
+      .filter((tx) => {
+        return tx.keterangan
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase());
+      })
+      .filter((tx) => {
+        if (!startDate && !endDate) return true;
+
+        const txDate = new Date(tx.tanggal).getTime();
+        const start = startDate ? new Date(startDate).getTime() : null;
+        const end = endDate
+          ? new Date(endDate + "T23:59:59").getTime()
+          : null;
+
+        if (start && end) return txDate >= start && txDate <= end;
+        if (start) return txDate >= start;
+        if (end) return txDate <= end;
+
+        return true;
       });
-  }, [allTransactions, selectedCategory, searchTerm]);
+  }, [allTransactions, selectedCategory, searchTerm, startDate, endDate]);
 
-
+  // =======================
+  // ✅ RENDER UI
+  // =======================
   return (
     <div className="space-y-8">
+      {/* HEADER */}
       <header className="flex flex-col md:flex-row justify-between items-center gap-4">
         <div>
-            <h1 className="text-3xl font-bold text-white">Manajemen Transaksi</h1>
-            <p className="text-gray-400">Lacak, saring, dan cari semua pengeluaran Anda di sini.</p>
+          <h1 className="text-3xl font-bold text-white">
+            Manajemen Transaksi
+          </h1>
+          <p className="text-gray-400">
+            Lacak, filter, dan cari transaksi dengan mudah.
+          </p>
         </div>
-        {/* Tombol untuk menambah transaksi baru, akan me-refresh data di halaman ini */}
         <ExpenseForm onTransactionAdded={fetchTransactions} />
       </header>
-      
-      {/* Bagian BARU untuk Kontrol Filter dan Pencarian */}
-      <div className="flex flex-col md:flex-row gap-4 p-4 bg-gray-800/50 rounded-lg border border-gray-700">
-        <div className="relative flex-grow">
+
+      {/* ✅ FILTER BAR */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-gray-800/50 rounded-xl border border-gray-700">
+        {/* SEARCH */}
+        <div className="relative md:col-span-2">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-          <Input 
+          <Input
             type="search"
-            placeholder="Cari berdasarkan keterangan..."
+            placeholder="Cari keterangan..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10 w-full"
           />
         </div>
-        <div className="flex-shrink-0">
-          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger className="w-full md:w-[180px]">
-              <SelectValue placeholder="Semua Kategori" />
-            </SelectTrigger>
-            <SelectContent>
-              {uniqueCategories.map(category => (
-                <SelectItem key={category} value={category}>
-                  {category === 'all' ? 'Semua Kategori' : category}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+
+        {/* KATEGORI */}
+        <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+          <SelectTrigger>
+            <SelectValue placeholder="Semua Kategori" />
+          </SelectTrigger>
+          <SelectContent className="bg-popover bg-white text-popover-foreground border-border text-slate-500">
+            {uniqueCategories.map((cat) => (
+              <SelectItem key={cat} value={cat}>
+                {cat === "all" ? "Semua Kategori" : cat}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* PRESET BULAN INI */}
+        <button
+          onClick={setThisMonth}
+          className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white font-semibold transition"
+        >
+          <Calendar className="h-4 w-4" />
+          Bulan Ini
+        </button>
       </div>
 
-      {/* Komponen TransactionManager sekarang menampilkan data yang SUDAH DIFILTER */}
+      {/* ✅ RANGE DATE */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Input
+          type="date"
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
+        />
+        <Input
+          type="date"
+          value={endDate}
+          onChange={(e) => setEndDate(e.target.value)}
+        />
+      </div>
+
+      {/* ✅ TRANSACTION TABLE */}
       <TransactionManager
-        transactions={filteredTransactions} // Gunakan data yang sudah difilter
+        transactions={filteredTransactions}
         isLoading={isLoading}
-        onDataChange={fetchTransactions} // onDataChange tetap mengambil semua data
+        onDataChange={fetchTransactions}
       />
     </div>
   );
 }
-
