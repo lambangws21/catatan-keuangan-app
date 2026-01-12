@@ -31,13 +31,18 @@
   }
 }
 
+html {
+  background-color: #010409;
+}
+
 body {
   font-family: var(--font-body);
   margin: 0;
   padding: 0;
-  background-color: #f9fafb; /* Sedikit abu-abu seperti bg-gray-50 */
+  background-color: #010409;
   color: var(--foreground);
   transition: background-color 0.4s ease, color 0.4s ease;
+  min-height: 100vh;
 }
 
 .dashboard-surface,
