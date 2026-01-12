@@ -35,7 +35,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
-import { ImplantedFirestoreStock } from "@/types/implant-stock";
+import { ActivityLog, ImplantedFirestoreStock } from "@/types/implant-stock";
 
 const pageTitles: { [key: string]: string } = {
     '/dashboard': 'Dashboard',
@@ -79,11 +79,15 @@ interface ActivityLogRaw {
 }
 
 const buildActivityLabel = (item: ActivityLogRaw) => {
+  const toText = (entry?: ImplantedFirestoreStock | null) => {
+    if (!entry) return undefined;
+    const extended = entry as ImplantedFirestoreStock & { description?: string };
+    return extended.deskripsi ?? extended.description;
+  };
+
   const piece =
-    item.after?.deskripsi ??
-    item.after?.description ??
-    item.before?.deskripsi ??
-    item.before?.description ??
+    toText(item.after) ??
+    toText(item.before) ??
     "stok";
   switch (item.action) {
     case "CREATE":
@@ -149,7 +153,7 @@ export default function Navbar() {
     const loadActivityPreview = async () => {
       try {
         const res = await fetch("/api/activity-log");
-        const json = await res.json();
+        const json: { data?: ActivityLog[] } = await res.json();
         if (Array.isArray(json.data)) {
           setActivityPreview(
             json.data

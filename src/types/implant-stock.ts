@@ -83,6 +83,7 @@ export interface ImplantedFirestoreStock {
   no: number;
   noStok: string;
   deskripsi: string;
+  description?: string;
   batch: string;
   qty: number;
   refill: number;
