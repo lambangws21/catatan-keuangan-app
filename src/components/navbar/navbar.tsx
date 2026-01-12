@@ -5,9 +5,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { logOut } from "@/lib/AuthServices"; // PERBAIKAN: Path impor disesuaikan
-import { Bell, Settings, LogOut, Menu, Search, Home, Wallet } from "lucide-react";
+import { Bell, Settings, LogOut, Menu, Search, Home, Wallet, Palette, Check } from "lucide-react";
+import { useTheme } from "next-themes";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
-import { listenForNotifications, markNotificationAsRead, type Notification } from "@/lib/notificationService";
+import {
+  listenForNotifications,
+  markNotificationAsRead,
+  type Notification,
+} from "@/lib/notificationService";
 import { navItems } from "@/components/navbar/sidebar";
 
 // Import komponen dari shadcn/ui
@@ -30,6 +35,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { ImplantedFirestoreStock } from "@/types/implant-stock";
 
 const pageTitles: { [key: string]: string } = {
     '/dashboard': 'Dashboard',
@@ -38,6 +44,14 @@ const pageTitles: { [key: string]: string } = {
     '/operasi': 'Operasi',
     '/gallery': 'Galeri',
     '/settings': 'Pengaturan',
+};
+
+type ActivityLogPreview = {
+  id: string;
+  action: string;
+  label: string;
+  changedAt: string;
+  stockId?: string;
 };
 
 const dropdownVariants: Variants = {
@@ -55,15 +69,67 @@ const mobileNavItemVariants: Variants = {
   visible: { opacity: 1, x: 0 },
 };
 
+interface ActivityLogRaw {
+  action?: string;
+  after?: ImplantedFirestoreStock | null;
+  before?: ImplantedFirestoreStock | null;
+  changedAt?: string;
+  id?: string;
+  stockId?: string;
+}
+
+const buildActivityLabel = (item: ActivityLogRaw) => {
+  const piece =
+    item.after?.deskripsi ??
+    item.after?.description ??
+    item.before?.deskripsi ??
+    item.before?.description ??
+    "stok";
+  switch (item.action) {
+    case "CREATE":
+      return `Tambah ${piece}`;
+    case "DELETE":
+      return `Hapus ${piece}`;
+    case "UPDATE":
+      return `Perbarui ${piece}`;
+    default:
+      return `Aktivitas ${piece}`;
+  }
+};
+
+const themeOptions = [
+  { value: "light", label: "Tema Terang" },
+  { value: "dark", label: "Gelap Standar" },
+  { value: "premium", label: "Tampilan Gelap Premium" },
+];
+
+const timeAgo = (timestamp: string) => {
+  if (!timestamp) return "Baru saja";
+  const when = new Date(timestamp);
+  const diff = Date.now() - when.getTime();
+  if (diff < 60000) return "Baru saja";
+  if (diff < 3600000) return `${Math.floor(diff / 60000)} menit lalu`;
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)} jam lalu`;
+  return `${Math.floor(diff / 86400000)} hari lalu`;
+};
+
+const getActivityHref = (item: ActivityLogPreview) =>
+  item.stockId ? `/stock-dasboard?stock=${item.stockId}` : "/stock-dasboard";
+
 export default function Navbar() {
   const { user } = useAuth();
   const pathname = usePathname();
+  const { theme, setTheme } = useTheme();
   const [pageTitle, setPageTitle] = useState("Dashboard");
   const [currentDate, setCurrentDate] = useState("");
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [activityPreview, setActivityPreview] = useState<ActivityLogPreview[]>([]);
   const [isNotifOpen, setNotifOpen] = useState(false);
+  const [isThemeOpen, setThemeOpen] = useState(false);
   const [isProfileOpen, setProfileOpen] = useState(false);
-  const hasUnread = notifications.some(n => !n.isRead);
+  const hasUnread = notifications.some((n) => !n.isRead);
+  const themeLabel =
+    themeOptions.find((opt) => opt.value === theme)?.label ?? "Tema";
 
   useEffect(() => {
     setPageTitle(pageTitles[pathname] || "Halaman");
@@ -78,11 +144,54 @@ export default function Navbar() {
       return () => unsubscribe();
     }
   }, [user]);
+
+  useEffect(() => {
+    const loadActivityPreview = async () => {
+      try {
+        const res = await fetch("/api/activity-log");
+        const json = await res.json();
+        if (Array.isArray(json.data)) {
+          setActivityPreview(
+            json.data
+              .slice(0, 4)
+              .map((item) => ({
+                id: item.id,
+                action: item.action ?? "UPDATE",
+                changedAt: item.changedAt,
+                label: buildActivityLabel(item),
+                stockId: item.stockId,
+              }))
+          );
+        }
+      } catch (error) {
+        console.error("Gagal mengambil ringkasan timeline:", error);
+      }
+    };
+
+    loadActivityPreview();
+  }, []);
   
   const handleNotificationClick = (notification: Notification) => {
       if (!notification.isRead && user?.uid) {
           markNotificationAsRead(user.uid, notification.id);
+          setNotifications((prev) =>
+            prev.map((notif) =>
+              notif.id === notification.id ? { ...notif, isRead: true } : notif
+            )
+          );
       }
+  };
+
+  const handleMarkAllRead = async () => {
+    if (!user?.uid) return;
+    const unread = notifications.filter((notif) => !notif.isRead);
+    if (!unread.length) return;
+
+    await Promise.all(
+      unread.map((notif) => markNotificationAsRead(user.uid!, notif.id))
+    );
+
+    setNotifications((prev) => prev.map((notif) => ({ ...notif, isRead: true })));
   };
 
   const getInitials = (email: string | null | undefined) => {
@@ -133,6 +242,39 @@ export default function Navbar() {
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
           <Input type="search" placeholder="Cari..." className="pl-8 w-[150px] md:w-[200px] lg:w-[300px]" />
         </div>
+        <DropdownMenu open={isThemeOpen} onOpenChange={setThemeOpen}>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 text-xs font-semibold text-white/90"
+            >
+              <Palette className="h-4 w-4 text-cyan-300" />
+              {themeLabel}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            className="w-48 rounded-2xl bg-gray-900/90 backdrop-blur-xl border border-white/10 shadow-2xl"
+            align="end"
+          >
+            <DropdownMenuLabel className="text-xs uppercase tracking-[0.3em] text-gray-400">
+              Tema
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator className="bg-gray-800" />
+            {themeOptions.map((option) => (
+              <DropdownMenuItem
+                key={option.value}
+                onClick={() => setTheme(option.value)}
+                className="flex items-center justify-between text-sm text-white transition hover:text-white"
+              >
+                <span>{option.label}</span>
+                {theme === option.value && (
+                  <Check className="h-4 w-4 text-cyan-400" />
+                )}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
         
         <DropdownMenu open={isNotifOpen} onOpenChange={setNotifOpen}>
             <DropdownMenuTrigger asChild>
@@ -143,18 +285,76 @@ export default function Navbar() {
             </DropdownMenuTrigger>
             <AnimatePresence>
                 {isNotifOpen && (
-                    <DropdownMenuContent asChild className="w-80 bg-gray-800/80 backdrop-blur-md border-gray-700 text-white" align="end">
-                        <motion.div variants={dropdownVariants} initial="hidden" animate="visible" exit="exit">
-                            <DropdownMenuLabel>Notifikasi</DropdownMenuLabel>
-                            <DropdownMenuSeparator className="bg-gray-700" />
-                            {notifications.length > 0 ? notifications.map(notif => (
-                                <DropdownMenuItem key={notif.id} onClick={() => handleNotificationClick(notif)} className={cn("cursor-pointer focus:bg-gray-700 whitespace-normal", !notif.isRead && "bg-cyan-900/50")}>
-                                    <div className="flex items-start gap-3 py-2">
-                                        {!notif.isRead && <div className="h-2 w-2 rounded-full bg-cyan-400 mt-1.5 flex-shrink-0" />}
-                                        <p className={cn("text-sm", !notif.isRead ? "text-white" : "text-gray-400")}>{notif.message}</p>
-                                    </div>
-                                </DropdownMenuItem>
-                            )) : <p className="text-center text-sm text-gray-400 p-4">Tidak ada notifikasi baru.</p>}
+                    <DropdownMenuContent asChild className="w-96 bg-gray-900/80 backdrop-blur-xl border border-cyan-500/30 text-white shadow-2xl" align="end">
+                        <motion.div variants={dropdownVariants} initial="hidden" animate="visible" exit="exit" className="space-y-4 px-1 py-2">
+                            <div className="rounded-2xl border border-gray-800 bg-gradient-to-br from-slate-900/60 to-slate-800/80 px-4 py-3">
+                                <div className="flex items-center justify-between gap-3">
+                                  <DropdownMenuLabel className="text-sm">Notifikasi</DropdownMenuLabel>
+                                  {hasUnread && (
+                                    <button
+                                      type="button"
+                                      onClick={handleMarkAllRead}
+                                      className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-300 transition hover:text-cyan-100"
+                                    >
+                                      Tandai semua
+                                    </button>
+                                  )}
+                                </div>
+                                <DropdownMenuSeparator className="bg-gray-700" />
+                                {notifications.length > 0 ? (
+                                  <div className="space-y-2 max-h-56 overflow-y-auto pr-2">
+                                    {notifications.map((notif) => (
+                                      <DropdownMenuItem
+                                        key={notif.id}
+                                        onClick={() => handleNotificationClick(notif)}
+                                        className={cn(
+                                          "cursor-pointer focus:bg-cyan-600/20 whitespace-normal rounded-2xl py-2 px-3 text-sm transition",
+                                          !notif.isRead ? "bg-cyan-900/50 text-white" : "text-gray-300"
+                                        )}
+                                      >
+                                        <div className="flex items-start gap-3">
+                                          {!notif.isRead && (
+                                            <div className="h-2.5 w-2.5 rounded-full bg-cyan-400 mt-1 shrink-0" />
+                                          )}
+                                          <p className="leading-snug">{notif.message}</p>
+                                        </div>
+                                      </DropdownMenuItem>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <p className="text-center text-sm text-gray-400 py-4">
+                                    Tidak ada notifikasi baru.
+                                  </p>
+                                )}
+                            </div>
+                            <div className="rounded-2xl border border-gray-800 bg-slate-900/80 p-4">
+                                <div className="flex items-center justify-between text-xs uppercase tracking-[0.25em] text-gray-500">
+                                  <span>Timeline terbaru</span>
+                                  <span>{activityPreview.length} entri</span>
+                                </div>
+                                <div className="mt-3 space-y-2">
+                                  {activityPreview.length === 0 && (
+                                    <p className="text-sm text-gray-400">
+                                      Belum ada aktivitas terbaru.
+                                    </p>
+                                  )}
+                                  {activityPreview.map((item) => (
+                                    <Link
+                                      key={item.id}
+                                      href={getActivityHref(item)}
+                                      className="block rounded-2xl border border-gray-800 bg-gradient-to-r from-slate-900/70 to-slate-900 px-3 py-2 text-sm text-gray-100 transition hover:border-cyan-500/50 hover:bg-cyan-900/40"
+                                    >
+                                      <p className="font-semibold">{item.label}</p>
+                                      <p className="text-xs text-cyan-300">{timeAgo(item.changedAt)}</p>
+                                    </Link>
+                                  ))}
+                                </div>
+                                <div className="mt-3 text-right text-xs font-semibold uppercase tracking-[0.3em] text-cyan-300">
+                                  <Link href="/stock-dasboard" className="hover:text-white">
+                                    Lihat semua aktivitas
+                                  </Link>
+                                </div>
+                            </div>
                         </motion.div>
                     </DropdownMenuContent>
                 )}
@@ -189,4 +389,3 @@ export default function Navbar() {
     </motion.header>
   );
 }
-

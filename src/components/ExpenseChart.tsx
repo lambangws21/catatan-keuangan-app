@@ -19,7 +19,7 @@ interface ChartProps {
   data: ChartData[];
 }
 
-const COLORS = ["#06b6d4", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981"];
+const COLORS = ["#14b8a6", "#f59e0b", "#38bdf8", "#22c55e", "#fb7185"];
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat("id-ID", {
@@ -45,19 +45,19 @@ export default function ExpenseChartPro({ data }: ChartProps) {
   const activeItem = data[activeIndex];
 
   return (
-    <div className="bg-white dark:bg-gray-900 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xl space-y-4">
+    <div className="rounded-3xl border border-white/10 bg-[var(--dash-surface)] p-5 sm:p-6 shadow-[0_20px_40px_rgba(2,6,23,0.45)] backdrop-blur space-y-6">
 
       {/* HEADER */}
-      <div className="flex justify-between items-center">
-        <h3 className="text-xl font-bold text-cyan-500 flex items-center gap-2">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h3 className="text-xl sm:text-2xl font-semibold font-[var(--font-display)] text-[color:var(--dash-ink)] flex items-center gap-2">
           <Zap className="w-5 h-5" />
           Distribusi Pengeluaran
         </h3>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
           <button
             onClick={() => setIsPlaying(!isPlaying)}
-            className="p-2 rounded-full bg-cyan-600 text-white hover:scale-110 transition"
+            className="inline-flex items-center justify-center rounded-full bg-[var(--dash-accent)] p-2 text-slate-950 transition hover:scale-105"
           >
             {isPlaying ? <Pause size={16} /> : <Play size={16} />}
           </button>
@@ -69,7 +69,7 @@ export default function ExpenseChartPro({ data }: ChartProps) {
             step="500"
             value={intervalSpeed}
             onChange={(e) => setIntervalSpeed(Number(e.target.value))}
-            className="accent-cyan-500"
+            className="w-full sm:w-36 accent-[color:var(--dash-accent)]"
           />
         </div>
       </div>
@@ -77,7 +77,7 @@ export default function ExpenseChartPro({ data }: ChartProps) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* PIE */}
-        <div style={{ width: "100%", height: 300 }}>
+        <div className="min-h-[280px] sm:min-h-[320px]" style={{ width: "100%", height: 320 }}>
           <ResponsiveContainer>
             <PieChart>
               <Pie
@@ -110,24 +110,24 @@ export default function ExpenseChartPro({ data }: ChartProps) {
             key={activeItem?.name}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-gray-100 dark:bg-gray-800 p-5 rounded-lg"
+            className="rounded-2xl border border-white/10 bg-white/5 p-5"
           >
-            <h4 className="text-lg font-semibold text-cyan-400">
+            <h4 className="text-lg font-semibold text-[color:var(--dash-ink)]">
               {activeItem?.name}
             </h4>
 
-            <p className="text-2xl font-bold dark:text-white text-slate-900">
+            <p className="text-2xl font-semibold text-[color:var(--dash-ink)]">
               {formatCurrency(activeItem?.value || 0)}
             </p>
 
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-[color:var(--dash-muted)]">
               {((activeItem?.value / totalValue) * 100).toFixed(2)}%
               dari total
             </p>
 
-            <div className="mt-3 w-full bg-gray-700 rounded-full h-2 overflow-hidden">
+            <div className="mt-3 w-full rounded-full bg-white/10 h-2 overflow-hidden">
               <div
-                className="h-full bg-cyan-500 transition-all"
+                className="h-full bg-[var(--dash-accent)] transition-all"
                 style={{
                   width: `${(activeItem?.value / totalValue) * 100}%`,
                 }}
@@ -141,10 +141,10 @@ export default function ExpenseChartPro({ data }: ChartProps) {
               <button
                 key={i}
                 onClick={() => setActiveIndex(i)}
-                className={`flex items-center gap-2 text-sm p-2 rounded-md transition ${
+                className={`flex items-center gap-2 text-xs sm:text-sm p-2 rounded-full border border-white/10 transition ${
                   activeIndex === i
-                    ? "bg-cyan-600 text-white"
-                    : "bg-muted hover:bg-muted/80"
+                    ? "bg-white/20 text-[color:var(--dash-ink)]"
+                    : "bg-white/5 text-[color:var(--dash-muted)] hover:bg-white/10"
                 }`}
               >
                 <span

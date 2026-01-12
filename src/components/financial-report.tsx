@@ -22,10 +22,12 @@ export default function FinancialReportPDF({
   transactions,
   saldoData,
   title,
+  buttonClassName,
 }: {
   transactions: TransactionItem[];
   saldoData: SaldoItem[];
   title?: string;
+  buttonClassName?: string;
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
 
@@ -175,7 +177,9 @@ export default function FinancialReportPDF({
         </div>
       </div>
 
-      <Button onClick={handleExport}>Export PDF</Button>
+      <Button onClick={handleExport} className={buttonClassName}>
+        Export PDF
+      </Button>
     </>
   );
 }

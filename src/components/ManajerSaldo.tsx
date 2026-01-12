@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, ChangeEvent } from 'react';
+import { useMemo, useState, ChangeEvent } from 'react';
 import { Edit, Trash2, FileDown, Wallet, ArchiveX, Loader2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/AuthProvider"; // Diperlukan untuk autentikasi
@@ -154,85 +154,247 @@ export default function SaldoManager({
     setItemToEdit(prev => prev ? { ...prev, jumlah: value || 0 } : null);
   };
 
-  if (isLoading) return (
+  if (isLoading)
+    return (
       <div className="flex justify-center items-center p-16">
         <Loader2 className="h-8 w-8 animate-spin text-cyan-400" />
       </div>
-  );
+    );
+
+  const hasEntries = Array.isArray(saldoData) && saldoData.length > 0;
+  const totalEntries = hasEntries ? saldoData.length : 0;
+  const latestEntries = hasEntries ? saldoData.slice(0, 3) : [];
 
   const containerVariants = {
     hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
+    visible: { opacity: 1, transition: { staggerChildren: 0.08 } },
   };
 
   const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
+    hidden: { y: 16, opacity: 0 },
     visible: { y: 0, opacity: 1 },
   };
 
+  const cardBackground = "border border-white/10 bg-[var(--dash-surface)] shadow-[0_20px_60px_rgba(2,6,23,0.45)]";
+
   return (
     <motion.div
-        className="bg-gray-800/60 backdrop-blur-xl border border-white/10 rounded-lg shadow-lg p-6 text-white"
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
+      className={`space-y-6 rounded-3xl ${cardBackground} p-6 text-[color:var(--dash-ink)]`}
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
     >
-      <motion.div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4" variants={itemVariants}>
-        <h2 className="text-xl font-semibold text-cyan-400">Riwayat Saldo</h2>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={!saldoData || saldoData.length === 0}><FileDown className="h-4 w-4 mr-2" /> Excel</Button>
-          <Button variant="outline" size="sm" onClick={handleExportPdf} disabled={!saldoData || saldoData.length === 0}><FileDown className="h-4 w-4 mr-2" /> PDF</Button>
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <p className="text-[10px] uppercase tracking-[0.4em] text-[color:var(--dash-muted)]">
+            Riwayat Saldo
+          </p>
+          <h2 className="text-2xl font-semibold text-white">Sirkulasi Dana Terkini</h2>
+          <p className="text-sm text-[color:var(--dash-muted)]">
+            {totalEntries} entri dapat diekspor dengan cepat.
+          </p>
         </div>
-      </motion.div>
 
-      <motion.div className="mb-6 p-4 bg-gray-700/50 rounded-lg flex justify-between items-center" variants={itemVariants}>
-        <div className="flex items-center gap-3"><Wallet className="h-6 w-6 text-gray-400" /><h3 className="text-md font-semibold text-gray-300">Total Semua Saldo</h3></div>
-        <p className="text-2xl font-bold text-cyan-400">{formatCurrency(totalSaldo)}</p>
-      </motion.div>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportExcel}
+            disabled={!hasEntries}
+            className="border-white/20 text-white/80 hover:border-white/40"
+          >
+            <FileDown className="h-4 w-4 mr-2" /> Excel
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportPdf}
+            disabled={!hasEntries}
+            className="border-white/20 text-white/80 hover:border-white/40"
+          >
+            <FileDown className="h-4 w-4 mr-2" /> PDF
+          </Button>
+        </div>
+      </div>
 
-      <motion.div variants={itemVariants}>
-        {!Array.isArray(saldoData) || saldoData.length === 0 ? (
-          <div className="text-center text-gray-400 py-16 bg-gray-800/50 rounded-lg">
-            <ArchiveX className="h-12 w-12 mx-auto mb-4 text-gray-500" />
-            <p className="font-semibold">Tidak Ada Data Saldo</p>
-            <p className="text-sm">Data yang Anda tambahkan akan muncul di sini.</p>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-inner">
+          <div className="flex items-center gap-3">
+            <Wallet className="h-5 w-5 text-emerald-300" />
+            <p className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--dash-muted)]">
+              Total Saldo
+            </p>
           </div>
-        ) : (
-          <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
-            <Table>
-              <TableHeader><TableRow className="border-gray-700 hover:bg-gray-800 sticky top-0 bg-gray-800 z-10"><TableHead>Tanggal</TableHead><TableHead>Keterangan</TableHead><TableHead className="text-right">Jumlah</TableHead><TableHead className="text-center">Aksi</TableHead></TableRow></TableHeader>
-              <motion.tbody variants={containerVariants} initial="hidden" animate="visible">
-                {saldoData.map((item) => (
-                  <motion.tr key={item.id} className="border-b border-gray-700" variants={itemVariants}>
-                    <TableCell className="py-3 px-6">{item.tanggal}</TableCell>
-                    <TableCell className="font-medium py-3 px-6">{item.keterangan}</TableCell>
-                    <TableCell className="text-right py-3 px-6 font-mono">{formatCurrency(Number(item.jumlah))}</TableCell>
-                    <TableCell className="text-center py-3 px-6">
-                      <TooltipProvider>
-                        <div className="flex justify-center items-center gap-1">
-                          <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => handleOpenEditModal(item)}><Edit className="h-4 w-4 text-yellow-500" /></Button></TooltipTrigger><TooltipContent><p>Edit Data</p></TooltipContent></Tooltip>
-                          <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)}><Trash2 className="h-4 w-4 text-red-500" /></Button></TooltipTrigger><TooltipContent><p>Hapus Data</p></TooltipContent></Tooltip>
+          <p className="mt-3 text-3xl font-semibold text-white">{formatCurrency(totalSaldo)}</p>
+          <p className="mt-2 text-[11px] text-[color:var(--dash-muted)]">
+            {hasEntries ? `${totalEntries} transaksi` : "Belum ada data"}
+          </p>
+        </div>
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <p className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--dash-muted)]">
+            Entri terbaru
+          </p>
+          {latestEntries.length === 0 ? (
+            <p className="text-sm text-[color:var(--dash-muted)] mt-2">
+              Tambahkan saldo untuk melihat ringkasan.
+            </p>
+          ) : (
+            <ul className="mt-3 space-y-2 text-sm text-white/90">
+              {latestEntries.map((item) => (
+                <li key={item.id} className="flex items-center justify-between">
+                  <span className="font-medium">{item.tanggal}</span>
+                  <span className="text-[color:var(--dash-muted)]">{formatCurrency(Number(item.jumlah))}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+
+      {hasEntries ? (
+        <>
+          <div className="hidden lg:block">
+            <div className="overflow-x-auto">
+              <Table className="min-w-full text-sm">
+                <TableHeader>
+                  <TableRow className="bg-slate-900 text-left text-white">
+                    <TableHead className="p-3">Tanggal</TableHead>
+                    <TableHead className="p-3">Keterangan</TableHead>
+                    <TableHead className="p-3 text-right">Jumlah</TableHead>
+                    <TableHead className="p-3 text-center">Aksi</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <motion.tbody variants={containerVariants} initial="hidden" animate="visible">
+                  {saldoData.map((item) => (
+                    <motion.tr
+                      key={item.id}
+                      className="border-b border-white/10"
+                      variants={itemVariants}
+                    >
+                      <TableCell className="py-3 px-3">{item.tanggal}</TableCell>
+                      <TableCell className="py-3 px-3 font-medium">{item.keterangan}</TableCell>
+                      <TableCell className="py-3 px-3 text-right font-mono text-white/80">
+                        {formatCurrency(Number(item.jumlah))}
+                      </TableCell>
+                      <TableCell className="py-3 px-3 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleOpenEditModal(item)}
+                                  className="text-yellow-300 hover:text-yellow-200"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Edit Data</TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDelete(item.id)}
+                                  className="text-rose-300 hover:text-rose-200"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Hapus Data</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         </div>
-                      </TooltipProvider>
-                    </TableCell>
-                  </motion.tr>
-                ))}
-              </motion.tbody>
-            </Table>
+                      </TableCell>
+                    </motion.tr>
+                  ))}
+                </motion.tbody>
+              </Table>
+            </div>
           </div>
-        )}
-      </motion.div>
+
+          <div className="space-y-3 lg:hidden">
+            {saldoData.map((item) => (
+              <motion.article
+                key={item.id}
+                className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-[0_12px_30px_rgba(2,6,23,0.45)]"
+                variants={itemVariants}
+              >
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-[11px] uppercase tracking-[0.3em] text-[color:var(--dash-muted)]">
+                        {item.tanggal}
+                      </p>
+                      <p className="text-lg font-semibold text-white">{item.keterangan}</p>
+                    </div>
+                    <span className="text-right text-sm font-mono text-white/70">
+                      {formatCurrency(Number(item.jumlah))}
+                    </span>
+                  </div>
+                  <p className="text-[10px] font-medium text-[color:var(--dash-muted)]">
+                    Catatan: {item.keterangan || "—"}
+                  </p>
+                </div>
+                <div className="mt-3 flex justify-end gap-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleOpenEditModal(item)}
+                    className="rounded-full bg-white/5 text-yellow-300 hover:text-yellow-200"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleDelete(item.id)}
+                    className="rounded-full bg-white/5 text-rose-300 hover:text-rose-200"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </motion.article>
+            ))}
+          </div>
+        </>
+      ) : (
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-8 text-center text-sm text-[color:var(--dash-muted)]">
+          <ArchiveX className="mx-auto mb-3 h-10 w-10 text-white/60" />
+          <p className="font-semibold text-white/90">Belum ada data saldo</p>
+          <p>Tambahkan saldo agar riwayat dapat ditampilkan.</p>
+        </div>
+      )}
 
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent className="sm:max-w-[425px] bg-gray-800/80 backdrop-blur-md border-gray-700 text-white">
-          <DialogHeader><DialogTitle className="text-cyan-400">Edit Saldo</DialogTitle></DialogHeader>
+        <DialogContent className="sm:max-w-[425px] bg-slate-900/80 backdrop-blur-md border border-white/10 text-white">
+          <DialogHeader>
+            <DialogTitle className="text-cyan-400">Edit Saldo</DialogTitle>
+          </DialogHeader>
           {itemToEdit && (
             <div className="grid gap-4 py-4">
-              <div className="grid gap-2"><Label htmlFor="tanggal">Tanggal</Label><Input id="tanggal" name="tanggal" type="date" value={itemToEdit.tanggal} onChange={handleEditFormChange} className="bg-gray-700 border-gray-600"/></div>
+              <div className="grid gap-2">
+                <Label htmlFor="tanggal">Tanggal</Label>
+                <Input
+                  id="tanggal"
+                  name="tanggal"
+                  type="date"
+                  value={itemToEdit.tanggal}
+                  onChange={handleEditFormChange}
+                  className="bg-gray-800 border-gray-600"
+                />
+              </div>
               <div className="grid gap-2">
                 <Label htmlFor="keterangan">Keterangan</Label>
-                {/* PERBAIKAN: Hapus 'as any' karena sudah type-safe */}
-                <Textarea id="keterangan" name="keterangan" value={itemToEdit.keterangan} onChange={handleEditFormChange} className="bg-gray-700 border-gray-600"/>
+                <Textarea
+                  id="keterangan"
+                  name="keterangan"
+                  value={itemToEdit.keterangan}
+                  onChange={handleEditFormChange}
+                  className="bg-gray-800 border-gray-600"
+                />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="jumlah">Jumlah (Rp)</Label>
@@ -246,12 +408,15 @@ export default function SaldoManager({
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={handleCloseEditModal}>Batal</Button>
-            <Button onClick={handleUpdate} className="bg-cyan-600 hover:bg-cyan-700">Simpan Perubahan</Button>
+            <Button variant="outline" onClick={handleCloseEditModal}>
+              Batal
+            </Button>
+            <Button onClick={handleUpdate} className="bg-cyan-600 hover:bg-cyan-700">
+              Simpan Perubahan
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </motion.div>
   );
 }
-

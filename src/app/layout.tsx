@@ -4,6 +4,7 @@ import './globals.css';
 import { ReactNode, useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Toaster } from 'sonner';
+import { ThemeProvider } from 'next-themes';
 import { AuthProvider, useAuth } from '@/components/AuthProvider';
 import Navbar from '@/components/navbar/navbar';
 import Sidebar from '@/components/navbar/sidebar';
@@ -42,24 +43,20 @@ function AppLayout({ children }: { children: ReactNode }) {
   const toggleSidebar = () => setSidebarCollapsed(prev => !prev);
 
   return (
-    <div className="min-h-screen w-full bg-gray-900 text-white">
-      {/* Kirim state dan fungsi toggle ke Sidebar */}
-      <Sidebar isCollapsed={isSidebarCollapsed} toggleSidebar={toggleSidebar} />
-      
-      {/* Konten utama sekarang memiliki class padding kiri yang dinamis */}
-      <div
-        className={cn(
-          "flex flex-col transition-all duration-300 ease-in-out",
-          // Terapkan padding kiri di layar besar (lg) berdasarkan status sidebar
-          isSidebarCollapsed ? "lg:pl-20" : "lg:pl-64"
-        )}
-      >
-        <Navbar  />
-        <main className="flex-1 p-4 md:p-8">
-          {children}
-        </main>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <div className="min-h-screen w-full bg-gray-900 text-white">
+        <Sidebar isCollapsed={isSidebarCollapsed} toggleSidebar={toggleSidebar} />
+        <div
+          className={cn(
+            "flex flex-col transition-all duration-300 ease-in-out",
+            isSidebarCollapsed ? "lg:pl-20" : "lg:pl-64"
+          )}
+        >
+          <Navbar />
+          <main className="flex-1 p-4 md:p-8">{children}</main>
+        </div>
       </div>
-    </div>
+    </ThemeProvider>
   );
 }
 
@@ -76,4 +73,3 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     </html>
   );
 }
-

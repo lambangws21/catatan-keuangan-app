@@ -330,71 +330,134 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="space-y-8">
-      <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div>
-          <h1 className="text-3xl font-bold text-white">Dashboard Keuangan</h1>
-          <p className="text-gray-400 mt-1">Ringkasan aktivitas keuangan Anda.</p>
-        </div>
+    <div className="relative isolate">
+      <div className="pointer-events-none absolute -top-32 right-[-10%] h-72 w-72 rounded-full bg-[radial-gradient(circle_at_center,_rgba(20,184,166,0.25),transparent_65%)] blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-40 left-[-15%] h-80 w-80 rounded-full bg-[radial-gradient(circle_at_center,_rgba(245,158,11,0.22),transparent_70%)] blur-3xl" />
 
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
-              {theme === "dark" ? <Sun /> : <Moon />}
-            </Button>
+      <div className="relative z-10 space-y-8 font-[var(--font-body)] text-[color:var(--dash-ink)]">
+        <header className="dashboard-surface rounded-3xl border border-white/10 bg-[var(--dash-surface)] p-4 sm:p-6 lg:p-8 backdrop-blur">
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div className="space-y-2">
+                <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-[color:var(--dash-muted)]">
+                  Dashboard
+                </span>
+                <h1 className="text-3xl sm:text-4xl font-[var(--font-display)] font-semibold tracking-tight">
+                  Dashboard Keuangan
+                </h1>
+                <p className="text-sm text-[color:var(--dash-muted)]">
+                  Ringkasan aktivitas keuangan yang rapi, responsif, dan mudah dipantau.
+                </p>
+              </div>
 
-            <Button variant="outline" onClick={() => setViewMode((v) => (v === "compact" ? "expanded" : "compact"))}>
-              {viewMode === "compact" ? "Expanded View" : "Compact View"}
-            </Button>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Select value={String(selectedMonth)} onValueChange={(v) => setSelectedMonth(Number(v))}>
-              <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
-              <SelectContent className="bg-white ">
-                {months.map(m => <SelectItem key={m.value} value={String(m.value)}>{m.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-
-            <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
-              <SelectTrigger className="w-[110px]"><SelectValue /></SelectTrigger>
-              <SelectContent className="bg-white ">
-                {years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex gap-2">
-            <SaldoForm onSaldoAdded={fetchSaldo} />
-            <ExpenseForm onTransactionAdded={fetchTransactions} />
-          </div>
-        </div>
-      </header>
-
-      {/* Chart + PDF + Summary */}
-      <div className={viewMode === "compact" ? "grid grid-cols-1 md:grid-cols-2 gap-4" : "grid grid-cols-1 gap-4"}>
-        <div className={viewMode === "compact" ? "col-span-1" : ""}>
-          <FinancialChart transactions={filteredTransactions}  />
-        </div>
-
-        <div className={viewMode === "compact" ? "col-span-1 flex flex-col gap-3" : "flex flex-col gap-3"}>
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h3 className="text-lg font-semibold text-white">Ringkasan Bulanan</h3>
-              <p className="text-sm text-gray-400">{months[selectedMonth].name} — {selectedYear}</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setViewMode((v) => (v === "compact" ? "expanded" : "compact"))}
+                  className="rounded-full border border-white/10 bg-white/5 text-[color:var(--dash-ink)] hover:bg-white/10"
+                >
+                  {viewMode === "compact" ? "Mode Detail" : "Mode Ringkas"}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                  className="rounded-full border border-white/10 bg-white/5 text-[color:var(--dash-ink)] hover:bg-white/10"
+                >
+                  {theme === "dark" ? <Sun /> : <Moon />}
+                  <span className="text-xs font-medium">Tema</span>
+                </Button>
+              </div>
             </div>
-            <FinancialReportPDF transactions={filteredTransactions} saldoData={filteredSaldoData} />
-          </div> 
-          <FinancialDashboard transactions={filteredTransactions} saldoData={filteredSaldoData} isLoading={isLoading} />
+
+            <div className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-center">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Select value={String(selectedMonth)} onValueChange={(v) => setSelectedMonth(Number(v))}>
+                  <SelectTrigger className="w-full sm:w-[180px] rounded-full border-white/10 bg-white/5 text-[color:var(--dash-ink)] shadow-inner">
+                    <SelectValue placeholder="Bulan" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl border-white/10 bg-slate-950 text-slate-100">
+                    {months.map((m) => (
+                      <SelectItem key={m.value} value={String(m.value)}>
+                        {m.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
+                  <SelectTrigger className="w-full sm:w-[150px] rounded-full border-white/10 bg-white/5 text-[color:var(--dash-ink)] shadow-inner">
+                    <SelectValue placeholder="Tahun" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl border-white/10 bg-slate-950 text-slate-100">
+                    {years.map((y) => (
+                      <SelectItem key={y} value={String(y)}>
+                        {y}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3">
+                <SaldoForm onSaldoAdded={fetchSaldo} />
+                <ExpenseForm onTransactionAdded={fetchTransactions} />
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <div
+          className={
+            viewMode === "compact"
+              ? "grid gap-6 lg:grid-cols-[1.2fr_0.8fr]"
+              : "grid gap-6"
+          }
+        >
+          <div className="min-w-0">
+            <FinancialChart transactions={filteredTransactions} />
+          </div>
+
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-white/10 bg-[var(--dash-surface-strong)] p-4">
+              <div>
+                <h3 className="text-lg font-semibold font-[var(--font-display)] text-[color:var(--dash-ink)]">
+                  Ringkasan Bulanan
+                </h3>
+                <p className="text-sm text-[color:var(--dash-muted)]">
+                  {months[selectedMonth].name} — {selectedYear}
+                </p>
+              </div>
+              <FinancialReportPDF
+                transactions={filteredTransactions}
+                saldoData={filteredSaldoData}
+                buttonClassName="rounded-full bg-white text-slate-950 hover:bg-slate-100"
+              />
+            </div>
+
+            <FinancialDashboard
+              transactions={filteredTransactions}
+              saldoData={filteredSaldoData}
+              isLoading={isLoading}
+            />
+          </div>
         </div>
+
+        <SaldoManager
+          saldoData={filteredSaldoData}
+          isLoading={isLoading}
+          onDataChange={fetchSaldo}
+        />
+
+        <TransactionManager
+          transactions={filteredTransactions}
+          isLoading={isLoading}
+          onDataChange={fetchTransactions}
+        />
+
+        <ImageGallery transactions={filteredTransactions} isLoading={isLoading} />
       </div>
-
-      <SaldoManager saldoData={filteredSaldoData} isLoading={isLoading} onDataChange={fetchSaldo} />
-
-      <TransactionManager transactions={filteredTransactions} isLoading={isLoading} onDataChange={fetchTransactions} />
-
-      <ImageGallery transactions={filteredTransactions} isLoading={isLoading} />
     </div>
   );
 }
-

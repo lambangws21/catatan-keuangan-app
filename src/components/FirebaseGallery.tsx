@@ -12,6 +12,7 @@ import { toast } from "sonner";
 // Import komponen dari shadcn/ui
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
@@ -44,6 +45,9 @@ export default function ImageGallery() {
   const [isDownloading, setIsDownloading] = useState(false);
   const [selectedItem, setSelectedItem] = useState<Transaction | null>(null);
   const itemsPerPage = 6; // 2 baris x 3 kolom
+  const [deleteMonth, setDeleteMonth] = useState("");
+  const [isDeletingMonth, setIsDeletingMonth] = useState(false);
+  const [isDeletingSingle, setIsDeletingSingle] = useState(false);
 
   // Fungsi untuk mengambil semua data transaksi
   const fetchTransactions = useCallback(async () => {
@@ -68,6 +72,61 @@ export default function ImageGallery() {
       setIsLoading(false);
     }
   }, [user]);
+
+  const handleDeletePhotosByMonth = useCallback(async () => {
+    if (!user || !deleteMonth) return;
+    setIsDeletingMonth(true);
+    try {
+      const token = await user.getIdToken();
+      const [year, month] = deleteMonth.split("-");
+      const response = await fetch("/api/transactions/photos", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          year: Number(year),
+          month: Number(month) - 1,
+        }),
+      });
+
+      const json = await response.json();
+      if (!response.ok) throw new Error(json?.error || "Gagal menghapus foto");
+
+      toast.success(
+        `${json.deletedCount || 0} foto bulan ${deleteMonth} berhasil dihapus.`
+      );
+      setDeleteMonth("");
+      fetchTransactions();
+    } catch (error) {
+      console.error("Error deleting month photos:", error);
+      toast.error("Gagal menghapus foto. Coba lagi.");
+    } finally {
+      setIsDeletingMonth(false);
+    }
+  }, [deleteMonth, fetchTransactions, user]);
+
+  const handleDeleteSinglePhoto = async () => {
+    if (!selectedItem) return;
+    setIsDeletingSingle(true);
+    try {
+      const response = await fetch("/api/transactions/photo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: selectedItem.id }),
+      });
+      if (!response.ok) throw new Error("Gagal menghapus foto");
+      toast.success("Foto berhasil dihapus.");
+      setSelectedItem((prev) => (prev ? { ...prev, fileUrl: "" } : null));
+      fetchTransactions();
+    } catch (error) {
+      console.error(error);
+      toast.error("Gagal menghapus foto. Silakan coba lagi.");
+    } finally {
+      setIsDeletingSingle(false);
+    }
+  };
 
   useEffect(() => {
     fetchTransactions();
@@ -189,7 +248,7 @@ export default function ImageGallery() {
 
         <Card className="bg-gray-800/60 backdrop-blur-xl border border-white/10 p-4">
             <div className="flex flex-col md:flex-row gap-4 items-center">
-                <div className="relative flex-grow w-full md:w-auto">
+                <div className="relative grow w-full md:w-auto">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                     <Input type="search" placeholder="Cari berdasarkan keterangan..." value={search} onChange={(e) => {setSearch(e.target.value); setCurrentPage(1);}} className="pl-10"/>
                 </div>
@@ -198,6 +257,27 @@ export default function ImageGallery() {
                     <Download className="h-4 w-4 mr-2" />
                     Export PDF
                 </Button>
+            </div>
+            <div className="mt-4 grid gap-3 md:grid-cols-[1fr,auto] md:items-end">
+              <div className="grid gap-1">
+                <Label htmlFor="delete-month" className="text-xs uppercase tracking-[0.3em] text-gray-400">
+                  Hapus foto berdasarkan bulan
+                </Label>
+                <Input
+                  id="delete-month"
+                  type="month"
+                  value={deleteMonth}
+                  onChange={(e) => setDeleteMonth(e.target.value)}
+                  className="bg-gray-700 border-gray-600 w-full"
+                />
+              </div>
+              <Button
+                onClick={handleDeletePhotosByMonth}
+                disabled={!deleteMonth || isDeletingMonth || !user}
+                className="w-full md:w-auto bg-rose-600 hover:bg-rose-700 text-white"
+              >
+                {isDeletingMonth ? "Menghapus..." : "Hapus Foto per Bulan"}
+              </Button>
             </div>
         </Card>
       
@@ -212,7 +292,7 @@ export default function ImageGallery() {
                     {currentImages.map((item) => (
                         <div key={item.id} className="relative aspect-square rounded-lg overflow-hidden cursor-pointer group shadow-lg hover:shadow-xl transition-shadow" onClick={() => setSelectedItem(item)}>
                           <Image src={item.fileUrl!} alt={item.keterangan} fill sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 20vw" style={{ objectFit: 'cover' }} />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          <div className="absolute inset-0 bg-linear-to-t from-black/80 to-transparent flex items-end p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                             <p className="text-white text-xs font-semibold truncate">{item.keterangan}</p>
                           </div>
                         </div>
@@ -230,7 +310,7 @@ export default function ImageGallery() {
         {/* Modal untuk Preview Gambar Beserta Datanya (diperbarui) */}
       <Dialog open={!!selectedItem} onOpenChange={(isOpen) => !isOpen && setSelectedItem(null)}>
         {/* Mengubah max-width untuk modal yang lebih besar */}
-        <DialogContent className="sm:max-w-xl md:max-w-xl lg:max-w-screen-xl w-auto bg-gray-800/80 backdrop-blur-lg border-gray-700 text-white p-4">
+        <DialogContent className="sm:max-w-xl md:max-w-xl lg:max-w-xl w-auto bg-gray-800/80 backdrop-blur-lg border-gray-700 text-white p-4">
           <DialogHeader className="sr-only">
             <DialogTitle>Pratinjau Berkas: {selectedItem?.keterangan}</DialogTitle>
             <DialogDescription>Detail transaksi dan gambar berkas yang diperbesar.</DialogDescription>
@@ -291,6 +371,20 @@ export default function ImageGallery() {
           >
             <X className="h-5 w-5" />
           </Button>
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+            <div className="text-sm text-gray-400">
+              {selectedItem?.fileUrl
+                ? "Gunakan tombol ini untuk menghapus foto saat ini."
+                : "Foto sudah dihapus dari transaksi ini."}
+            </div>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteSinglePhoto}
+              disabled={!selectedItem?.fileUrl || isDeletingSingle}
+            >
+              {isDeletingSingle ? "Menghapus..." : "Hapus Foto"}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

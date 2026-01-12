@@ -78,12 +78,14 @@ export default function FinancialChartTitan({
       const item = payload[0].payload;
       return (
         <div
-          className={`p-3 rounded-lg shadow-lg ${
-            isDark ? "bg-gray-800 text-white" : "bg-white text-black"
+          className={`p-3 rounded-lg border shadow-lg ${
+            isDark
+              ? "bg-slate-900 text-slate-100 border-white/10"
+              : "bg-white text-slate-900 border-slate-200"
           }`}
         >
           <p className="font-semibold">Tanggal: {item?.day}</p>
-          <p className="text-cyan-400 font-bold">
+          <p className="text-emerald-300 font-semibold">
             Rp {new Intl.NumberFormat("id-ID").format(item?.value || 0)}
           </p>
         </div>
@@ -96,52 +98,52 @@ export default function FinancialChartTitan({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="p-8 rounded-xl h-[635px] border-1 border-slate-700 bg-card shadow-2xl space-y-6"
+      className="rounded-3xl border border-white/10 bg-[var(--dash-surface)] p-5 sm:p-7 shadow-[0_20px_40px_rgba(2,6,23,0.45)] backdrop-blur space-y-6 min-h-[520px] sm:min-h-[620px]"
     >
       {/* HEADER */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-cyan-400 flex items-center gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <h2 className="text-2xl font-semibold font-[var(--font-display)] text-[color:var(--dash-ink)] flex items-center gap-2">
           <Brain /> Financial Graph
         </h2>
 
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="flex items-center gap-2 text-sm text-[color:var(--dash-muted)]">
           <TrendingUp size={18} />
           Analisis Tren Pengeluaran
         </div>
       </div>
 
       {/* KPI PANEL */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="bg-muted p-4 rounded-lg">
-          <p className="text-xs text-muted-foreground">Total Bulan Ini</p>
-          <h3 className="text-lg font-bold">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <p className="text-xs text-[color:var(--dash-muted)]">Total Bulan Ini</p>
+          <h3 className="text-lg font-semibold text-[color:var(--dash-ink)]">
             Rp {new Intl.NumberFormat("id-ID").format(totalExpense)}
           </h3>
         </div>
 
-        <div className="bg-muted p-4 rounded-lg">
-          <p className="text-xs text-muted-foreground">Hari Tertinggi</p>
-          <h3 className="text-lg font-bold text-rose-500">
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <p className="text-xs text-[color:var(--dash-muted)]">Hari Tertinggi</p>
+          <h3 className="text-lg font-semibold text-amber-300">
             Tanggal {highestPoint.day}
           </h3>
         </div>
 
-        <div className="bg-muted p-4 rounded-lg">
-          <p className="text-xs text-muted-foreground">Pengeluaran Maks</p>
-          <h3 className="text-lg font-bold text-emerald-400">
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <p className="text-xs text-[color:var(--dash-muted)]">Pengeluaran Maks</p>
+          <h3 className="text-lg font-semibold text-emerald-300">
             Rp {new Intl.NumberFormat("id-ID").format(highestPoint.value)}
           </h3>
         </div>
       </div>
 
       {/* MAIN GRAPH */}
-      <div className="h-[380px]">
+      <div className="h-[300px] sm:h-[380px]">
         <ResponsiveContainer>
           <LineChart data={dailyTrend}>
             <defs>
               <linearGradient id="colorTitan" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#22d3ee" stopOpacity={0.8} />
-                <stop offset="95%" stopColor="#22d3ee" stopOpacity={0} />
+                <stop offset="5%" stopColor="#14b8a6" stopOpacity={0.8} />
+                <stop offset="95%" stopColor="#14b8a6" stopOpacity={0} />
               </linearGradient>
             </defs>
 
@@ -153,7 +155,7 @@ export default function FinancialChartTitan({
             <Area
               type="monotone"
               dataKey="value"
-              stroke="#22d3ee"
+              stroke="#14b8a6"
               fillOpacity={1}
               fill="url(#colorTitan)"
             />
@@ -161,11 +163,11 @@ export default function FinancialChartTitan({
             <Line
               type="monotone"
               dataKey="value"
-              stroke="#22d3ee"
+              stroke="#14b8a6"
               strokeWidth={3}
               dot={{
                 r: 5,
-                fill: "#22d3ee",
+                fill: "#14b8a6",
                 stroke: "#0f172a",
               }}
             />

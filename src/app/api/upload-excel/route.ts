@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import * as XLSX from "xlsx";
-import { db } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import admin from "@/lib/firebase/admin";
 
 interface ExcelRow {
   NO: number | null;
@@ -32,6 +31,7 @@ export async function POST(req: NextRequest) {
       defval: null,
     });
 
+    const db = admin.firestore();
     let counter = 0;
 
     for (const row of data) {
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
             ? row.Qty
             : null; // ✅ UBAH undefined → null
       
-        await addDoc(collection(db, "implantStocks"), {
+        await db.collection("implantStocks").add({
           no: row.NO ?? null,
           noStok: row["No Stok"] ?? null,
           deskripsi: row.Deskripsi ?? null,
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
           terpakai: row.TERPAKAI ?? null,
           refill: row.REFILL ?? null,
           keterangan: row["KET."] ?? null,
-          createdAt: serverTimestamp(),
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
         });
       
         counter++;

@@ -1,14 +1,24 @@
 import { NextResponse } from "next/server";
-import { collection, getDocs } from "firebase/firestore";
-import { db } from "@/lib/firebase/client";
+import admin from "@/lib/firebase/admin";
 import {
   ImplantStockItem,
   ImplantedFirestoreStock,
 } from "@/types/implant-stock";
 
+const toIsoString = (value: unknown): string => {
+  if (!value) return "";
+  if (typeof value === "string") return value;
+  if (value instanceof Date) return value.toISOString();
+  if (typeof (value as { toDate?: () => Date }).toDate === "function") {
+    return (value as { toDate: () => Date }).toDate().toISOString();
+  }
+  return "";
+};
+
 export async function GET() {
   try {
-    const snapshot = await getDocs(collection(db, "implantStocks"));
+    const db = admin.firestore();
+    const snapshot = await db.collection("implantStocks").get();
 
     const data: ImplantStockItem[] = [];
 
@@ -32,8 +42,8 @@ export async function GET() {
         used: Number(raw.terpakai ?? 0),
         totalQty: Number(raw.totalQty ?? 0),
         note: String(raw.keterangan ?? ""),
-        createdAt: raw.createdAt ? String(raw.createdAt) : "",
-        updatedAt: raw.updatedAt ? String(raw.updatedAt) : "",
+        createdAt: toIsoString(raw.createdAt),
+        updatedAt: toIsoString(raw.updatedAt),
       });
     });
 

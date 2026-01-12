@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { collection, getDocs, orderBy, query } from "firebase/firestore";
-import { db } from "@/lib/firebase/client";
+import admin from "@/lib/firebase/admin";
 import {
   ImplantStockLog,
   ImplantedFirestoreStock,
@@ -8,12 +7,11 @@ import {
 
 export async function GET() {
   try {
-    const q = query(
-      collection(db, "implantStockLogs"),
-      orderBy("changedAt", "desc")
-    );
-
-    const snapshot = await getDocs(q);
+    const db = admin.firestore();
+    const snapshot = await db
+      .collection("implantStockLogs")
+      .orderBy("changedAt", "desc")
+      .get();
 
     const data: ImplantStockLog[] = snapshot.docs.map((doc) => {
       const raw = doc.data();
