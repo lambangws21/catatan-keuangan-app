@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "@/components/AuthProvider";
-import SaldoForm from "@/components/FormSaldo";
 import SaldoManager from "@/components/ManajerSaldo";
 
 // =======================
@@ -102,8 +101,6 @@ export default function SaldoPage() {
             </span>
           </p>
         </div>
-
-        <SaldoForm onSaldoAdded={fetchSaldo} />
       </header>
 
       {/* ================= FILTER ================= */}

@@ -75,17 +75,18 @@ export async function GET() {
     const schedulesData = snapshot.docs.map(doc => {
       const data = doc.data();
 
-      return {
-        id: doc.id,
-        namaDokter: data.namaDokter,
-        rumahSakit: data.rumahSakit,
-        note: data.note,
-        status: data.status,
-        repeat: data.repeat || "once", // ✅ default sekali
-        waktuVisit: data.waktuVisit.toDate().toISOString(),
-        createdAt: data.createdAt?.toDate()?.toISOString() ?? null,
-      };
-    });
+    return {
+      id: doc.id,
+      namaDokter: data.namaDokter,
+      rumahSakit: data.rumahSakit,
+      note: data.note,
+      status: data.status,
+      repeat: data.repeat || "once", // ✅ default sekali
+      waktuVisit: data.waktuVisit.toDate().toISOString(),
+      createdAt: data.createdAt?.toDate()?.toISOString() ?? null,
+      perawat: data.perawat ?? null,
+    };
+  });
 
     return NextResponse.json(schedulesData, { status: 200 });
 
@@ -106,7 +107,8 @@ export async function POST(request: Request) {
       note,
       waktuVisit,
       status,
-      repeat = "once" // ✅ default
+      repeat = "once",
+      perawat = "",
     } = body;
 
     if (!namaDokter || !rumahSakit || !note || !waktuVisit || !status) {
@@ -125,6 +127,7 @@ export async function POST(request: Request) {
       waktuVisit: new Date(waktuVisit),
       status,
       repeat, // ✅ disimpan sebagai mode
+      perawat,
       createdAt: new Date(),
     });
 
@@ -141,4 +144,3 @@ export async function POST(request: Request) {
     );
   }
 }
-

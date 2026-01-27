@@ -21,6 +21,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
 
 /* ================= UTIL ================= */
@@ -58,6 +66,7 @@ export default function ScheduleSidebar({
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<"compact" | "detail">("detail");
+  const [nurseFilter, setNurseFilter] = useState("");
 
   /* ================= FILTER & SORT ================= */
 
@@ -88,12 +97,17 @@ export default function ScheduleSidebar({
             : (s.namaDokter || "")
                 .toLowerCase()
                 .includes(lowerSearch) ||
-              (s.rumahSakit || "")
-                .toLowerCase()
-                .includes(lowerSearch) ||
-              (s.note || "").toLowerCase().includes(lowerSearch);
+          (s.rumahSakit || "")
+            .toLowerCase()
+            .includes(lowerSearch) ||
+          (s.note || "").toLowerCase().includes(lowerSearch) ||
+          (s.perawat || "").toLowerCase().includes(lowerSearch);
+        const normalizedNurse = (s.perawat || "").toLowerCase();
+        const normalizedFilter = nurseFilter.toLowerCase();
+        const passNurse =
+          nurseFilter.length === 0 ? true : normalizedNurse === normalizedFilter;
 
-        return passTime && passStatus && passSearch;
+        return passTime && passStatus && passSearch && passNurse;
       })
       .sort((a, b) => {
         const ta = new Date(a.waktuVisit).getTime();
@@ -106,7 +120,15 @@ export default function ScheduleSidebar({
         // upcoming & today → terdekat dulu
         return ta - tb;
       });
-  }, [schedules, filterMode, statusFilter, searchTerm, now, todayStr]);
+  }, [
+    schedules,
+    filterMode,
+    statusFilter,
+    searchTerm,
+    nurseFilter,
+    now,
+    todayStr,
+  ]);
 
   /* ================= NEXT UPCOMING ================= */
 
@@ -133,6 +155,16 @@ export default function ScheduleSidebar({
     }),
     [schedules]
   );
+
+  const nurseOptions = useMemo(() => {
+    const unique = new Set<string>();
+    schedules.forEach((schedule) => {
+      if (schedule.perawat) {
+        unique.add(schedule.perawat);
+      }
+    });
+    return Array.from(unique).sort();
+  }, [schedules]);
 
   const StatBox = ({
     label,
@@ -229,6 +261,30 @@ export default function ScheduleSidebar({
           />
         </div>
 
+        <div className="space-y-2">
+          <Label className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
+            Filter Perawat
+          </Label>
+          <Select
+            value={nurseFilter || "all"}
+            onValueChange={(value) =>
+              setNurseFilter(value === "all" ? "" : value)
+            }
+          >
+            <SelectTrigger className="h-9 rounded-lg bg-background/40 text-[11px]">
+              <SelectValue placeholder="Semua Perawat" />
+            </SelectTrigger>
+            <SelectContent className="bg-gray-800/80 border border-gray-700 text-white">
+              <SelectItem value="all">Semua Perawat</SelectItem>
+              {nurseOptions.map((nurse) => (
+                <SelectItem key={nurse} value={nurse}>
+                  {nurse}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         {/* STATS PANEL */}
         <div className="grid grid-cols-2 gap-2">
           <StatBox
@@ -273,6 +329,9 @@ export default function ScheduleSidebar({
               </span>
               <span className="text-[11px] text-muted-foreground truncate">
                 {format(new Date(nextUpcoming.waktuVisit), "EEE, dd MMM HH:mm")}
+              </span>
+              <span className="text-[11px] text-muted-foreground truncate">
+                Perawat: {nextUpcoming.perawat || "Belum ditentukan"}
               </span>
             </div>
             <Button
@@ -356,6 +415,9 @@ function SidebarItem({
 
         <p className="text-[11px] text-muted-foreground truncate">
           {schedule.rumahSakit}
+        </p>
+        <p className="text-[11px] text-muted-foreground truncate">
+          Perawat: {schedule.perawat || "Belum ditentukan"}
         </p>
 
         {viewMode === "detail" && (

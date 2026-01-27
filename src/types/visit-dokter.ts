@@ -8,6 +8,7 @@ export interface Schedule {
   dokter?: string;
   pasien?: string;
   repeat?: "once" | "monthly";
+  perawat?: string;
 }
 
 export interface TimelineItem {

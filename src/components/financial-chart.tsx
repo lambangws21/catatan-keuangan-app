@@ -28,6 +28,12 @@ interface TrendItem {
   value: number;
 }
 
+const formatCompactId = (value: number) =>
+  new Intl.NumberFormat("id-ID", {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(value);
+
 /* ================= COMPONENT ================= */
 
 export default function FinancialChartTitan({
@@ -139,7 +145,10 @@ export default function FinancialChartTitan({
       {/* MAIN GRAPH */}
       <div className="h-[300px] sm:h-[380px]">
         <ResponsiveContainer>
-          <LineChart data={dailyTrend}>
+          <LineChart
+            data={dailyTrend}
+            margin={{ top: 12, right: 16, bottom: 4, left: 20 }}
+          >
             <defs>
               <linearGradient id="colorTitan" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#14b8a6" stopOpacity={0.8} />
@@ -149,7 +158,14 @@ export default function FinancialChartTitan({
 
             <CartesianGrid strokeDasharray="3 3" stroke="#4444" />
             <XAxis dataKey="day" tick={{ fill: isDark ? "#ccc" : "#333" }} />
-            <YAxis tick={{ fill: isDark ? "#ccc" : "#333" }} />
+            <YAxis
+              width={84}
+              tickMargin={10}
+              tick={{ fill: isDark ? "#ccc" : "#333" }}
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={(v) => `Rp ${formatCompactId(Number(v))}`}
+            />
             <Tooltip content={<CustomTooltip />} />
 
             <Area

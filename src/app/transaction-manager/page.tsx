@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "@/components/AuthProvider";
-import ExpenseForm from "@/components/ExepenseForm";
 import TransactionManager from "@/components/transaction-manager";
 
 import { Input } from "@/components/ui/input";
@@ -138,7 +137,6 @@ export default function TransactionsPage() {
             Lacak, filter, dan cari transaksi dengan mudah.
           </p>
         </div>
-        <ExpenseForm onTransactionAdded={fetchTransactions} />
       </header>
 
       {/* ✅ FILTER BAR */}

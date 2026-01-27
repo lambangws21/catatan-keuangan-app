@@ -29,51 +29,32 @@ interface FinancialDashboardProps {
     transactions: Transaction[];
     saldoData: Saldo[];
     isLoading: boolean;
+    compactMode?: boolean;
 }
 
-export default function FinancialDashboard({ transactions, saldoData, isLoading }: FinancialDashboardProps) {
+export default function FinancialDashboard({ transactions, saldoData, isLoading, compactMode }: FinancialDashboardProps) {
   // --- Kalkulasi Data dengan Memoization ---
   const { 
-    totalPemasukanKeseluruhan, 
-    totalPengeluaranBulanan, 
-    saldoKeseluruhan, 
-    pemasukanCountBulanan,
-    pengeluaranCountBulanan, 
-    dataGrafikPengeluaran 
+    totalPemasukan, 
+    totalPengeluaran, 
+    saldoSaatIni, 
+    pemasukanCount,
+    pengeluaranCount, 
+    dataGrafikPengeluaran,
+    reimbursementAmount,
   } = useMemo(() => {
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth();
-
     // Pastikan data adalah array sebelum melakukan operasi
     const validSaldoData = Array.isArray(saldoData) ? saldoData : [];
     const validTransactions = Array.isArray(transactions) ? transactions : [];
 
-    // --- PERHITUNGAN UNTUK KESELURUHAN WAKTU (ALL-TIME) ---
-    // Ini adalah total semua deposit/saldo dari awal
-    const totalPemasukanKeseluruhan = validSaldoData.reduce((sum, item) => sum + Number(item.jumlah), 0);
-    const totalPengeluaranKeseluruhan = validTransactions.reduce((sum, tx) => sum + Number(tx.jumlah), 0);
-    const saldoKeseluruhan = totalPemasukanKeseluruhan - totalPengeluaranKeseluruhan;
-
-    // --- PERHITUNGAN HANYA UNTUK BULAN INI ---
-    // Pemasukan bulan ini (hanya untuk hitungan/count)
-    const pemasukanBulanIni = validSaldoData.filter(item => {
-        const itemDate = new Date(item.tanggal);
-        return itemDate.getFullYear() === currentYear && itemDate.getMonth() === currentMonth;
-    });
+    // Gunakan data yang diterima apa adanya (bisa all-time atau hasil filter bulanan dari parent).
+    const totalPemasukan = validSaldoData.reduce((sum, item) => sum + Number(item.jumlah), 0);
+    const totalPengeluaran = validTransactions.reduce((sum, tx) => sum + Number(tx.jumlah), 0);
+    const saldoSaatIni = totalPemasukan - totalPengeluaran;
+    const pemasukanCount = validSaldoData.length;
+    const pengeluaranCount = validTransactions.length;
     
-    // Pengeluaran bulan ini (untuk kartu total dan grafik)
-    const pengeluaranBulanIni = validTransactions.filter(tx => {
-        const txDate = new Date(tx.tanggal);
-        return txDate.getFullYear() === currentYear && txDate.getMonth() === currentMonth;
-    });
-
-    const pemasukanCountBulanan = pemasukanBulanIni.length;
-    
-    const totalPengeluaranBulanan = pengeluaranBulanIni.reduce((sum, tx) => sum + tx.jumlah, 0);
-    const pengeluaranCountBulanan = pengeluaranBulanIni.length;
-    
-    const dataGrafikPengeluaran = pengeluaranBulanIni
+    const dataGrafikPengeluaran = validTransactions
       .reduce((acc, tx) => {
         const kategori = tx.jenisBiaya;
         const existing = acc.find(item => item.name === kategori);
@@ -85,13 +66,18 @@ export default function FinancialDashboard({ transactions, saldoData, isLoading 
         return acc;
       }, [] as { name: string; value: number }[]);
 
+    // Reimburse = defisit saat pengeluaran melebihi pemasukan (saldo minus).
+    const reimbursementAmount =
+      saldoSaatIni < 0 && totalPengeluaran > 0 ? Math.abs(saldoSaatIni) : 0;
+
     return { 
-      totalPemasukanKeseluruhan, 
-      totalPengeluaranBulanan, 
-      saldoKeseluruhan, 
-      pemasukanCountBulanan,
-      pengeluaranCountBulanan, 
-      dataGrafikPengeluaran 
+      totalPemasukan, 
+      totalPengeluaran, 
+      saldoSaatIni, 
+      pemasukanCount,
+      pengeluaranCount, 
+      dataGrafikPengeluaran,
+      reimbursementAmount,
     };
   }, [transactions, saldoData]);
 
@@ -117,11 +103,13 @@ export default function FinancialDashboard({ transactions, saldoData, isLoading 
             transition={{ duration: 0.5 }}
           >
             <SummaryCards 
-              pemasukan={totalPemasukanKeseluruhan} // PERBAIKAN: Gunakan total pemasukan keseluruhan
-              pengeluaran={totalPengeluaranBulanan} 
-              saldo={saldoKeseluruhan}
-              pemasukanCount={pemasukanCountBulanan}
-              pengeluaranCount={pengeluaranCountBulanan}
+              pemasukan={totalPemasukan}
+              pengeluaran={totalPengeluaran}
+              saldo={saldoSaatIni}
+              pemasukanCount={pemasukanCount}
+              pengeluaranCount={pengeluaranCount}
+              reimbursementAmount={reimbursementAmount}
+            compact={compactMode}
             />
             
             <div className="mt-8">
@@ -139,4 +127,3 @@ export default function FinancialDashboard({ transactions, saldoData, isLoading 
     </div>
   );
 }
-

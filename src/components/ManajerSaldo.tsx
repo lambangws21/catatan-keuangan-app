@@ -1,11 +1,13 @@
 "use client";
 
 import { useMemo, useState, ChangeEvent } from 'react';
-import { Edit, Trash2, FileDown, Wallet, ArchiveX, Loader2 } from 'lucide-react';
+import { Edit, Trash2, FileDown, Wallet, ArchiveX, Loader2, CalendarDays, StickyNote, Coins } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/AuthProvider"; // Diperlukan untuk autentikasi
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
+import SaldoForm from "@/components/FormSaldo";
+import { useTableUiConfig } from "@/hooks/use-table-ui-config";
 
 // Import library dan komponen UI
 import * as XLSX from "xlsx";
@@ -47,6 +49,7 @@ export default function SaldoManager({
   isLoading,
   onDataChange,
 }: SaldoManagerProps) {
+  const { config: tableUi } = useTableUiConfig();
   const { user } = useAuth(); // Dapatkan info pengguna untuk autentikasi
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [itemToEdit, setItemToEdit] = useState<Saldo | null>(null);
@@ -164,6 +167,7 @@ export default function SaldoManager({
   const hasEntries = Array.isArray(saldoData) && saldoData.length > 0;
   const totalEntries = hasEntries ? saldoData.length : 0;
   const latestEntries = hasEntries ? saldoData.slice(0, 3) : [];
+  const enableScroll = totalEntries > tableUi.saldoScrollThreshold;
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -196,12 +200,13 @@ export default function SaldoManager({
         </div>
 
         <div className="flex flex-wrap gap-2">
+          <SaldoForm onSaldoAdded={onDataChange} />
           <Button
             variant="outline"
             size="sm"
             onClick={handleExportExcel}
             disabled={!hasEntries}
-            className="border-white/20 text-white/80 hover:border-white/40"
+            className="border-slate-200 bg-white/70 text-slate-800 hover:bg-white hover:border-slate-300 dark:border-white/20 dark:bg-white/5 dark:text-white/80 dark:hover:border-white/40"
           >
             <FileDown className="h-4 w-4 mr-2" /> Excel
           </Button>
@@ -210,7 +215,7 @@ export default function SaldoManager({
             size="sm"
             onClick={handleExportPdf}
             disabled={!hasEntries}
-            className="border-white/20 text-white/80 hover:border-white/40"
+            className="border-slate-200 bg-white/70 text-slate-800 hover:bg-white hover:border-slate-300 dark:border-white/20 dark:bg-white/5 dark:text-white/80 dark:hover:border-white/40"
           >
             <FileDown className="h-4 w-4 mr-2" /> PDF
           </Button>
@@ -254,7 +259,14 @@ export default function SaldoManager({
       {hasEntries ? (
         <>
           <div className="hidden lg:block">
-            <div className="overflow-x-auto">
+            <div
+              className={enableScroll ? "overflow-auto" : "overflow-x-auto"}
+              style={
+                enableScroll
+                  ? { maxHeight: `${tableUi.saldoDesktopMaxHeightPx}px` }
+                  : undefined
+              }
+            >
               <Table className="min-w-full text-sm">
                 <TableHeader>
                   <TableRow className="bg-slate-900 text-left text-white">
@@ -271,10 +283,23 @@ export default function SaldoManager({
                       className="border-b border-white/10"
                       variants={itemVariants}
                     >
-                      <TableCell className="py-3 px-3">{item.tanggal}</TableCell>
-                      <TableCell className="py-3 px-3 font-medium">{item.keterangan}</TableCell>
+                      <TableCell className="py-3 px-3">
+                        <span className="inline-flex items-center gap-2">
+                          <CalendarDays className="h-4 w-4 text-emerald-200/80" />
+                          <span>{item.tanggal}</span>
+                        </span>
+                      </TableCell>
+                      <TableCell className="py-3 px-3 font-medium">
+                        <span className="inline-flex items-center gap-2">
+                          <StickyNote className="h-4 w-4 text-emerald-200/70" />
+                          <span>{item.keterangan}</span>
+                        </span>
+                      </TableCell>
                       <TableCell className="py-3 px-3 text-right font-mono text-white/80">
-                        {formatCurrency(Number(item.jumlah))}
+                        <span className="inline-flex items-center justify-end gap-2">
+                          <Coins className="h-4 w-4 text-emerald-200/70" />
+                          <span>{formatCurrency(Number(item.jumlah))}</span>
+                        </span>
                       </TableCell>
                       <TableCell className="py-3 px-3 text-center">
                         <div className="flex items-center justify-center gap-2">
@@ -315,7 +340,14 @@ export default function SaldoManager({
             </div>
           </div>
 
-          <div className="space-y-3 lg:hidden">
+          <div
+            className={`space-y-3 lg:hidden ${enableScroll ? "overflow-auto pr-1" : ""}`}
+            style={
+              enableScroll
+                ? { maxHeight: `${tableUi.saldoMobileMaxHeightPx}px` }
+                : undefined
+            }
+          >
             {saldoData.map((item) => (
               <motion.article
                 key={item.id}
@@ -325,13 +357,20 @@ export default function SaldoManager({
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-[11px] uppercase tracking-[0.3em] text-[color:var(--dash-muted)]">
-                        {item.tanggal}
+                      <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.3em] text-[color:var(--dash-muted)]">
+                        <CalendarDays className="h-4 w-4 text-emerald-200/70" />
+                        <span>{item.tanggal}</span>
                       </p>
-                      <p className="text-lg font-semibold text-white">{item.keterangan}</p>
+                      <p className="mt-1 inline-flex items-center gap-2 text-lg font-semibold text-white">
+                        <StickyNote className="h-4 w-4 text-emerald-200/70" />
+                        <span>{item.keterangan}</span>
+                      </p>
                     </div>
                     <span className="text-right text-sm font-mono text-white/70">
-                      {formatCurrency(Number(item.jumlah))}
+                      <span className="inline-flex items-center gap-2">
+                        <Coins className="h-4 w-4 text-emerald-200/70" />
+                        <span>{formatCurrency(Number(item.jumlah))}</span>
+                      </span>
                     </span>
                   </div>
                   <p className="text-[10px] font-medium text-[color:var(--dash-muted)]">
@@ -369,9 +408,11 @@ export default function SaldoManager({
       )}
 
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent className="sm:max-w-[425px] bg-slate-900/80 backdrop-blur-md border border-white/10 text-white">
+        <DialogContent className="sm:max-w-[500px] border-slate-200 bg-white text-slate-900 shadow-2xl dark:border-white/10 dark:bg-slate-950 dark:text-slate-100">
           <DialogHeader>
-            <DialogTitle className="text-cyan-400">Edit Saldo</DialogTitle>
+            <DialogTitle className="text-cyan-700 dark:text-cyan-300">
+              Edit Saldo
+            </DialogTitle>
           </DialogHeader>
           {itemToEdit && (
             <div className="grid gap-4 py-4">
@@ -383,7 +424,7 @@ export default function SaldoManager({
                   type="date"
                   value={itemToEdit.tanggal}
                   onChange={handleEditFormChange}
-                  className="bg-gray-800 border-gray-600"
+                  className="bg-white border-slate-200 dark:bg-slate-900/60 dark:border-white/10"
                 />
               </div>
               <div className="grid gap-2">
@@ -393,7 +434,7 @@ export default function SaldoManager({
                   name="keterangan"
                   value={itemToEdit.keterangan}
                   onChange={handleEditFormChange}
-                  className="bg-gray-800 border-gray-600"
+                  className="bg-white border-slate-200 dark:bg-slate-900/60 dark:border-white/10"
                 />
               </div>
               <div className="grid gap-2">
@@ -403,6 +444,7 @@ export default function SaldoManager({
                   placeholder="1.000.000"
                   value={itemToEdit.jumlah}
                   onValueChange={handleEditJumlahChange}
+                  className="bg-white border-slate-200 dark:bg-slate-900/60 dark:border-white/10"
                 />
               </div>
             </div>
@@ -411,7 +453,10 @@ export default function SaldoManager({
             <Button variant="outline" onClick={handleCloseEditModal}>
               Batal
             </Button>
-            <Button onClick={handleUpdate} className="bg-cyan-600 hover:bg-cyan-700">
+            <Button
+              onClick={handleUpdate}
+              className="bg-cyan-600 text-white hover:bg-cyan-700 dark:bg-cyan-500 dark:hover:bg-cyan-400"
+            >
               Simpan Perubahan
             </Button>
           </DialogFooter>

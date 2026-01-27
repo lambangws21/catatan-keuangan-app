@@ -5,6 +5,7 @@ import { storage } from "@/lib/firebase/client";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Loader2 } from "lucide-react";
 import Image from "next/image";
+import { toast } from "sonner";
 
 // Import komponen dari shadcn/ui
 import { Button } from "@/components/ui/button";
@@ -99,7 +100,14 @@ export default function ExpenseForm({ onTransactionAdded }: ExpenseFormProps) {
     setIsSubmitting(true);
     setMessage(null);
 
-    const finalJenisBiaya = jenisBiaya === "Lain-lain" ? customJenisBiaya : jenisBiaya;
+    const finalJenisBiaya =
+      jenisBiaya === "Lainnya" ? customJenisBiaya.trim() : jenisBiaya;
+    if (jenisBiaya === "Lainnya" && !finalJenisBiaya) {
+      setIsSubmitting(false);
+      setMessage("Mohon isi Jenis Biaya lainnya.");
+      return;
+    }
+
     let fileUrl = "";
 
     try {
@@ -125,13 +133,11 @@ export default function ExpenseForm({ onTransactionAdded }: ExpenseFormProps) {
       if (!response.ok) throw new Error("Gagal menyimpan data");
       
       await onTransactionAdded();
+      toast.success("Data berhasil disimpan!");
       setMessage("Data berhasil disimpan!");
       resetForm();
 
-      setTimeout(() => {
-        setIsOpen(false);
-        setMessage(null);
-      }, 1500);
+      setTimeout(() => setMessage(null), 1500);
 
     } catch (error) {
       console.error(error);
@@ -144,45 +150,70 @@ export default function ExpenseForm({ onTransactionAdded }: ExpenseFormProps) {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-cyan-600 hover:bg-cyan-700">Input Biaya Baru</Button>
+        <Button className="bg-cyan-600 text-white hover:bg-cyan-700 dark:bg-cyan-500 dark:hover:bg-cyan-400">
+          Input Biaya Baru
+        </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[625px] bg-gray-800 border-gray-700 text-white">
+      <DialogContent className="sm:max-w-[700px] border-slate-200 bg-white text-slate-900 shadow-2xl dark:border-white/10 dark:bg-slate-950 dark:text-slate-100">
         <DialogHeader>
-          <DialogTitle className="text-cyan-400">Input Biaya Baru</DialogTitle>
+          <DialogTitle className="text-cyan-700 dark:text-cyan-300">
+            Input Biaya Baru
+          </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="grid gap-4 py-4 max-h-[80vh] overflow-y-auto pr-6">
+        <form onSubmit={handleSubmit} className="grid gap-4 py-4 max-h-[80vh] overflow-y-auto pr-2">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label htmlFor="tanggal">Tanggal</Label>
-              <Input id="tanggal" type="date" value={tanggal} onChange={(e) => setTanggal(e.target.value)} required className="bg-gray-700 border-gray-600"/>
+              <Input
+                id="tanggal"
+                type="date"
+                value={tanggal}
+                onChange={(e) => setTanggal(e.target.value)}
+                required
+                className="bg-white border-slate-200 dark:bg-slate-900/60 dark:border-white/10"
+              />
             </div>
             
             <div className="grid gap-2">
               <Label htmlFor="jenisBiaya">Jenis Biaya</Label>
               <Select value={jenisBiaya} onValueChange={setJenisBiaya}>
-                <SelectTrigger className="w-full bg-gray-700 border-gray-600">
+                <SelectTrigger className="w-full bg-white border-slate-200 dark:bg-slate-900/60 dark:border-white/10">
                   <SelectValue placeholder="Pilih jenis biaya" />
                 </SelectTrigger>
-                <SelectContent className="bg-gray-700 text-white border-gray-600">
+                <SelectContent className="bg-white text-slate-900 border-slate-200 dark:bg-slate-900 dark:text-slate-100 dark:border-white/10">
                   <SelectItem value="Transportasi">Transportasi</SelectItem>
-                  <SelectItem value="Konsumsi">Konsumsi</SelectItem>
-                  <SelectItem value="Akomodasi">Akomodasi</SelectItem>
-                  <SelectItem value="Lain-lain">Lain-lain...</SelectItem>
+                  <SelectItem value="Cargo">Cargo</SelectItem>
+                  <SelectItem value="Meals Metting">Meals Metting</SelectItem>
+                  <SelectItem value="Lainnya">Lainnya...</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
-          
-          {jenisBiaya === 'Lain-lain' && (
+
+          {jenisBiaya === "Lainnya" ? (
             <div className="grid gap-2">
-              <Label htmlFor="customJenisBiaya">Tulis Jenis Biaya</Label>
-              <Input id="customJenisBiaya" value={customJenisBiaya} onChange={(e) => setCustomJenisBiaya(e.target.value)} placeholder="Contoh: Biaya Internet" required className="bg-gray-700 border-gray-600"/>
+              <Label htmlFor="customJenisBiaya">Jenis Biaya Lainnya</Label>
+              <Input
+                id="customJenisBiaya"
+                value={customJenisBiaya}
+                onChange={(e) => setCustomJenisBiaya(e.target.value)}
+                placeholder="Contoh: Parkir, Tol, Hotel, dll."
+                required
+                className="bg-white border-slate-200 dark:bg-slate-900/60 dark:border-white/10"
+              />
             </div>
-          )}
+          ) : null}
 
           <div className="grid gap-2">
             <Label htmlFor="keterangan">Keterangan</Label>
-            <Textarea id="keterangan" value={keterangan} onChange={(e) => setKeterangan(e.target.value)} required placeholder="Detail pengeluaran..." className="bg-gray-700 border-gray-600"/>
+            <Textarea
+              id="keterangan"
+              value={keterangan}
+              onChange={(e) => setKeterangan(e.target.value)}
+              required
+              placeholder="Detail pengeluaran..."
+              className="bg-white border-slate-200 dark:bg-slate-900/60 dark:border-white/10"
+            />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -194,23 +225,36 @@ export default function ExpenseForm({ onTransactionAdded }: ExpenseFormProps) {
                 required
                 value={jumlah || ''}
                 onValueChange={handleJumlahChange}
+                className="bg-white border-slate-200 dark:bg-slate-900/60 dark:border-white/10"
             />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="klaim">Nama Klaim</Label>
-              <Input id="klaim" value={klaim} onChange={(e) => setKlaim(e.target.value)} required placeholder="Contoh: Proyek A" className="bg-gray-700 border-gray-600"/>
+              <Input
+                id="klaim"
+                value={klaim}
+                onChange={(e) => setKlaim(e.target.value)}
+                required
+                placeholder="Contoh: Proyek A"
+                className="bg-white border-slate-200 dark:bg-slate-900/60 dark:border-white/10"
+              />
             </div>
           </div>
           
           <div className="grid gap-2">
             <Label htmlFor="file-input">Upload Berkas (Opsional)</Label>
-            <Input id="file-input" type="file" onChange={handleFileChange} className="text-gray-400 file:text-white file:bg-cyan-600 hover:file:bg-cyan-700"/>
+            <Input
+              id="file-input"
+              type="file"
+              onChange={handleFileChange}
+              className="text-slate-500 file:rounded-md file:border-0 file:bg-cyan-600 file:px-3 file:py-1 file:text-white hover:file:bg-cyan-700 dark:text-slate-400 dark:file:bg-cyan-500 dark:hover:file:bg-cyan-400"
+            />
           </div>
 
           {previewUrl && (
             <div className="grid gap-2">
               <Label>Preview Berkas</Label>
-              <div className="mt-1 relative aspect-video w-full max-w-sm mx-auto p-2 border-2 border-dashed border-gray-600 rounded-lg">
+              <div className="mt-1 relative aspect-video w-full max-w-sm mx-auto p-2 border-2 border-dashed border-slate-300 rounded-lg dark:border-white/15">
                 <Image 
                   src={previewUrl} 
                   alt="Preview Berkas" 
@@ -223,10 +267,24 @@ export default function ExpenseForm({ onTransactionAdded }: ExpenseFormProps) {
             </div>
           )}
 
-          {message && <p className={`mt-2 text-center text-sm ${message.includes("error") ? "text-red-400" : "text-green-400"}`}>{message}</p>}
+          {message && (
+            <p
+              className={`mt-2 text-center text-sm ${
+                message.toLowerCase().includes("error")
+                  ? "text-rose-600 dark:text-rose-300"
+                  : "text-emerald-600 dark:text-emerald-300"
+              }`}
+            >
+              {message}
+            </p>
+          )}
           
-          <DialogFooter className="sticky bottom-0 bg-gray-800 pt-4 -mx-6 px-6">
-            <Button type="submit" disabled={isSubmitting} className="w-full bg-cyan-600 hover:bg-cyan-700">
+          <DialogFooter className="sticky bottom-0 bg-white/90 pt-4 -mx-6 px-6 backdrop-blur dark:bg-slate-950/80">
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full bg-cyan-600 text-white hover:bg-cyan-700 dark:bg-cyan-500 dark:hover:bg-cyan-400"
+            >
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isSubmitting ? 'Menyimpan...' : 'Simpan Data'}
             </Button>
@@ -236,4 +294,3 @@ export default function ExpenseForm({ onTransactionAdded }: ExpenseFormProps) {
     </Dialog>
   );
 }
-

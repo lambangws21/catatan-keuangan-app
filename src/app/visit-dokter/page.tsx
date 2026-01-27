@@ -394,6 +394,7 @@ export default function SchedulesPage() {
                 status: editingSchedule.status ?? "Terjadwal",
                 waktuVisit: editingSchedule.waktuVisit,
                 repeat: editingSchedule.repeat ?? "once",
+                perawat: editingSchedule.perawat ?? "",
               }}
               doctorsList={doctors}
               onFormSubmit={handleFormSubmit}
@@ -404,4 +405,3 @@ export default function SchedulesPage() {
     </div>
   );
 }
-

@@ -13,6 +13,12 @@ import {
   Loader2,
   ChevronDown,
   ChevronUp,
+  CalendarDays,
+  StickyNote,
+  Tags,
+  Coins,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import Image from "next/image";
@@ -20,8 +26,11 @@ import Image from "next/image";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
+import ExpenseForm from "@/components/ExepenseForm";
 import { storage } from "@/lib/firebase/client";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { useTableUiConfig } from "@/hooks/use-table-ui-config";
+import { CurrencyInput } from "@/components/CurencyInput";
 
 import {
   Table,
@@ -48,6 +57,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Transaction {
   id: string;
@@ -77,6 +93,7 @@ export default function TransactionManager({
   isLoading,
   onDataChange,
 }: TransactionManagerProps) {
+  const { config: tableUi } = useTableUiConfig();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [transactionToEdit, setTransactionToEdit] =
     useState<Transaction | null>(null);
@@ -87,7 +104,8 @@ export default function TransactionManager({
   const [isSaving, setIsSaving] = useState(false);
   const [tablePage, setTablePage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const rowsPerPageOptions = [10, 15, 20];
+  const [rowsPerPageTouched, setRowsPerPageTouched] = useState(false);
+  const rowsPerPageOptions = tableUi.transactionRowsPerPageOptions;
   const [expandedMobileId, setExpandedMobileId] = useState<string | null>(null);
 
   const tablePageCount = Math.max(
@@ -164,7 +182,7 @@ export default function TransactionManager({
     if (!transactionToEdit) return;
     setIsSaving(true);
     try {
-      const payload: Transaction = { ...transactionToEdit };
+      const payload: Transaction = { ...transactionToEdit, jumlah: Number(transactionToEdit.jumlah) };
       if (newPhotoFile) {
         setIsPhotoProcessing(true);
         const storageRef = ref(
@@ -187,6 +205,11 @@ export default function TransactionManager({
       setIsSaving(false);
       setNewPhotoFile(null);
     }
+  };
+
+  const handleEditJumlahChange = (value: number | undefined) => {
+    if (!transactionToEdit) return;
+    setTransactionToEdit((prev) => (prev ? { ...prev, jumlah: value ?? 0 } : prev));
   };
 
   const handleEditFormChange = (
@@ -259,7 +282,35 @@ export default function TransactionManager({
     setTablePage(1);
   }, [transactions]);
 
+  useEffect(() => {
+    const options = tableUi.transactionRowsPerPageOptions;
+    if (!options.length) return;
+
+    const desired = tableUi.transactionRowsPerPageDefault;
+    const fallback = options[0];
+    const next = options.includes(desired) ? desired : fallback;
+
+    if (!rowsPerPageTouched) {
+      if (rowsPerPage !== next) {
+        setRowsPerPage(next);
+        setTablePage(1);
+      }
+      return;
+    }
+
+    if (!options.includes(rowsPerPage)) {
+      setRowsPerPage(next);
+      setTablePage(1);
+    }
+  }, [
+    tableUi.transactionRowsPerPageDefault,
+    tableUi.transactionRowsPerPageOptions,
+    rowsPerPage,
+    rowsPerPageTouched,
+  ]);
+
   const handleRowsPerPageChange = (value: number) => {
+    setRowsPerPageTouched(true);
     setRowsPerPage(value);
     setTablePage(1);
   };
@@ -385,12 +436,13 @@ export default function TransactionManager({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <ExpenseForm onTransactionAdded={onDataChange} />
           <Button
             variant="outline"
             size="sm"
             onClick={() => handleExportExcel()}
             disabled={!hasEntries}
-            className="border-white/20 text-white/80 hover:border-white/40"
+            className="border-slate-200 bg-white/70 text-slate-800 hover:bg-white hover:border-slate-300 dark:border-white/20 dark:bg-white/5 dark:text-white/80 dark:hover:border-white/40"
           >
             <FileDown className="h-4 w-4 mr-2" /> Excel
           </Button>
@@ -399,7 +451,7 @@ export default function TransactionManager({
             size="sm"
             onClick={() => handleExportPdf()}
             disabled={!hasEntries}
-            className="border-white/20 text-white/80 hover:border-white/40"
+            className="border-slate-200 bg-white/70 text-slate-800 hover:bg-white hover:border-slate-300 dark:border-white/20 dark:bg-white/5 dark:text-white/80 dark:hover:border-white/40"
           >
             <FileDown className="h-4 w-4 mr-2" /> PDF
           </Button>
@@ -436,7 +488,10 @@ export default function TransactionManager({
 
       <div className="hidden lg:block">
         {paginationControls}
-        <div className="overflow-x-auto">
+        <div
+          className="overflow-auto"
+          style={{ maxHeight: `${tableUi.transactionDesktopMaxHeightPx}px` }}
+        >
           <Table className="min-w-full text-sm">
             <TableHeader>
               <TableRow className="bg-slate-900 text-left text-white">
@@ -455,18 +510,42 @@ export default function TransactionManager({
                   className="border-b border-white/10 transition-colors hover:border-cyan-500/40 hover:bg-white/5"
                 >
                   <TableCell className="py-3 px-3">{tx.tanggal}</TableCell>
+                  <TableCell className="py-3 px-3">
+                    <span className="inline-flex items-center gap-2">
+                      <CalendarDays className="h-4 w-4 text-cyan-200/70" />
+                      <span>{tx.tanggal}</span>
+                    </span>
+                  </TableCell>
                   <TableCell className="py-3 px-3 font-medium">
-                    {tx.keterangan}
+                    <span className="inline-flex items-center gap-2">
+                      <StickyNote className="h-4 w-4 text-cyan-200/70" />
+                      <span>{tx.keterangan}</span>
+                    </span>
                   </TableCell>
                   <TableCell className="py-3 px-3">
                     <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold text-(--dash-muted)">
+                      <Tags className="mr-2 h-3.5 w-3.5 text-cyan-200/70" />
                       {tx.jenisBiaya}
                     </span>
                   </TableCell>
                   <TableCell className="py-3 px-3 text-center font-mono text-white/80">
-                    {formatCurrency(Number(tx.jumlah))}
+                    <span className="inline-flex items-center justify-center gap-2">
+                      <Coins className="h-4 w-4 text-cyan-200/70" />
+                      <span>{formatCurrency(Number(tx.jumlah))}</span>
+                    </span>
                   </TableCell>
-                  <TableCell className="py-3 px-3">{tx.klaim || "-"}</TableCell>
+                  <TableCell className="py-3 px-3">
+                    <span className="inline-flex items-center gap-2">
+                      {String(tx.klaim).toLowerCase() === "ya" ? (
+                        <CheckCircle2 className="h-4 w-4 text-emerald-300" />
+                      ) : String(tx.klaim).toLowerCase() === "tidak" ? (
+                        <XCircle className="h-4 w-4 text-rose-300" />
+                      ) : (
+                        <span className="h-2 w-2 rounded-full bg-white/30" />
+                      )}
+                      <span>{tx.klaim || "-"}</span>
+                    </span>
+                  </TableCell>
                   <TableCell className="py-3 px-3 text-center">
                     <div className="flex items-center justify-center gap-2">
                       <TooltipProvider>
@@ -521,7 +600,10 @@ export default function TransactionManager({
         </div>
       </div>
 
-      <div className="space-y-3 lg:hidden">
+      <div
+        className="space-y-3 lg:hidden overflow-auto pr-1"
+        style={{ maxHeight: `${tableUi.transactionMobileMaxHeightPx}px` }}
+      >
         {paginatedTransactions.map((tx) => {
           const isExpanded = expandedMobileId === tx.id;
           const toggleExpanded = () =>
@@ -534,16 +616,26 @@ export default function TransactionManager({
             >
                 <div className="sticky top-0 z-10 flex items-center justify-between gap-4 bg-linear-to-r from-slate-950/80 to-slate-900/80 px-4 py-3 backdrop-blur">
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.3em] text-(--dash-muted)">
-                    {tx.tanggal}
+                  <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.3em] text-(--dash-muted)">
+                    <CalendarDays className="h-4 w-4 text-cyan-200/70" />
+                    <span>{tx.tanggal}</span>
                   </p>
-                  <p className="text-lg font-semibold text-white">{tx.keterangan}</p>
+                  <p className="mt-1 inline-flex items-center gap-2 text-lg font-semibold text-white">
+                    <StickyNote className="h-4 w-4 text-cyan-200/70" />
+                    <span>{tx.keterangan}</span>
+                  </p>
                 </div>
                 <div className="text-right">
                   <p className="text-lg font-semibold text-white">
-                    {formatCurrency(Number(tx.jumlah))}
+                    <span className="inline-flex items-center gap-2">
+                      <Coins className="h-4 w-4 text-cyan-200/70" />
+                      <span>{formatCurrency(Number(tx.jumlah))}</span>
+                    </span>
                   </p>
-                  <p className="text-[11px] text-white/60">{tx.jenisBiaya}</p>
+                  <p className="mt-1 inline-flex items-center gap-2 text-[11px] text-white/60">
+                    <Tags className="h-3.5 w-3.5 text-cyan-200/60" />
+                    <span>{tx.jenisBiaya}</span>
+                  </p>
                 </div>
                 <button
                   onClick={toggleExpanded}
@@ -622,9 +714,11 @@ export default function TransactionManager({
       )}
 
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent className="sm:max-w-[625px] bg-gray-800/80 backdrop-blur-md border border-white/10 text-white">
+        <DialogContent className="sm:max-w-[700px] border-slate-200 bg-white text-slate-900 shadow-2xl dark:border-white/10 dark:bg-slate-950 dark:text-slate-100">
           <DialogHeader>
-            <DialogTitle className="text-cyan-400">Edit Transaksi</DialogTitle>
+            <DialogTitle className="text-cyan-700 dark:text-cyan-300">
+              Edit Transaksi
+            </DialogTitle>
           </DialogHeader>
           {transactionToEdit && (
             <div className="grid gap-4 py-4">
@@ -637,18 +731,36 @@ export default function TransactionManager({
                     type="date"
                     value={transactionToEdit.tanggal}
                     onChange={handleEditFormChange}
-                    className="bg-gray-700 border-gray-600"
+                    className="bg-white border-slate-200 dark:bg-slate-900/60 dark:border-white/10"
                   />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="jenisBiaya">Jenis Biaya</Label>
-                  <Input
-                    id="jenisBiaya"
-                    name="jenisBiaya"
+                  <Select
                     value={transactionToEdit.jenisBiaya}
-                    onChange={handleEditFormChange}
-                    className="bg-gray-700 border-gray-600"
-                  />
+                    onValueChange={(value) =>
+                      setTransactionToEdit((prev) =>
+                        prev ? { ...prev, jenisBiaya: value } : prev
+                      )
+                    }
+                  >
+                    <SelectTrigger className="w-full bg-white border-slate-200 dark:bg-slate-900/60 dark:border-white/10">
+                      <SelectValue placeholder="Pilih jenis biaya" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white text-slate-900 border-slate-200 dark:bg-slate-900 dark:text-slate-100 dark:border-white/10">
+                      <SelectItem value="Transportasi">Transportasi</SelectItem>
+                      <SelectItem value="Cargo">Cargo</SelectItem>
+                      <SelectItem value="Meals Metting">Meals Metting</SelectItem>
+                      {transactionToEdit.jenisBiaya &&
+                      !["Transportasi", "Cargo", "Meals Metting"].includes(
+                        transactionToEdit.jenisBiaya
+                      ) ? (
+                        <SelectItem value={transactionToEdit.jenisBiaya}>
+                          Lainnya: {transactionToEdit.jenisBiaya}
+                        </SelectItem>
+                      ) : null}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -659,7 +771,7 @@ export default function TransactionManager({
                   name="keterangan"
                   value={transactionToEdit.keterangan}
                   onChange={handleEditFormChange}
-                  className="bg-gray-700 border-gray-600"
+                  className="bg-white border-slate-200 dark:bg-slate-900/60 dark:border-white/10"
                 />
               </div>
 
@@ -695,20 +807,19 @@ export default function TransactionManager({
                   type="file"
                   accept="image/*"
                   onChange={handlePhotoSelection}
-                  className="text-gray-400 file:text-white file:bg-cyan-600 hover:file:bg-cyan-700"
+                  className="text-slate-500 file:rounded-md file:border-0 file:bg-cyan-600 file:px-3 file:py-1 file:text-white hover:file:bg-cyan-700 dark:text-slate-400 dark:file:bg-cyan-500 dark:hover:file:bg-cyan-400"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="jumlah">Jumlah (Rp)</Label>
-                  <Input
+                  <CurrencyInput
                     id="jumlah"
-                    name="jumlah"
-                    type="number"
-                    value={Number(transactionToEdit.jumlah)}
-                    onChange={handleEditFormChange}
-                    className="bg-gray-700 border-gray-600"
+                    placeholder="1.000.000"
+                    value={transactionToEdit.jumlah}
+                    onValueChange={handleEditJumlahChange}
+                    className="bg-white border-slate-200 dark:bg-slate-900/60 dark:border-white/10"
                   />
                 </div>
                 <div className="grid gap-2">
@@ -719,7 +830,7 @@ export default function TransactionManager({
                     name="klaim"
                     value={transactionToEdit.klaim}
                     onChange={handleEditFormChange}
-                    className="bg-gray-700 border-gray-600"
+                    className="bg-white border-slate-200 dark:bg-slate-900/60 dark:border-white/10"
                   />
                 </div>
               </div>
@@ -731,7 +842,7 @@ export default function TransactionManager({
             </Button>
             <Button
               onClick={handleUpdateTransaction}
-              className="bg-cyan-600 hover:bg-cyan-700"
+              className="bg-cyan-600 text-white hover:bg-cyan-700 dark:bg-cyan-500 dark:hover:bg-cyan-400"
               disabled={isSaving || isPhotoProcessing}
             >
               {isSaving ? "Menyimpan..." : "Simpan Perubahan"}

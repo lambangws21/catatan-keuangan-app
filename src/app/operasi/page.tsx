@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/AuthProvider';
 import { toast } from 'sonner';
+import { FileDown, FileText, Sparkles } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -184,30 +186,33 @@ export default function OperationsPage() {
       {/* ================= HEADER ================= */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">
+          <h1 className="text-3xl font-bold text-[color:var(--dash-ink)] tracking-tight flex items-center gap-2">
+            <Sparkles className="h-6 w-6 text-cyan-300" />
             Manajemen Operasi
           </h1>
-          <p className="text-gray-400">
+          <p className="text-[color:var(--dash-muted)]">
             Pantau, edit, filter, dan export seluruh data operasi.
           </p>
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <button
+          <Button
             onClick={handleExportExcel}
             disabled={isExporting || operations.length === 0}
-            className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold disabled:opacity-50"
+            className="border border-white/10 bg-white/10 text-[color:var(--dash-ink)] hover:bg-white/15 disabled:opacity-50"
           >
-            {isExporting ? 'Exporting...' : 'Export Excel'}
-          </button>
+            <FileDown className="mr-2 h-4 w-4" />
+            {isExporting ? 'Exporting...' : 'Export CSV'}
+          </Button>
 
-          <button
+          <Button
             onClick={handleExportPDF}
             disabled={isExporting || operations.length === 0}
-            className="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold disabled:opacity-50"
+            className="border border-white/10 bg-white/10 text-[color:var(--dash-ink)] hover:bg-white/15 disabled:opacity-50"
           >
+            <FileText className="mr-2 h-4 w-4" />
             {isExporting ? 'Exporting...' : 'Export PDF'}
-          </button>
+          </Button>
 
           <OperationForm onFormSubmit={fetchOperations} />
         </div>

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { UserCircle, LayoutGrid, Bell } from "lucide-react";
+import { UserCircle, LayoutGrid, Bell, Table2 } from "lucide-react";
 import {
   Tabs,
   TabsList,
@@ -12,6 +12,7 @@ import {
 import ProfileSettings from "@/components/setting/profilSetting";
 import NotificationSettings from "@/components/setting/NotifikasiSetting";
 import PlaceholderTab from "@/components/setting/placeHolderSetting";
+import TableSetting from "@/components/setting/TableSetting";
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("profile");
@@ -25,6 +26,7 @@ export default function SettingsPage() {
       />
     ),
     notifications: <NotificationSettings />,
+    table: <TableSetting />,
   };
 
   return (
@@ -66,6 +68,12 @@ export default function SettingsPage() {
             className="justify-start gap-3 px-4 py-2 data-[state=active]:bg-cyan-600/20 data-[state=active]:text-cyan-300"
           >
             <Bell className="h-5 w-5" /> Notifikasi
+          </TabsTrigger>
+          <TabsTrigger
+            value="table"
+            className="justify-start gap-3 px-4 py-2 data-[state=active]:bg-cyan-600/20 data-[state=active]:text-cyan-300"
+          >
+            <Table2 className="h-5 w-5" /> Tabel
           </TabsTrigger>
         </TabsList>
 

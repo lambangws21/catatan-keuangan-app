@@ -11,6 +11,7 @@ import {
   Clock,
   ListChecks,
   Notebook,
+  User2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -46,6 +47,7 @@ export interface ScheduleData {
   note: string;
   status: string;
   repeat: string;
+  perawat: string;
 }
 
 // Definisikan props
@@ -79,6 +81,15 @@ const formatDateTimeForInput = (isoString: string) => {
   }
 };
 
+const nurseSuggestions = [
+  "Perawat Intan",
+  "Perawat Rini",
+  "Perawat Sabila",
+  "Perawat Bayu",
+  "Perawat Gita",
+  "Perawat Arif",
+];
+
 const initialFormData: ScheduleData = {
   namaDokter: "",
   rumahSakit: "",
@@ -86,6 +97,7 @@ const initialFormData: ScheduleData = {
   waktuVisit: formatDateTimeForInput(new Date().toISOString()),
   status: "Terjadwal",
   repeat: "once",
+  perawat: "",
 };
 
 export default function ScheduleForm({
@@ -105,6 +117,7 @@ export default function ScheduleForm({
         ...initialData,
         // Penting: Mengubah ISO String dari backend ke format input datetime-local
         waktuVisit: formatDateTimeForInput(initialData.waktuVisit),
+        perawat: initialData.perawat ?? "",
       });
     } else if (!isEditMode && isOpen) {
       // Mengatur ulang ke waktu saat ini saat membuat baru
@@ -229,6 +242,27 @@ export default function ScheduleForm({
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="perawat">Perawat Pendamping</Label>
+            <div className="relative">
+              <User2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                id="perawat"
+                name="perawat"
+                value={formData.perawat}
+                onChange={handleChange}
+                placeholder="Contoh: Perawat Intan"
+                list="perawat-options"
+                className="pl-10"
+              />
+              <datalist id="perawat-options">
+                {nurseSuggestions.map((nurse) => (
+                  <option key={nurse} value={nurse} />
+                ))}
+              </datalist>
             </div>
           </div>
 

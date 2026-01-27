@@ -223,10 +223,8 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "@/components/AuthProvider";
-import ExpenseForm from "@/components/ExepenseForm";
 import FinancialDashboard from "@/components/FinalcialDashboard";
 import TransactionManager from "@/components/transaction-manager";
-import SaldoForm from "@/components/FormSaldo";
 import ImageGallery from "@/components/ImagePreview";
 import SaldoManager from "@/components/ManajerSaldo";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -235,6 +233,7 @@ import FinancialReportPDF from "@/components/financial-report";
 import { Button } from "@/components/ui/button";
 import { Sun, Moon } from "lucide-react";
 import { useTheme } from "next-themes";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 /* types (same as before) */
 interface Transaction {
@@ -334,7 +333,7 @@ export default function DashboardPage() {
       <div className="pointer-events-none absolute -top-32 right-[-10%] h-72 w-72 rounded-full bg-[radial-gradient(circle_at_center,_rgba(20,184,166,0.25),transparent_65%)] blur-3xl" />
       <div className="pointer-events-none absolute -bottom-40 left-[-15%] h-80 w-80 rounded-full bg-[radial-gradient(circle_at_center,_rgba(245,158,11,0.22),transparent_70%)] blur-3xl" />
 
-      <div className="relative z-10 space-y-8 font-[var(--font-body)] text-[color:var(--dash-ink)]">
+      <div className="relative z-10 space-y-6 sm:space-y-8 font-[var(--font-body)] text-[color:var(--dash-ink)]">
         <header className="dashboard-surface rounded-3xl border border-white/10 bg-[var(--dash-surface)] p-4 sm:p-6 lg:p-8 backdrop-blur">
           <div className="flex flex-col gap-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -342,7 +341,7 @@ export default function DashboardPage() {
                 <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-[color:var(--dash-muted)]">
                   Dashboard
                 </span>
-                <h1 className="text-3xl sm:text-4xl font-[var(--font-display)] font-semibold tracking-tight">
+                <h1 className="text-2xl sm:text-4xl font-[var(--font-display)] font-semibold tracking-tight">
                   Dashboard Keuangan
                 </h1>
                 <p className="text-sm text-[color:var(--dash-muted)]">
@@ -355,7 +354,7 @@ export default function DashboardPage() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setViewMode((v) => (v === "compact" ? "expanded" : "compact"))}
-                  className="rounded-full border border-white/10 bg-white/5 text-[color:var(--dash-ink)] hover:bg-white/10"
+                  className="hidden sm:inline-flex rounded-full border border-white/10 bg-white/5 text-[color:var(--dash-ink)] hover:bg-white/10"
                 >
                   {viewMode === "compact" ? "Mode Detail" : "Mode Ringkas"}
                 </Button>
@@ -366,7 +365,7 @@ export default function DashboardPage() {
                   className="rounded-full border border-white/10 bg-white/5 text-[color:var(--dash-ink)] hover:bg-white/10"
                 >
                   {theme === "dark" ? <Sun /> : <Moon />}
-                  <span className="text-xs font-medium">Tema</span>
+                  <span className="hidden sm:inline text-xs font-medium">Tema</span>
                 </Button>
               </div>
             </div>
@@ -400,63 +399,139 @@ export default function DashboardPage() {
                 </Select>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-3">
-                <SaldoForm onSaldoAdded={fetchSaldo} />
-                <ExpenseForm onTransactionAdded={fetchTransactions} />
-              </div>
             </div>
           </div>
         </header>
 
-        <div
-          className={
-            viewMode === "compact"
-              ? "grid gap-6 lg:grid-cols-[1.2fr_0.8fr]"
-              : "grid gap-6"
-          }
-        >
-          <div className="min-w-0">
-            <FinancialChart transactions={filteredTransactions} />
-          </div>
+        {/* MOBILE: minimal, no long scroll */}
+        <div className="lg:hidden">
+          <Tabs defaultValue="overview" className="gap-4">
+            <TabsList className="w-full grid grid-cols-4 bg-white/5 border border-white/10">
+              <TabsTrigger value="overview" className="text-xs">
+                Overview
+              </TabsTrigger>
+              <TabsTrigger value="saldo" className="text-xs">
+                Saldo
+              </TabsTrigger>
+              <TabsTrigger value="transaksi" className="text-xs">
+                Transaksi
+              </TabsTrigger>
+              <TabsTrigger value="galeri" className="text-xs">
+                Galeri
+              </TabsTrigger>
+            </TabsList>
 
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-white/10 bg-[var(--dash-surface-strong)] p-4">
-              <div>
-                <h3 className="text-lg font-semibold font-[var(--font-display)] text-[color:var(--dash-ink)]">
-                  Ringkasan Bulanan
-                </h3>
-                <p className="text-sm text-[color:var(--dash-muted)]">
-                  {months[selectedMonth].name} — {selectedYear}
-                </p>
+            <TabsContent value="overview" className="space-y-4">
+              <div className="min-w-0">
+                <FinancialChart transactions={filteredTransactions} />
               </div>
-              <FinancialReportPDF
-                transactions={filteredTransactions}
-                saldoData={filteredSaldoData}
-                buttonClassName="rounded-full bg-white text-slate-950 hover:bg-slate-100"
-              />
-            </div>
 
-            <FinancialDashboard
-              transactions={filteredTransactions}
-              saldoData={filteredSaldoData}
-              isLoading={isLoading}
-            />
-          </div>
+              <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-[var(--dash-surface-strong)] p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="text-base font-semibold font-[var(--font-display)] text-[color:var(--dash-ink)]">
+                      Ringkasan
+                    </h3>
+                    <p className="text-xs text-[color:var(--dash-muted)]">
+                      {months[selectedMonth].name} — {selectedYear}
+                    </p>
+                  </div>
+                  <FinancialReportPDF
+                    transactions={filteredTransactions}
+                    saldoData={filteredSaldoData}
+                    buttonClassName="rounded-full bg-white text-slate-950 hover:bg-slate-100"
+                  />
+                </div>
+
+                <FinancialDashboard
+                  transactions={filteredTransactions}
+                  saldoData={filteredSaldoData}
+                  isLoading={isLoading}
+                  compactMode
+                />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="saldo">
+              <SaldoManager
+                saldoData={filteredSaldoData}
+                isLoading={isLoading}
+                onDataChange={fetchSaldo}
+              />
+            </TabsContent>
+
+            <TabsContent value="transaksi">
+              <TransactionManager
+                transactions={filteredTransactions}
+                isLoading={isLoading}
+                onDataChange={fetchTransactions}
+              />
+            </TabsContent>
+
+            <TabsContent value="galeri">
+              <ImageGallery transactions={filteredTransactions} isLoading={isLoading} />
+            </TabsContent>
+          </Tabs>
         </div>
 
-        <SaldoManager
-          saldoData={filteredSaldoData}
-          isLoading={isLoading}
-          onDataChange={fetchSaldo}
-        />
+        {/* DESKTOP: full layout */}
+        <div className="hidden lg:block space-y-6">
+          <div
+            className={
+              viewMode === "compact"
+                ? "grid gap-6 lg:grid-cols-[1.2fr_0.8fr]"
+                : "grid gap-6"
+            }
+          >
+            <div className="min-w-0">
+              <FinancialChart transactions={filteredTransactions} />
+            </div>
 
-        <TransactionManager
-          transactions={filteredTransactions}
-          isLoading={isLoading}
-          onDataChange={fetchTransactions}
-        />
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-white/10 bg-[var(--dash-surface-strong)] p-4">
+                <div>
+                  <h3 className="text-lg font-semibold font-[var(--font-display)] text-[color:var(--dash-ink)]">
+                    Ringkasan Bulanan
+                  </h3>
+                  <p className="text-sm text-[color:var(--dash-muted)]">
+                    {months[selectedMonth].name} — {selectedYear}
+                  </p>
+                </div>
+                <FinancialReportPDF
+                  transactions={filteredTransactions}
+                  saldoData={filteredSaldoData}
+                  buttonClassName="rounded-full bg-white text-slate-950 hover:bg-slate-100"
+                />
+              </div>
 
-        <ImageGallery transactions={filteredTransactions} isLoading={isLoading} />
+              <FinancialDashboard
+                transactions={filteredTransactions}
+                saldoData={filteredSaldoData}
+                isLoading={isLoading}
+                compactMode={viewMode === "compact"}
+              />
+            </div>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
+            <div className="min-w-0">
+              <SaldoManager
+                saldoData={filteredSaldoData}
+                isLoading={isLoading}
+                onDataChange={fetchSaldo}
+              />
+            </div>
+            <div className="min-w-0">
+              <TransactionManager
+                transactions={filteredTransactions}
+                isLoading={isLoading}
+                onDataChange={fetchTransactions}
+              />
+            </div>
+          </div>
+
+          <ImageGallery transactions={filteredTransactions} isLoading={isLoading} />
+        </div>
       </div>
     </div>
   );

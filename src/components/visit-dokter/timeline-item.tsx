@@ -79,6 +79,9 @@ export function TimelineItem({
             <span className="text-gray-400">RS:</span> {schedule.rumahSakit ?? "-"}
           </p>
           <p>
+            <span className="text-gray-400">Perawat:</span> {schedule.perawat ?? "Belum ditentukan"}
+          </p>
+          <p>
             <span className="text-gray-400">Waktu:</span>{" "}
             {format(new Date(schedule.waktuVisit), "dd MMM yyyy, HH:mm")}
           </p>
@@ -102,6 +105,9 @@ export function TimelineItem({
           </h3>
           <p className="text-xs text-white/80 truncate">
             {schedule.rumahSakit ?? "Rumah Sakit Tidak Diketahui"}
+          </p>
+          <p className="text-[11px] text-white/60 truncate">
+            Perawat: {schedule.perawat ?? "Belum ditentukan"}
           </p>
         </div>
 

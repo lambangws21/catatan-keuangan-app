@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, type ForwardRefExoticComponent, type RefAttributes } from 'react';
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
-import { ArrowUpRight, ArrowDownLeft, Wallet } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, Wallet, Handshake, type LucideProps } from 'lucide-react';
 
 interface SummaryProps {
   pemasukan: number;
@@ -8,7 +8,24 @@ interface SummaryProps {
   saldo: number;
   pemasukanCount: number;
   pengeluaranCount: number;
+  compact?: boolean;
+  reimbursementAmount?: number;
 }
+
+type LucideIconType = ForwardRefExoticComponent<
+  Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>
+>;
+
+type SummaryTone = "income" | "expense" | "balance" | "reimbursement";
+
+type SummaryItem = {
+  title: "Total Pemasukan" | "Total Pengeluaran" | "Saldo Saat Ini" | "Reimburse";
+  value: number;
+  count: number | null;
+  icon: LucideIconType;
+  tone: SummaryTone;
+  formatter: (num: number) => string;
+};
 
 // Fungsi untuk format mata uang standar
 const formatCurrency = (value: number) => {
@@ -61,20 +78,57 @@ const itemVariants = {
   visible: { y: 0, opacity: 1 },
 };
 
-export default function SummaryCards({ 
-  pemasukan, 
-  pengeluaran, 
-  saldo, 
-  pemasukanCount, 
+export default function SummaryCards({
+  pemasukan,
+  pengeluaran,
+  saldo,
+  pemasukanCount,
   pengeluaranCount,
+  compact = false,
+  reimbursementAmount = 0,
 }: SummaryProps) {
   
-  // Setiap item sekarang memiliki fungsi formatter-nya sendiri
-  const summaryData = [
-    { title: 'Total Pemasukan', value: pemasukan, count: pemasukanCount, icon: ArrowUpRight, tone: 'income', formatter: formatSaldoDisplay },
-    { title: 'Total Pengeluaran', value: pengeluaran, count: pengeluaranCount, icon: ArrowDownLeft, tone: 'expense', formatter: formatSaldoDisplay },
-    { title: 'Saldo Saat Ini', value: saldo, count: null, icon: Wallet, tone: 'balance', formatter: formatSaldoDisplay },
-  ] as const;
+  // Reimburse: saat pengeluaran > pemasukan / saldo minus (defisit)
+  const computedReimbursement = Math.max(0, pengeluaran - pemasukan);
+  const reimbursementValue = Math.max(0, reimbursementAmount || computedReimbursement);
+
+  const summaryData: SummaryItem[] = [
+    {
+      title: "Total Pemasukan",
+      value: pemasukan,
+      count: pemasukanCount,
+      icon: ArrowUpRight,
+      tone: "income",
+      formatter: formatSaldoDisplay,
+    },
+    {
+      title: "Total Pengeluaran",
+      value: pengeluaran,
+      count: pengeluaranCount,
+      icon: ArrowDownLeft,
+      tone: "expense",
+      formatter: formatSaldoDisplay,
+    },
+    {
+      title: "Saldo Saat Ini",
+      value: saldo,
+      count: null,
+      icon: Wallet,
+      tone: "balance",
+      formatter: formatSaldoDisplay,
+    },
+  ];
+
+  if (saldo < 0 && pengeluaran > 0 && reimbursementValue > 0) {
+    summaryData.push({
+      title: "Reimburse",
+      value: reimbursementValue,
+      count: null,
+      icon: Handshake,
+      tone: "reimbursement",
+      formatter: formatSaldoDisplay,
+    });
+  }
 
   const toneStyles = {
     income: {
@@ -92,11 +146,18 @@ export default function SummaryCards({
       badge: "bg-sky-400/10",
       glow: "from-sky-500/20 via-transparent to-transparent",
     },
+    reimbursement: {
+      accent: "text-amber-300",
+      badge: "bg-amber-400/10",
+      glow: "from-amber-500/20 via-transparent to-transparent",
+    },
   } as const;
 
   return (
     <motion.div
-      className="grid grid-cols-1 md:grid-cols-3 gap-5"
+      className={`grid grid-cols-1 ${
+        summaryData.length >= 4 ? "md:grid-cols-2 xl:grid-cols-4" : "md:grid-cols-3"
+      } ${compact ? "gap-3" : "gap-5"}`}
       variants={containerVariants}
       initial="hidden"
       animate="visible"
@@ -104,39 +165,44 @@ export default function SummaryCards({
       {summaryData.map((item, index) => {
         const tone = toneStyles[item.tone];
         return (
-        <motion.div
-          key={index}
-          className="relative overflow-hidden rounded-2xl border border-white/10 bg-[var(--dash-surface)] p-5 shadow-[0_16px_30px_rgba(2,6,23,0.45)]"
-          variants={itemVariants}
-        >
-          <div className={`absolute inset-0 bg-gradient-to-br ${tone.glow}`} />
+          <motion.div
+            key={index}
+            className={`relative overflow-hidden rounded-2xl border border-white/10 bg-[var(--dash-surface)] ${compact ? "p-4 shadow-[0_12px_24px_rgba(2,6,23,0.35)]" : "p-5 shadow-[0_16px_30px_rgba(2,6,23,0.45)]"}`}
+            variants={itemVariants}
+          >
+            <div className={`absolute inset-0 bg-gradient-to-br ${tone.glow}`} />
 
-          <div className="relative z-10 flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${tone.badge}`}>
-                <item.icon className={`h-5 w-5 ${tone.accent}`} />
+            <div className="relative z-10 flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${tone.badge}`}>
+                  <item.icon className={`h-5 w-5 ${tone.accent}`} />
+                </div>
+                {item.count !== null && (
+                  <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] text-[color:var(--dash-muted)]">
+                    {item.count} transaksi
+                  </span>
+                )}
               </div>
-              {item.count !== null && (
-                <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] text-[color:var(--dash-muted)]">
-                  {item.count} transaksi
-                </span>
-              )}
-            </div>
 
-            <div>
-              <p className="text-[11px] uppercase tracking-[0.25em] text-[color:var(--dash-muted)]">
-                {item.title}
-              </p>
-              <AnimatedNumber
-                value={item.value}
-                className={`mt-3 text-3xl sm:text-4xl font-semibold font-[var(--font-display)] ${tone.accent}`}
-                formatter={item.formatter}
-              />
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.25em] text-[color:var(--dash-muted)]">
+                  {item.title}
+                </p>
+                <AnimatedNumber
+                  value={item.value}
+                  className={`mt-3 ${compact ? "text-2xl sm:text-3xl" : "text-3xl sm:text-4xl"} font-semibold font-[var(--font-display)] ${tone.accent}`}
+                  formatter={item.formatter}
+                />
+                {item.title === "Reimburse" ? (
+                  <p className="text-[10px] text-white/70">
+                    Pengeluaran melebihi pemasukan, segera ajukan reimbusen.
+                  </p>
+                ) : null}
+              </div>
             </div>
-          </div>
-        </motion.div>
-        );
-      })}
-    </motion.div>
+          </motion.div>
+          );
+        })}
+      </motion.div>
   );
 }

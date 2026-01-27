@@ -3,13 +3,12 @@
 import { useState, useEffect, useCallback } from "react";
 
 // Impor semua komponen yang akan ditampilkan di halaman
-import ExpenseForm from "@/components/ExepenseForm";
 import FinancialDashboard from "@/components/FinalcialDashboard";
 import TransactionManager from "@/components/transaction-manager";
 import ImageGallery from "@/components/ImagePreview";
-import SaldoForm from "@/components/FormSaldo";
 import SaldoManager from "@/components/ManajerSaldo"; 
 import {useAuth} from "@/components/AuthProvider";// Komponen yang ada di Canvas Anda
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 
 
@@ -85,34 +84,89 @@ export default function Home() {
   }, [user, fetchTransactions, fetchSaldo]); // Tambahkan user di sini juga
 
   return (
-    <main className="min-h-screen bg-gray-900 p-4 md:p-8 text-white">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <main className="min-h-screen bg-gray-900 p-4 sm:p-6 md:p-8 text-white">
+      <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
         <header className="flex justify-between items-center">
-          <h1 className="text-4xl font-bold">Dashboard Keuangan</h1>
-          <div className="flex gap-4">
-            <SaldoForm onSaldoAdded={fetchSaldo} />
-            <ExpenseForm onTransactionAdded={fetchTransactions} />
-          </div>
+          <h1 className="text-2xl sm:text-4xl font-bold">Dashboard Keuangan</h1>
         </header>
 
-        <FinancialDashboard transactions={transactions} saldoData={saldoData} isLoading={isLoading} />
-        
-        <SaldoManager
-          saldoData={saldoData}
-          isLoading={isLoading}
-          onDataChange={fetchSaldo}
-        />
-        
-        <TransactionManager 
-          transactions={transactions} 
-          isLoading={isLoading}
-          onDataChange={fetchTransactions} 
-        />
-        
-        <ImageGallery transactions={transactions} isLoading={isLoading}/>
+        {/* MOBILE: tampil per-tab biar tidak panjang */}
+        <div className="lg:hidden">
+          <Tabs defaultValue="ringkasan" className="gap-4">
+            <TabsList className="w-full grid grid-cols-4 bg-white/10">
+              <TabsTrigger value="ringkasan" className="text-xs">
+                Ringkasan
+              </TabsTrigger>
+              <TabsTrigger value="saldo" className="text-xs">
+                Saldo
+              </TabsTrigger>
+              <TabsTrigger value="transaksi" className="text-xs">
+                Transaksi
+              </TabsTrigger>
+              <TabsTrigger value="galeri" className="text-xs">
+                Galeri
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="ringkasan">
+              <FinancialDashboard
+                transactions={transactions}
+                saldoData={saldoData}
+                isLoading={isLoading}
+                compactMode
+              />
+            </TabsContent>
+
+            <TabsContent value="saldo">
+              <SaldoManager
+                saldoData={saldoData}
+                isLoading={isLoading}
+                onDataChange={fetchSaldo}
+              />
+            </TabsContent>
+
+            <TabsContent value="transaksi">
+              <TransactionManager
+                transactions={transactions}
+                isLoading={isLoading}
+                onDataChange={fetchTransactions}
+              />
+            </TabsContent>
+
+            <TabsContent value="galeri">
+              <ImageGallery transactions={transactions} isLoading={isLoading} />
+            </TabsContent>
+          </Tabs>
+        </div>
+
+        {/* DESKTOP */}
+        <div className="hidden lg:block space-y-8">
+          <FinancialDashboard
+            transactions={transactions}
+            saldoData={saldoData}
+            isLoading={isLoading}
+          />
+
+          <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
+            <div className="min-w-0">
+              <SaldoManager
+                saldoData={saldoData}
+                isLoading={isLoading}
+                onDataChange={fetchSaldo}
+              />
+            </div>
+            <div className="min-w-0">
+              <TransactionManager
+                transactions={transactions}
+                isLoading={isLoading}
+                onDataChange={fetchTransactions}
+              />
+            </div>
+          </div>
+
+          <ImageGallery transactions={transactions} isLoading={isLoading}/>
+        </div>
       </div>
     </main>
   );
 }
-
-

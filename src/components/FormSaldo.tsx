@@ -84,10 +84,6 @@ export default function SaldoForm({ onSaldoAdded }: SaldoFormProps) {
       toast.success("Data saldo berhasil disimpan!");
       resetForm();
 
-      setTimeout(() => {
-        setIsOpen(false);
-      }, 1000);
-
     } catch (error) {
       toast.error((error as Error).message);
     } finally {
@@ -98,24 +94,43 @@ export default function SaldoForm({ onSaldoAdded }: SaldoFormProps) {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="font-bold md:rounded-lg rounded-full p-3 md:px-4 md:py-2 transition-all">
+        <Button
+          variant="outline"
+          className="font-bold md:rounded-lg rounded-full p-3 md:px-4 md:py-2 transition-all border-cyan-600 bg-cyan-600 text-white hover:bg-cyan-700 hover:text-white dark:border-cyan-400 dark:bg-cyan-500 dark:hover:bg-cyan-400"
+        >
             <Landmark className="h-5 w-5 md:mr-2" />
             <span className="hidden md:inline">Input Saldo</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px] bg-gray-800 border-gray-700 text-white">
+      <DialogContent className="sm:max-w-[500px] border-slate-200 bg-white text-slate-900 shadow-2xl dark:border-white/10 dark:bg-slate-950 dark:text-slate-100">
         <DialogHeader>
-          <DialogTitle className="text-cyan-400">Input Saldo Baru</DialogTitle>
+          <DialogTitle className="text-cyan-700 dark:text-cyan-300">
+            Input Saldo Baru
+          </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="grid gap-4 py-4">
           <div className="grid gap-2">
             <Label htmlFor="tanggal">Tanggal</Label>
-            <Input id="tanggal" type="date" value={tanggal} onChange={(e) => setTanggal(e.target.value)} required className="bg-gray-700 border-gray-600"/>
+            <Input
+              id="tanggal"
+              type="date"
+              value={tanggal}
+              onChange={(e) => setTanggal(e.target.value)}
+              required
+              className="bg-white border-slate-200 dark:bg-slate-900/60 dark:border-white/10"
+            />
           </div>
           
           <div className="grid gap-2">
             <Label htmlFor="keterangan">Keterangan</Label>
-            <Textarea id="keterangan" value={keterangan} onChange={(e) => setKeterangan(e.target.value)} required placeholder="Contoh: Saldo Awal, Pemasukan Proyek B..." className="bg-gray-700 border-gray-600"/>
+            <Textarea
+              id="keterangan"
+              value={keterangan}
+              onChange={(e) => setKeterangan(e.target.value)}
+              required
+              placeholder="Contoh: Saldo Awal, Pemasukan Proyek B..."
+              className="bg-white border-slate-200 dark:bg-slate-900/60 dark:border-white/10"
+            />
           </div>
 
           <div className="grid gap-2">
@@ -126,11 +141,16 @@ export default function SaldoForm({ onSaldoAdded }: SaldoFormProps) {
                 required
                 value={jumlah || ''}
                 onValueChange={handleJumlahChange}
+                className="bg-white border-slate-200 dark:bg-slate-900/60 dark:border-white/10"
             />
           </div>
           
           <DialogFooter>
-            <Button type="submit" disabled={isSubmitting} className="w-full bg-cyan-600 hover:bg-cyan-700">
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full bg-cyan-600 text-white hover:bg-cyan-700 dark:bg-cyan-500 dark:hover:bg-cyan-400"
+            >
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isSubmitting ? 'Menyimpan...' : 'Simpan Data'}
             </Button>
@@ -140,4 +160,3 @@ export default function SaldoForm({ onSaldoAdded }: SaldoFormProps) {
     </Dialog>
   );
 }
-
