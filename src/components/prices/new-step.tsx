@@ -1,9 +1,12 @@
 "use client";
 
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import type { PriceItem } from "@/app/api/price-list/route";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
 
 // ===============================
 // ✅ BACKGROUND BY TYPE
@@ -11,9 +14,9 @@ import type { PriceItem } from "@/app/api/price-list/route";
 function getBackgroundByType(type: string): string {
   const t = type.toLowerCase().trim();
 
-  if (t.includes("persona")) return "/images/backgrounds/persona.png";
+  if (t.includes("persona")) return "/images/backgrounds/Persona.png";
   if (t.includes("uka") || t.includes("uni")) return "/images/backgrounds/uka.png";
-  if (t.includes("vanguard")) return "/images/backgrounds/vanguard-bg.png";
+  if (t.includes("vanguard")) return "/images/backgrounds/Vanguard-bg.png";
 
   if (
     t.includes("ps") ||
@@ -46,7 +49,10 @@ async function generateShareImage(item: PriceItem, bg: string): Promise<Blob | n
   img.crossOrigin = "anonymous";
   img.src = bg;
 
-  await new Promise((resolve) => (img.onload = resolve));
+  await new Promise<void>((resolve, reject) => {
+    img.onload = () => resolve();
+    img.onerror = () => reject(new Error("Gagal memuat background"));
+  });
 
   // BACKGROUND
   ctx.drawImage(img, 0, 0, 1200, 630);
@@ -103,34 +109,54 @@ export default function StepCard({
 }) {
   const bg = getBackgroundByType(item.type);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const previewBlobRef = useRef<Blob | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
 
   // ✅ PREVIEW GENERATOR
   async function handlePreview() {
-    const blob = await generateShareImage(item, bg);
-    if (!blob) return;
-    const url = URL.createObjectURL(blob);
-    setPreviewUrl(url);
-    setPreviewOpen(true);
+    setIsGenerating(true);
+    try {
+      const blob = await generateShareImage(item, bg);
+      if (!blob) throw new Error("Gagal membuat preview");
+
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      previewBlobRef.current = blob;
+      const url = URL.createObjectURL(blob);
+      setPreviewUrl(url);
+      setPreviewOpen(true);
+    } catch (e) {
+      toast.error((e as Error).message || "Gagal membuat preview");
+    } finally {
+      setIsGenerating(false);
+    }
   }
 
   // ✅ FINAL SHARE
   async function handleShare() {
-    if (!previewUrl) return;
-
-    const res = await fetch(previewUrl);
-    const blob = await res.blob();
+    const blob = previewBlobRef.current;
+    if (!blob || !previewUrl) return;
 
     const file = new File([blob], `${item.product}.png`, {
       type: "image/png",
     });
 
     if (navigator.canShare?.({ files: [file] })) {
-      await navigator.share({
-        title: item.product,
-        text: "Zimmer Biomet Price Info",
-        files: [file],
-      });
+      try {
+        await navigator.share({
+          title: item.product,
+          text: "Zimmer Biomet Price Info",
+          files: [file],
+        });
+      } catch {
+        // user cancel share -> ignore
+      }
     } else {
       const a = document.createElement("a");
       a.href = previewUrl;
@@ -138,6 +164,13 @@ export default function StepCard({
       a.click();
     }
   }
+
+  const closePreview = () => {
+    setPreviewOpen(false);
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(null);
+    previewBlobRef.current = null;
+  };
 
   return (
     <>
@@ -188,18 +221,13 @@ export default function StepCard({
           </div>
 
           {/* ✅ BUTTON */}
-          <button
+          <Button
             onClick={handlePreview}
-            className="
-              mt-3 md:mt-0
-              px-4 py-2 rounded-xl
-              bg-cyan-500 hover:bg-cyan-400
-              text-white font-semibold
-              shadow-[0_0_20px_rgba(34,211,238,0.7)]
-            "
+            disabled={isGenerating}
+            className="mt-3 md:mt-0 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold shadow-[0_0_20px_rgba(34,211,238,0.55)]"
           >
-            Preview
-          </button>
+            {isGenerating ? "Membuat..." : "Preview"}
+          </Button>
 
           {icon && <div className="text-cyan-300 text-4xl drop-shadow">{icon}</div>}
         </div>
@@ -208,28 +236,37 @@ export default function StepCard({
       {/* ✅ PREVIEW MODAL */}
       {previewOpen && previewUrl && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-          <div className="bg-gray-900 rounded-2xl p-4 max-w-md w-full">
-            <h3 className="text-white font-bold mb-3 text-center">
-              Preview Share
-            </h3>
+          <div className="relative w-full max-w-md rounded-3xl border border-white/10 bg-[var(--dash-surface-strong)] p-4 text-[color:var(--dash-ink)] shadow-[0_30px_90px_rgba(2,6,23,0.65)]">
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="font-semibold">Preview Share</h3>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={closePreview}
+                className="hover:bg-white/10"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
 
             <div className="relative w-full aspect-1200/630 rounded-xl overflow-hidden">
               <Image src={previewUrl} alt="Preview" fill className="object-contain" />
             </div>
 
             <div className="flex gap-3 mt-4">
-              <button
+              <Button
                 onClick={handleShare}
-                className="flex-1 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg py-2 font-semibold"
+                className="flex-1 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold"
               >
                 Share Sekarang
-              </button>
-              <button
-                onClick={() => setPreviewOpen(false)}
-                className="flex-1 bg-gray-700 hover:bg-gray-600 text-white rounded-lg py-2"
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={closePreview}
+                className="flex-1 border border-white/10 bg-white/10 text-[color:var(--dash-ink)] hover:bg-white/15"
               >
                 Batal
-              </button>
+              </Button>
             </div>
           </div>
         </div>

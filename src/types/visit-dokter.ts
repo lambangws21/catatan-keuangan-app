@@ -9,6 +9,10 @@ export interface Schedule {
   pasien?: string;
   repeat?: "once" | "monthly";
   perawat?: string;
+  /** id schedule asli saat item ini adalah hasil generate repeat */
+  sourceId?: string;
+  /** true jika ini hasil generate repeat (virtual occurrence) */
+  isVirtual?: boolean;
 }
 
 export interface TimelineItem {

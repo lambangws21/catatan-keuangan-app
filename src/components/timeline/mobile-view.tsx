@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 import {
@@ -9,56 +9,52 @@ import {
   ChevronRight,
   CalendarDays,
   ListPlus,
+  CheckCircle2,
+  ClipboardList,
+  Pencil,
+  Trash2,
+  XCircle,
 } from "lucide-react";
 import clsx from "clsx";
 import ScheduleForm from "@/components/visit-dokter/form-input";
+import type { Schedule } from "@/types/visit-dokter";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
-interface TimelineItem {
-  id: string;
-  namaDokter?: string;
-  rumahSakit?: string;
-  note?: string;
-  waktuVisit?: string;
-  status?: string;
-}
-
-export default function TimelinePage() {
-  const [allEvents, setAllEvents] = useState<TimelineItem[]>([]);
+export default function MobileTimeline({
+  schedules,
+  isLoading,
+  doctors,
+  onRefresh,
+  onEdit,
+  onDelete,
+  onQuickStatus,
+}: {
+  schedules: Schedule[];
+  isLoading: boolean;
+  doctors: { id: string; namaDokter: string; rumahSakit: string }[];
+  onRefresh: () => Promise<void>;
+  onEdit: (schedule: Schedule) => void;
+  onDelete: (scheduleId: string) => void;
+  onQuickStatus?: (schedule: Schedule, nextStatus: "Selesai" | "Dibatalkan") => void;
+}) {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [isLoading, setIsLoading] = useState(true);
 
   const [showAllDates, setShowAllDates] = useState(false);
   const [showAllEvents, setShowAllEvents] = useState(false);
 
-  const fetchEvents = async () => {
-    try {
-      setIsLoading(true);
-      const res = await fetch("/api/visit-dokter");
-      const data = await res.json();
-      setAllEvents(Array.isArray(data) ? data : []);
-    } catch {
-      setAllEvents([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchEvents();
-  }, []);
-
   // ✅ FILTER EVENT BY DATE ATAU ALL
   const filteredEvents = useMemo(() => {
-    if (showAllEvents) return allEvents;
+    if (showAllEvents) return schedules;
 
     const d = selectedDate.toISOString().slice(0, 10);
 
-    return allEvents.filter(
+    return schedules.filter(
       (item) =>
         item?.waktuVisit &&
         item.waktuVisit.split("T")[0] === d
     );
-  }, [selectedDate, allEvents, showAllEvents]);
+  }, [selectedDate, schedules, showAllEvents]);
 
   // ✅ FULL DATE RANGE
   const fullDateList = useMemo(() => {
@@ -86,10 +82,10 @@ export default function TimelinePage() {
   };
 
   return (
-    <div className="p-5 max-w-2xl mx-auto space-y-5 min-h-screen">
+    <div className="space-y-5">
 
       {/* HEADER */}
-      <header className="flex justify-between items-start">
+      <header className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs text-muted-foreground">
             {format(selectedDate, "MMMM dd, yyyy")}
@@ -97,9 +93,20 @@ export default function TimelinePage() {
           <h1 className="text-2xl font-bold">
             {showAllEvents ? "Semua Jadwal" : "Jadwal Hari Ini"}
           </h1>
+          <p className="text-xs text-muted-foreground mt-1">
+            Tap item untuk edit. Gunakan tombol cepat untuk selesai/batal.
+          </p>
         </div>
 
-        <ScheduleForm onFormSubmit={fetchEvents} doctorsList={[]} />
+        <div className="flex items-center gap-2 bg-slate-900 dark:bg-gray-800 dark:text-white text-slate-500">
+          <Button asChild variant="outline" size="sm" className="hidden sm:inline-flex">
+            <Link href="/list-dokter">
+              <ClipboardList className="mr-2 h-4 w-4" />
+              List Dokter
+            </Link>
+          </Button>
+          <ScheduleForm onFormSubmit={onRefresh} doctorsList={doctors} />
+        </div>
       </header>
 
       {!showAllEvents && (
@@ -189,9 +196,7 @@ export default function TimelinePage() {
 
       <div className="space-y-4">
         {filteredEvents.map((item) => {
-          const dateObj = item.waktuVisit
-            ? new Date(item.waktuVisit)
-            : new Date();
+          const dateObj = item.waktuVisit ? new Date(item.waktuVisit) : new Date();
 
           return (
             <motion.div
@@ -204,8 +209,9 @@ export default function TimelinePage() {
                   ? "bg-primary/10 border-primary/30"
                   : "bg-card border-border"
               )}
+              onClick={() => onEdit(item)}
             >
-              <div className="flex justify-between">
+              <div className="flex justify-between gap-3">
                 <h3 className="font-semibold">
                   {item.namaDokter || "-"}
                 </h3>
@@ -225,6 +231,61 @@ export default function TimelinePage() {
               <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
                 <Clock className="w-4 h-4" />
                 {format(dateObj, "EEEE, dd MMM yyyy")}
+              </div>
+
+              <div className="mt-3 flex flex-wrap justify-end gap-2">
+                {item.status === "Terjadwal" && onQuickStatus ? (
+                  <>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onQuickStatus(item, "Selesai");
+                      }}
+                    >
+                      <CheckCircle2 className="mr-2 h-4 w-4" />
+                      Selesai
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onQuickStatus(item, "Dibatalkan");
+                      }}
+                    >
+                      <XCircle className="mr-2 h-4 w-4" />
+                      Batal
+                    </Button>
+                  </>
+                ) : null}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit(item);
+                  }}
+                >
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Edit
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(item.id);
+                  }}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Hapus
+                </Button>
               </div>
             </motion.div>
           );

@@ -11,6 +11,8 @@ import {
   CalendarClock,
   Search,
   ChevronRight,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -46,6 +48,8 @@ interface ScheduleSidebarProps {
   schedules: Schedule[];
   onEdit: (schedule: Schedule) => void;
   onDelete: (scheduleId: string) => void;
+  onQuickStatus?: (schedule: Schedule, nextStatus: "Selesai" | "Dibatalkan") => void;
+  sticky?: boolean;
 }
 
 type FilterMode = "upcoming" | "past" | "today";
@@ -57,6 +61,8 @@ export default function ScheduleSidebar({
   schedules,
   onEdit,
   onDelete,
+  onQuickStatus,
+  sticky = true,
 }: ScheduleSidebarProps) {
 
   const now = useMemo(() => new Date(), []);
@@ -207,7 +213,12 @@ export default function ScheduleSidebar({
   /* ================= RENDER ================= */
 
   return (
-    <Card className="h-full sticky top-4 max-h-[calc(100vh-4rem)] overflow-y-auto bg-card border-border shadow-xl">
+    <Card
+      className={cn(
+        "h-full max-h-[calc(100vh-4rem)] overflow-y-auto bg-card border-border shadow-xl",
+        sticky ? "sticky top-4" : "static max-h-none"
+      )}
+    >
       <CardHeader className="space-y-4 border-b border-border/60">
         {/* TITLE */}
         <div className="flex items-center justify-between gap-2">
@@ -358,6 +369,7 @@ export default function ScheduleSidebar({
               schedule={schedule}
               onEdit={onEdit}
               onDelete={onDelete}
+              onQuickStatus={onQuickStatus}
               viewMode={viewMode}
             />
           ))
@@ -373,11 +385,13 @@ function SidebarItem({
   schedule,
   onEdit,
   onDelete,
+  onQuickStatus,
   viewMode,
 }: {
   schedule: Schedule;
   onEdit: (s: Schedule) => void;
   onDelete: (id: string) => void;
+  onQuickStatus?: (schedule: Schedule, nextStatus: "Selesai" | "Dibatalkan") => void;
   viewMode: "compact" | "detail";
 }) {
   const dateObj = new Date(schedule.waktuVisit);
@@ -437,6 +451,34 @@ function SidebarItem({
 
       {/* ACTIONS */}
       <div className="flex flex-col gap-1 ml-1">
+        {schedule.status === "Terjadwal" && onQuickStatus ? (
+          <>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7"
+              title="Tandai Selesai"
+              onClick={(e) => {
+                e.stopPropagation();
+                onQuickStatus(schedule, "Selesai");
+              }}
+            >
+              <CheckCircle2 className="h-4 w-4 text-green-500" />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7"
+              title="Batalkan"
+              onClick={(e) => {
+                e.stopPropagation();
+                onQuickStatus(schedule, "Dibatalkan");
+              }}
+            >
+              <XCircle className="h-4 w-4 text-red-500" />
+            </Button>
+          </>
+        ) : null}
         <Button
           size="icon"
           variant="ghost"

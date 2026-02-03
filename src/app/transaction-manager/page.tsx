@@ -150,11 +150,11 @@ export default function TransactionsPage() {
       </header>
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "transaksi" | "meals")} className="gap-4">
-        <TabsList className="w-full justify-start overflow-x-auto bg-white/10 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <TabsTrigger value="transaksi" className="min-w-[120px] text-xs">
+        <TabsList className="w-full  dark:bg-gray-800 dark:text-white justify-start overflow-x-auto bg-white/10 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <TabsTrigger value="transaksi" className="min-w-[120px] text-xs bg-slate-900 dark:bg-gray-800 dark:text-white text-slate-500">
             Transaksi
           </TabsTrigger>
-          <TabsTrigger value="meals" className="min-w-[120px] text-xs">
+          <TabsTrigger value="meals" className="min-w-[120px] text-xs bg-slate-900 dark:bg-gray-800 dark:text-white text-slate-500">
             Meals Metting
           </TabsTrigger>
         </TabsList>
@@ -179,7 +179,7 @@ export default function TransactionsPage() {
             <SelectTrigger>
               <SelectValue placeholder="Semua Kategori" />
             </SelectTrigger>
-            <SelectContent className="bg-popover bg-white text-popover-foreground border-border text-slate-500">
+            <SelectContent className="bg-popover bg-slate-900 dark:bg-gray-800 dark:text-white text-popover-foreground border-border text-slate-500">
               {uniqueCategories
                 .filter((cat) => cat !== "Meals Metting")
                 .map((cat) => (

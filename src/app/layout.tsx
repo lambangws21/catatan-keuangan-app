@@ -44,7 +44,7 @@ function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <div className="min-h-screen w-full bg-gray-900 text-white">
+      <div className="min-h-screen w-full bg-black text-white">
         <Sidebar isCollapsed={isSidebarCollapsed} toggleSidebar={toggleSidebar} />
         <div
           className={cn(
@@ -64,7 +64,7 @@ function AppLayout({ children }: { children: ReactNode }) {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="id" suppressHydrationWarning>
-      <body className="bg-gray-900">
+      <body className="bg-black">
           <AuthProvider>
             <Toaster richColors position="top-right" />
             <AppLayout>{children}</AppLayout>

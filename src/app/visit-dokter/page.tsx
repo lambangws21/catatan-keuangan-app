@@ -1,214 +1,20 @@
-// "use client";
-
-// import { useState, useEffect, useCallback } from "react";
-// import { Loader2, ClipboardList, Stethoscope, Hospital, Clock } from "lucide-react";
-// import Link from "next/link";
-// import { Button } from "@/components/ui/button";
-// import ScheduleForm from "@/components/visit-dokter/form-input";
-// import DailyTimelineView from "@/components/visit-dokter/daily-timeline-view";
-// import ScheduleSidebar from "@/components/visit-dokter/schedule-sidebar";
-// import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-// import { toast } from "sonner";
-// import { format } from "date-fns";
-// import type { Schedule } from "@/types/visit-dokter";
-
-// export interface Doctor {
-//   id: string;
-//   namaDokter: string;
-//   rumahSakit: string;
-// }
-
-// export default function SchedulesPage() {
-//   const [schedules, setSchedules] = useState<Schedule[]>([]);
-//   const [doctors, setDoctors] = useState<Doctor[]>([]);
-//   const [isLoading, setIsLoading] = useState(true);
-//   const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null);
-
-//   const fetchData = useCallback(async () => {
-//     setIsLoading(true);
-//     try {
-//       const [schedulesRes, doctorsRes] = await Promise.all([
-//         fetch("/api/visit-dokter"),
-//         fetch("/api/list-dokter"),
-//       ]);
-
-//       if (!schedulesRes.ok) throw new Error("Gagal mengambil data jadwal.");
-//       if (!doctorsRes.ok) throw new Error("Gagal mengambil daftar dokter.");
-
-//       const schedulesData = await schedulesRes.json();
-//       const doctorsData = await doctorsRes.json();
-
-//       setSchedules(schedulesData);
-//       setDoctors(doctorsData);
-//     } catch (error) {
-//       console.error(error);
-//       setSchedules([]);
-//       setDoctors([]);
-//     } finally {
-//       setIsLoading(false);
-//     }
-//   }, []);
-
-//   const handleDeleteSchedule = async (scheduleId: string) => {
-//     try {
-//       const response = await fetch(`/api/visit-dokter/${scheduleId}`, {
-//         method: "DELETE",
-//         headers: { "Content-Type": "application/json" },
-//       });
-
-//       if (!response.ok) {
-//         const errorData = await response.json();
-//         throw new Error(errorData.error || "Gagal menghapus jadwal.");
-//       }
-
-//       await fetchData();
-//       toast.success("Jadwal berhasil dihapus!");
-//     } catch (error) {
-//       console.error("Error deleting schedule:", error);
-//       toast.error(`Gagal menghapus: ${(error as Error).message}`);
-//     }
-//   };
-
-//   useEffect(() => {
-//     fetchData();
-//   }, [fetchData]);
-
-//   const handleEdit = (schedule: Schedule) => {
-//     setEditingSchedule(schedule);
-//   };
-
-//   const handleCloseEdit = () => {
-//     setEditingSchedule(null);
-//   };
-
-//   const handleFormSubmit = async () => {
-//     handleCloseEdit();
-//     await fetchData();
-//   };
-
-//   // --- DARK MODE FRIENDLY DETAILS ---
-//   const renderScheduleDetails = (schedule: Schedule) => {
-//     if (!schedule) return null;
-
-//     const date = new Date(schedule.waktuVisit);
-
-//     return (
-//       <div className="mt-4 p-3 bg-muted rounded-lg border border-border space-y-2 text-sm transition-colors">
-//         <div className="flex items-center text-foreground">
-//           <Stethoscope className="w-4 h-4 mr-2 text-primary" />
-//           <span className="font-semibold">{schedule.namaDokter}</span>
-//         </div>
-
-//         <div className="flex items-center text-muted-foreground">
-//           <Hospital className="w-4 h-4 mr-2 text-primary" />
-//           <span className="font-medium">{schedule.rumahSakit}</span>
-//         </div>
-
-//         <div className="flex items-center text-muted-foreground">
-//           <Clock className="w-4 h-4 mr-2 text-primary" />
-//           <span className="font-medium">
-//             {format(date, "EEEE, dd MMMM yyyy")} | {format(date, "HH:mm")}
-//           </span>
-//         </div>
-//       </div>
-//     );
-//   };
-
-//   return (
-//     <div className="space-y-6 p-4 md:p-6 min-h-screen text-foreground bg-background">
-
-//       {/* Header */}
-//       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 pb-4 border-b border-border">
-//         <div>
-//           <h1 className="text-3xl font-bold">Manajemen Jadwal Visit</h1>
-//           <p className="text-muted-foreground text-sm">
-//             Atur semua jadwal visit dokter secara terorganisir dan efisien.
-//           </p>
-//         </div>
-
-//         <div className="flex items-center gap-3">
-//           <ScheduleForm onFormSubmit={handleFormSubmit} doctorsList={doctors} />
-
-//           <Button asChild variant="outline" className="font-semibold rounded-lg">
-//             <Link href="/list-dokter">
-//               <ClipboardList className="h-5 w-5 mr-2" />
-//               List Dokter
-//             </Link>
-//           </Button>
-//         </div>
-//       </header>
-
-//       {/* Loader */}
-//       {isLoading ? (
-//         <div className="flex justify-center items-center py-20 text-primary">
-//           <Loader2 className="h-8 w-8 animate-spin mr-2" />
-//           Memuat Jadwal...
-//         </div>
-//       ) : (
-//         <div className="flex flex-col lg:flex-row gap-6">
-
-//           {/* Timeline */}
-//           <div className="flex-1 w-full lg:w-2/3">
-//             <div className="rounded-xl shadow-md border border-border bg-card p-4">
-//               <DailyTimelineView
-//                 schedulesData={schedules}
-//                 onDataChange={fetchData}
-//                 onEditSchedule={handleEdit}
-//               />
-//             </div>
-//           </div>
-
-//           {/* Sidebar */}
-//           <div className="w-full lg:w-1/3">
-//             <div className="rounded-xl shadow-md border border-border bg-card p-4">
-//               <ScheduleSidebar
-//                 schedules={schedules}
-//                 onEdit={handleEdit}
-//                 onDelete={handleDeleteSchedule}
-//               />
-//             </div>
-//           </div>
-
-//         </div>
-//       )}
-
-//       {/* Modal Edit */}
-//       <Dialog open={!!editingSchedule} onOpenChange={(open) => !open && handleCloseEdit()}>
-//         <DialogContent className="sm:max-w-[480px] bg-card text-foreground border border-border rounded-xl shadow-xl">
-//           <DialogHeader>
-//             <DialogTitle className="text-primary text-lg">
-//               Edit Jadwal Kunjungan
-//             </DialogTitle>
-
-//             {editingSchedule && (
-//               <div className="mt-3 bg-muted p-3 rounded-lg border border-border">
-//                 {renderScheduleDetails(editingSchedule)}
-//               </div>
-//             )}
-//           </DialogHeader>
-
-//           {editingSchedule && (
-//             <ScheduleForm
-//               onFormSubmit={handleFormSubmit}
-//               doctorsList={doctors}
-//               initialData={editingSchedule}
-//             />
-//           )}
-//         </DialogContent>
-//       </Dialog>
-
-//     </div>
-//   );
-// }
-
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { Loader2, ClipboardList } from "lucide-react";
+import { useMemo, useState, useEffect, useCallback } from "react";
+import {
+  ClipboardList,
+  Loader2,
+  RefreshCw,
+  CalendarDays,
+  CheckCircle2,
+  XCircle,
+  Clock,
+} from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import ScheduleForm from "@/components/visit-dokter/form-input";
 import DailyTimelineView from "@/components/visit-dokter/daily-timeline-view";
@@ -225,14 +31,10 @@ export interface Doctor {
 
 export default function SchedulesPage() {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const [baseSchedules, setBaseSchedules] = useState<Schedule[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null);
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    setIsMobile(window.innerWidth < 768);
-  }, []);
 
   // ========================
   // ✅ GENERATE REPEAT EVENT
@@ -241,7 +43,7 @@ export default function SchedulesPage() {
     const result: Schedule[] = [];
 
     events.forEach(event => {
-      result.push(event);
+      result.push({ ...event, sourceId: event.id, isVirtual: false });
 
       if (event.repeat === "monthly") {
         for (let i = 1; i <= 6; i++) {
@@ -252,6 +54,8 @@ export default function SchedulesPage() {
             ...event,
             id: `${event.id}-r${i}`,
             waktuVisit: date.toISOString(),
+            sourceId: event.id,
+            isVirtual: true,
           });
         }
       }
@@ -274,8 +78,11 @@ export default function SchedulesPage() {
       const scheduleData = await scheduleRes.json();
       const doctorData = await doctorRes.json();
 
+      const base = Array.isArray(scheduleData) ? (scheduleData as Schedule[]) : [];
+      setBaseSchedules(base);
+
       const expandedSchedules = generateRecurringEvents(
-        Array.isArray(scheduleData) ? scheduleData : []
+        base
       );
 
       setSchedules(expandedSchedules);
@@ -297,7 +104,22 @@ export default function SchedulesPage() {
   // ========================
   const handleDeleteSchedule = async (id: string) => {
     try {
-      const res = await fetch(`/api/visit-dokter/${id}`, { method: "DELETE" });
+      const schedule = schedules.find((s) => s.id === id);
+      const actualId = schedule?.isVirtual ? schedule.sourceId : id;
+
+      if (!actualId) {
+        toast.error("Jadwal tidak valid");
+        return;
+      }
+
+      if (schedule?.isVirtual) {
+        const ok = window.confirm(
+          "Ini jadwal bulanan (virtual). Menghapus akan menghapus jadwal utama dan seluruh repeat. Lanjutkan?"
+        );
+        if (!ok) return;
+      }
+
+      const res = await fetch(`/api/visit-dokter/${actualId}`, { method: "DELETE" });
       if (!res.ok) throw new Error();
       toast.success("Jadwal dihapus");
       fetchData();
@@ -309,7 +131,14 @@ export default function SchedulesPage() {
   // ========================
   // EDIT
   // ========================
-  const handleEdit = (schedule: Schedule) => setEditingSchedule(schedule);
+  const handleEdit = (schedule: Schedule) => {
+    if (schedule.isVirtual && schedule.sourceId) {
+      const original = baseSchedules.find((s) => s.id === schedule.sourceId);
+      setEditingSchedule(original ?? schedule);
+      return;
+    }
+    setEditingSchedule(schedule);
+  };
   const closeEdit = () => setEditingSchedule(null);
 
   const handleFormSubmit = async () => {
@@ -317,91 +146,317 @@ export default function SchedulesPage() {
     await fetchData();
   };
 
-  // ========================
-  // MOBILE MODE
-  // ========================
-  if (isMobile) {
-    return (
-      <MobileTimeline
-      />
-    );
-  }
+  const stats = useMemo(() => {
+    const now = new Date();
+    const todayStr = now.toISOString().slice(0, 10);
+
+    const today = schedules.filter((s) => s.waktuVisit.slice(0, 10) === todayStr);
+    const upcoming = schedules.filter((s) => new Date(s.waktuVisit).getTime() >= now.getTime());
+
+    return {
+      total: schedules.length,
+      today: today.length,
+      upcoming: upcoming.length,
+      scheduled: schedules.filter((s) => s.status === "Terjadwal").length,
+      done: schedules.filter((s) => s.status === "Selesai").length,
+      canceled: schedules.filter((s) => s.status === "Dibatalkan").length,
+    };
+  }, [schedules]);
+
+  const handleQuickStatus = useCallback(
+    async (schedule: Schedule, nextStatus: "Selesai" | "Dibatalkan") => {
+      const actualId = schedule.isVirtual ? schedule.sourceId : schedule.id;
+      if (!actualId) return toast.error("Jadwal tidak valid");
+
+      const targetSchedule =
+        schedule.isVirtual && schedule.sourceId
+          ? baseSchedules.find((s) => s.id === schedule.sourceId) ?? schedule
+          : schedule;
+
+      if (schedule.isVirtual) {
+        toast.message("Jadwal bulanan: status diubah pada jadwal utama.");
+      }
+
+      try {
+        const res = await fetch(`/api/visit-dokter/${actualId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            namaDokter: targetSchedule.namaDokter ?? "",
+            rumahSakit: targetSchedule.rumahSakit ?? "",
+            note: targetSchedule.note ?? "",
+            waktuVisit: targetSchedule.waktuVisit,
+            status: nextStatus,
+            perawat: targetSchedule.perawat ?? "",
+          }),
+        });
+
+        if (!res.ok) throw new Error("Gagal update status");
+        toast.success(`Status diubah: ${nextStatus}`);
+        await fetchData();
+      } catch (err) {
+        toast.error((err as Error).message);
+      }
+    },
+    [baseSchedules, fetchData]
+  );
 
   // ========================
   // DESKTOP MODE
   // ========================
   return (
-    <div className="space-y-6 p-6 min-h-screen">
+    <div className="relative isolate">
+      <div className="pointer-events-none absolute -top-24 right-[-10%] h-64 w-64 rounded-full bg-[radial-gradient(circle_at_center,rgba(20,184,166,0.20),transparent_65%)] blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-32 left-[-15%] h-72 w-72 rounded-full bg-[radial-gradient(circle_at_center,rgba(245,158,11,0.18),transparent_70%)] blur-3xl" />
 
-      <header className="flex justify-between items-center border-b pb-4">
-        <div>
-          <h1 className="text-3xl font-bold">Manajemen Jadwal Visit</h1>
-          <p className="text-muted-foreground text-sm">
-            Pengaturan jadwal visit dokter terintegrasi
-          </p>
-        </div>
+      <div className="relative z-10 space-y-6 p-4 sm:p-6 lg:p-8 text-(--dash-ink)]">
+        <header className="rounded-3xl border border-white/10 bg-(--dash-surface)] p-5 sm:p-6 shadow-[0_20px_60px_rgba(2,6,23,0.45)] backdrop-blur">
+          <div className="flex flex-col gap-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.4em] text-(--dash-muted)]">
+                  Visit Dokter
+                </p>
+                <h1 className="mt-2 text-2xl sm:text-3xl font-semibold font-(--font-display)]">
+                  Manajemen Jadwal Visit
+                </h1>
+                <p className="mt-2 text-sm text-(--dash-muted)]">
+                  Kelola jadwal, status, repeat bulanan, dan pantau operator/perawat dengan cepat.
+                </p>
+              </div>
 
-        <div className="flex gap-3">
-          <ScheduleForm onFormSubmit={handleFormSubmit} doctorsList={doctors} />
-          <Button asChild variant="outline">
-            <Link href="/list-dokter">
-              <ClipboardList className="mr-2 w-4 h-4" />
-              List Dokter
-            </Link>
-          </Button>
-        </div>
-      </header>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  onClick={fetchData}
+                  variant="secondary"
+                  className="border border-white/10 bg-white/10 text-(--dash-ink)] hover:bg-white/15"
+                >
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Refresh
+                </Button>
+                <Button asChild variant="secondary" className="border border-white/10 bg-white/10 text-(--dash-ink)] hover:bg-white/15 text-slate-50">
+                  <Link href="/list-dokter">
+                    <ClipboardList className="mr-2 h-4 w-4" />
+                    List Dokter
+                  </Link>
+                </Button>
+                <ScheduleForm onFormSubmit={handleFormSubmit} doctorsList={doctors} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
+                  Hari Ini
+                </p>
+                <p className="mt-2 text-lg font-semibold tabular-nums">
+                  {stats.today}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
+                  Mendatang
+                </p>
+                <p className="mt-2 text-lg font-semibold tabular-nums">
+                  {stats.upcoming}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
+                  Terjadwal
+                </p>
+                <p className="mt-2 text-lg font-semibold tabular-nums text-sky-300">
+                  {stats.scheduled}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
+                  Selesai
+                </p>
+                <p className="mt-2 text-lg font-semibold tabular-nums text-emerald-300">
+                  {stats.done}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
+                  Dibatalkan
+                </p>
+                <p className="mt-2 text-lg font-semibold tabular-nums text-rose-300">
+                  {stats.canceled}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
+                  Total
+                </p>
+                <p className="mt-2 text-lg font-semibold tabular-nums">
+                  {stats.total}
+                </p>
+              </div>
+            </div>
+          </div>
+        </header>
 
       {isLoading ? (
-        <div className="flex justify-center py-20">
-          <Loader2 className="animate-spin mr-2" />
-          Memuat Jadwal...
+        <div className="flex items-center justify-center gap-2 rounded-3xl border border-white/10 bg-(--dash-surface)] p-10 text-sm text-(--dash-muted)]">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          Memuat jadwal...
         </div>
       ) : (
-        <div className="flex flex-col lg:flex-row gap-6">
-          <div className="flex-1">
-            <DailyTimelineView
-              schedulesData={schedules}
-              onDataChange={fetchData}
-              onEditSchedule={handleEdit}
-            />
+        <>
+          {/* MOBILE */}
+          <div className="lg:hidden">
+            <Tabs defaultValue="timeline" className="gap-4">
+              <TabsList className="w-full justify-start overflow-x-auto border border-white/10 bg-white/10 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <TabsTrigger value="timeline" className="min-w-[120px] text-xs bg-slate-900 text-slate-500 dark:bg-gray-800 dark:text-white">
+                  Timeline
+                </TabsTrigger>
+                <TabsTrigger value="daftar" className="min-w-[120px] text-xs bg-slate-900 text-slate-500 dark:bg-gray-800 dark:text-white">
+                  Daftar
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="timeline">
+                <div className="rounded-3xl border border-white/10 bg-(--dash-surface)] p-5 shadow-[0_20px_60px_rgba(2,6,23,0.45)]">
+                  <MobileTimeline
+                    schedules={schedules}
+                    isLoading={false}
+                    doctors={doctors}
+                    onRefresh={fetchData}
+                    onEdit={handleEdit}
+                    onDelete={handleDeleteSchedule}
+                    onQuickStatus={handleQuickStatus}
+                  />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="daftar">
+                <ScheduleSidebar
+                  schedules={schedules}
+                  onEdit={handleEdit}
+                  onDelete={handleDeleteSchedule}
+                  onQuickStatus={handleQuickStatus}
+                  sticky={false}
+                />
+              </TabsContent>
+            </Tabs>
           </div>
 
-          <div className="lg:w-1/3">
-            <ScheduleSidebar
-              schedules={schedules}
-              onEdit={handleEdit}
-              onDelete={handleDeleteSchedule}
-            />
+          {/* DESKTOP */}
+          <div className="hidden lg:flex gap-6">
+            <div className="flex-1 min-w-0 rounded-3xl border border-white/10 bg-(--dash-surface)] p-5 shadow-[0_20px_60px_rgba(2,6,23,0.45)]">
+              <DailyTimelineView
+                schedulesData={schedules}
+                onDataChange={fetchData}
+                onEditSchedule={handleEdit}
+              />
+            </div>
+
+            <div className="w-full lg:w-[380px]">
+              <ScheduleSidebar
+                schedules={schedules}
+                onEdit={handleEdit}
+                onDelete={handleDeleteSchedule}
+                onQuickStatus={handleQuickStatus}
+              />
+            </div>
           </div>
-        </div>
+        </>
       )}
 
       {/* MODAL EDIT */}
       <Dialog open={!!editingSchedule} onOpenChange={(open) => !open && closeEdit()}>
-        <DialogContent className="sm:max-w-[480px]">
+        <DialogContent className="sm:max-w-[560px] border-white/10 bg-(--dash-surface-strong)] text-(--dash-ink)]">
           <DialogHeader>
-            <DialogTitle>Edit Jadwal Visit</DialogTitle>
+            <DialogTitle className="flex items-center justify-between gap-3">
+              <span>Edit Jadwal Visit</span>
+              {editingSchedule?.isVirtual ? (
+                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold text-(--dash-muted)]">
+                  Bulanan (series)
+                </span>
+              ) : null}
+            </DialogTitle>
           </DialogHeader>
 
-          {editingSchedule && (
-            <ScheduleForm
-              initialData={{
-                id: editingSchedule.id ?? "",
-                namaDokter: editingSchedule.namaDokter ?? "",
-                rumahSakit: editingSchedule.rumahSakit ?? "",
-                note: editingSchedule.note ?? "",
-                status: editingSchedule.status ?? "Terjadwal",
-                waktuVisit: editingSchedule.waktuVisit,
-                repeat: editingSchedule.repeat ?? "once",
-                perawat: editingSchedule.perawat ?? "",
-              }}
-              doctorsList={doctors}
-              onFormSubmit={handleFormSubmit}
-            />
-          )}
+          {editingSchedule ? (
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+                  <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
+                    Tanggal
+                  </p>
+                  <p className="mt-2 inline-flex items-center gap-2 text-sm font-semibold">
+                    <CalendarDays className="h-4 w-4 text-cyan-300" />
+                    <span className="tabular-nums">
+                      {editingSchedule.waktuVisit.slice(0, 10)}
+                    </span>
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+                  <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
+                    Jam
+                  </p>
+                  <p className="mt-2 inline-flex items-center gap-2 text-sm font-semibold">
+                    <Clock className="h-4 w-4 text-cyan-300" />
+                    {new Date(editingSchedule.waktuVisit).toLocaleTimeString(
+                      "id-ID",
+                      {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      }
+                    )}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+                  <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
+                    Status cepat
+                  </p>
+                  <div className="mt-2 flex gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      className="border border-white/10 bg-white/10 text-(--dash-ink)] hover:bg-white/15"
+                      onClick={() => handleQuickStatus(editingSchedule, "Selesai")}
+                      disabled={editingSchedule.status === "Selesai"}
+                    >
+                      <CheckCircle2 className="mr-2 h-4 w-4 text-emerald-300" />
+                      Selesai
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      className="border border-white/10 bg-white/10 text-(--dash-ink)] hover:bg-white/15"
+                      onClick={() => handleQuickStatus(editingSchedule, "Dibatalkan")}
+                      disabled={editingSchedule.status === "Dibatalkan"}
+                    >
+                      <XCircle className="mr-2 h-4 w-4 text-rose-300" />
+                      Batal
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              <ScheduleForm
+                initialData={{
+                  id: editingSchedule.id ?? "",
+                  namaDokter: editingSchedule.namaDokter ?? "",
+                  rumahSakit: editingSchedule.rumahSakit ?? "",
+                  note: editingSchedule.note ?? "",
+                  status: editingSchedule.status ?? "Terjadwal",
+                  waktuVisit: editingSchedule.waktuVisit,
+                  repeat: editingSchedule.repeat ?? "once",
+                  perawat: editingSchedule.perawat ?? "",
+                }}
+                doctorsList={doctors}
+                onFormSubmit={handleFormSubmit}
+              />
+            </div>
+          ) : null}
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 }
