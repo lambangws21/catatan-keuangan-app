@@ -432,7 +432,7 @@ export default function TransactionManager({
           </p>
           <h2 className="text-2xl font-semibold text-white">Catatan Pengeluaran</h2>
           <p className="text-sm text-(--dash-muted)">
-            {transactions.length} operasi terakhir siap direkap dan dicetak.
+            {transactions.length} transaksi terakhir siap direkap dan dicetak.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -509,17 +509,16 @@ export default function TransactionManager({
                   key={tx.id}
                   className="border-b border-white/10 transition-colors hover:border-cyan-500/40 hover:bg-white/5"
                 >
-                  <TableCell className="py-3 px-3">{tx.tanggal}</TableCell>
                   <TableCell className="py-3 px-3">
                     <span className="inline-flex items-center gap-2">
                       <CalendarDays className="h-4 w-4 text-cyan-200/70" />
                       <span>{tx.tanggal}</span>
                     </span>
                   </TableCell>
-                  <TableCell className="py-3 px-3 font-medium">
+                  <TableCell className="py-3 px-3">
                     <span className="inline-flex items-center gap-2">
                       <StickyNote className="h-4 w-4 text-cyan-200/70" />
-                      <span>{tx.keterangan}</span>
+                      <span className="line-clamp-2 whitespace-pre-line">{tx.keterangan}</span>
                     </span>
                   </TableCell>
                   <TableCell className="py-3 px-3">

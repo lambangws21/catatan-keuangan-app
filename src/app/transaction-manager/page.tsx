@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import TransactionManager from "@/components/transaction-manager";
+import MealsMeetingManager from "@/components/MealsMeetingManager";
 
 import { Input } from "@/components/ui/input";
 import {
@@ -13,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Search, Calendar } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // =======================
 // ✅ TYPE DATA
@@ -32,6 +34,7 @@ export default function TransactionsPage() {
 
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<"transaksi" | "meals">("transaksi");
 
   // ✅ FILTER STATE
   const [searchTerm, setSearchTerm] = useState("");
@@ -70,6 +73,10 @@ export default function TransactionsPage() {
     fetchTransactions();
   }, [fetchTransactions]);
 
+  useEffect(() => {
+    if (selectedCategory === "Meals Metting") setActiveTab("meals");
+  }, [selectedCategory]);
+
   // =======================
   // ✅ PRESET: BULAN INI
   // =======================
@@ -93,12 +100,11 @@ export default function TransactionsPage() {
   // =======================
   // ✅ FILTER DATA FINAL
   // =======================
-  const filteredTransactions = useMemo(() => {
+  const filteredBase = useMemo(() => {
     return allTransactions
       .filter((tx) => {
-        return (
-          selectedCategory === "all" || tx.jenisBiaya === selectedCategory
-        );
+        if (activeTab === "meals") return tx.jenisBiaya === "Meals Metting";
+        return selectedCategory === "all" || tx.jenisBiaya === selectedCategory;
       })
       .filter((tx) => {
         return tx.keterangan
@@ -120,7 +126,11 @@ export default function TransactionsPage() {
 
         return true;
       });
-  }, [allTransactions, selectedCategory, searchTerm, startDate, endDate]);
+  }, [allTransactions, selectedCategory, searchTerm, startDate, endDate, activeTab]);
+
+  const filteredTransactionsNonMeals = useMemo(() => {
+    return filteredBase.filter((tx) => tx.jenisBiaya !== "Meals Metting");
+  }, [filteredBase]);
 
   // =======================
   // ✅ RENDER UI
@@ -139,6 +149,16 @@ export default function TransactionsPage() {
         </div>
       </header>
 
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "transaksi" | "meals")} className="gap-4">
+        <TabsList className="w-full justify-start overflow-x-auto bg-white/10 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <TabsTrigger value="transaksi" className="min-w-[120px] text-xs">
+            Transaksi
+          </TabsTrigger>
+          <TabsTrigger value="meals" className="min-w-[120px] text-xs">
+            Meals Metting
+          </TabsTrigger>
+        </TabsList>
+
       {/* ✅ FILTER BAR */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-gray-800/50 rounded-xl border border-gray-700">
         {/* SEARCH */}
@@ -154,18 +174,26 @@ export default function TransactionsPage() {
         </div>
 
         {/* KATEGORI */}
-        <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-          <SelectTrigger>
-            <SelectValue placeholder="Semua Kategori" />
-          </SelectTrigger>
-          <SelectContent className="bg-popover bg-white text-popover-foreground border-border text-slate-500">
-            {uniqueCategories.map((cat) => (
-              <SelectItem key={cat} value={cat}>
-                {cat === "all" ? "Semua Kategori" : cat}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {activeTab === "transaksi" ? (
+          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+            <SelectTrigger>
+              <SelectValue placeholder="Semua Kategori" />
+            </SelectTrigger>
+            <SelectContent className="bg-popover bg-white text-popover-foreground border-border text-slate-500">
+              {uniqueCategories
+                .filter((cat) => cat !== "Meals Metting")
+                .map((cat) => (
+                  <SelectItem key={cat} value={cat}>
+                    {cat === "all" ? "Semua Kategori" : cat}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          <div className="rounded-lg border border-gray-700 bg-gray-900/40 px-4 py-2 text-sm text-gray-300 flex items-center">
+            Kategori: <span className="ml-2 font-semibold text-amber-300">Meals Metting</span>
+          </div>
+        )}
 
         {/* PRESET BULAN INI */}
         <button
@@ -192,11 +220,22 @@ export default function TransactionsPage() {
       </div>
 
       {/* ✅ TRANSACTION TABLE */}
-      <TransactionManager
-        transactions={filteredTransactions}
-        isLoading={isLoading}
-        onDataChange={fetchTransactions}
-      />
+        <TabsContent value="transaksi">
+          <TransactionManager
+            transactions={filteredTransactionsNonMeals}
+            isLoading={isLoading}
+            onDataChange={fetchTransactions}
+          />
+        </TabsContent>
+
+        <TabsContent value="meals">
+          <MealsMeetingManager
+            transactions={filteredBase}
+            isLoading={isLoading}
+            onDataChange={fetchTransactions}
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

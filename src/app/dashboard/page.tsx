@@ -234,6 +234,7 @@ import { Button } from "@/components/ui/button";
 import { Sun, Moon } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import MealsMeetingManager from "@/components/MealsMeetingManager";
 
 /* types (same as before) */
 interface Transaction {
@@ -319,6 +320,10 @@ export default function DashboardPage() {
       return itemDate.getMonth() === selectedMonth && itemDate.getFullYear() === selectedYear;
     });
   }, [allSaldoData, selectedMonth, selectedYear]);
+
+  const filteredTransactionsNonMeals = useMemo(() => {
+    return filteredTransactions.filter((tx) => tx.jenisBiaya !== "Meals Metting");
+  }, [filteredTransactions]);
 
   const years = Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - i);
   const months = [
@@ -406,17 +411,20 @@ export default function DashboardPage() {
         {/* MOBILE: minimal, no long scroll */}
         <div className="lg:hidden">
           <Tabs defaultValue="overview" className="gap-4">
-            <TabsList className="w-full grid grid-cols-4 bg-white/5 border border-white/10">
-              <TabsTrigger value="overview" className="text-xs">
+            <TabsList className="w-full justify-start overflow-x-auto border border-white/10 bg-white/5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <TabsTrigger value="overview" className="min-w-[92px] text-xs">
                 Overview
               </TabsTrigger>
-              <TabsTrigger value="saldo" className="text-xs">
+              <TabsTrigger value="saldo" className="min-w-[92px] text-xs">
                 Saldo
               </TabsTrigger>
-              <TabsTrigger value="transaksi" className="text-xs">
+              <TabsTrigger value="transaksi" className="min-w-[92px] text-xs">
                 Transaksi
               </TabsTrigger>
-              <TabsTrigger value="galeri" className="text-xs">
+              <TabsTrigger value="meals" className="min-w-[92px] text-xs">
+                Meals
+              </TabsTrigger>
+              <TabsTrigger value="galeri" className="min-w-[92px] text-xs">
                 Galeri
               </TabsTrigger>
             </TabsList>
@@ -462,6 +470,14 @@ export default function DashboardPage() {
 
             <TabsContent value="transaksi">
               <TransactionManager
+                transactions={filteredTransactionsNonMeals}
+                isLoading={isLoading}
+                onDataChange={fetchTransactions}
+              />
+            </TabsContent>
+
+            <TabsContent value="meals">
+              <MealsMeetingManager
                 transactions={filteredTransactions}
                 isLoading={isLoading}
                 onDataChange={fetchTransactions}
@@ -523,12 +539,18 @@ export default function DashboardPage() {
             </div>
             <div className="min-w-0">
               <TransactionManager
-                transactions={filteredTransactions}
+                transactions={filteredTransactionsNonMeals}
                 isLoading={isLoading}
                 onDataChange={fetchTransactions}
               />
             </div>
           </div>
+
+          <MealsMeetingManager
+            transactions={filteredTransactions}
+            isLoading={isLoading}
+            onDataChange={fetchTransactions}
+          />
 
           <ImageGallery transactions={filteredTransactions} isLoading={isLoading} />
         </div>

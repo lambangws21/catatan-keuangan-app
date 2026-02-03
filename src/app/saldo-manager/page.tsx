@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 
 // Impor semua komponen yang akan ditampilkan di halaman
 import FinancialDashboard from "@/components/FinalcialDashboard";
@@ -9,6 +9,7 @@ import ImageGallery from "@/components/ImagePreview";
 import SaldoManager from "@/components/ManajerSaldo"; 
 import {useAuth} from "@/components/AuthProvider";// Komponen yang ada di Canvas Anda
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import MealsMeetingManager from "@/components/MealsMeetingManager";
 
 
 
@@ -83,6 +84,10 @@ export default function Home() {
     fetchAllData();
   }, [user, fetchTransactions, fetchSaldo]); // Tambahkan user di sini juga
 
+  const transactionsNonMeals = useMemo(() => {
+    return transactions.filter((tx) => tx.jenisBiaya !== "Meals Metting");
+  }, [transactions]);
+
   return (
     <main className="min-h-screen bg-gray-900 p-4 sm:p-6 md:p-8 text-white">
       <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
@@ -93,17 +98,20 @@ export default function Home() {
         {/* MOBILE: tampil per-tab biar tidak panjang */}
         <div className="lg:hidden">
           <Tabs defaultValue="ringkasan" className="gap-4">
-            <TabsList className="w-full grid grid-cols-4 bg-white/10">
-              <TabsTrigger value="ringkasan" className="text-xs">
+            <TabsList className="w-full justify-start overflow-x-auto bg-white/10 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <TabsTrigger value="ringkasan" className="min-w-[92px] text-xs">
                 Ringkasan
               </TabsTrigger>
-              <TabsTrigger value="saldo" className="text-xs">
+              <TabsTrigger value="saldo" className="min-w-[92px] text-xs">
                 Saldo
               </TabsTrigger>
-              <TabsTrigger value="transaksi" className="text-xs">
+              <TabsTrigger value="transaksi" className="min-w-[92px] text-xs">
                 Transaksi
               </TabsTrigger>
-              <TabsTrigger value="galeri" className="text-xs">
+              <TabsTrigger value="meals" className="min-w-[92px] text-xs">
+                Meals
+              </TabsTrigger>
+              <TabsTrigger value="galeri" className="min-w-[92px] text-xs">
                 Galeri
               </TabsTrigger>
             </TabsList>
@@ -127,6 +135,14 @@ export default function Home() {
 
             <TabsContent value="transaksi">
               <TransactionManager
+                transactions={transactionsNonMeals}
+                isLoading={isLoading}
+                onDataChange={fetchTransactions}
+              />
+            </TabsContent>
+
+            <TabsContent value="meals">
+              <MealsMeetingManager
                 transactions={transactions}
                 isLoading={isLoading}
                 onDataChange={fetchTransactions}
@@ -157,12 +173,18 @@ export default function Home() {
             </div>
             <div className="min-w-0">
               <TransactionManager
-                transactions={transactions}
+                transactions={transactionsNonMeals}
                 isLoading={isLoading}
                 onDataChange={fetchTransactions}
               />
             </div>
           </div>
+
+          <MealsMeetingManager
+            transactions={transactions}
+            isLoading={isLoading}
+            onDataChange={fetchTransactions}
+          />
 
           <ImageGallery transactions={transactions} isLoading={isLoading}/>
         </div>
