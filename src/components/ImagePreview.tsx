@@ -100,7 +100,7 @@ export default function ImageGallery({ transactions, isLoading }: ImageGalleryPr
                 style={{ objectFit: 'cover' }}
                 priority={index < 6}
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent opacity-100">
+              <div className="absolute inset-0 bg-linear-to-t from-black/85 via-black/10 to-transparent opacity-100">
                 <div className="absolute bottom-0 left-0 right-0 p-3">
                   <p className="text-white text-xs font-semibold line-clamp-2">
                     {item.keterangan}

@@ -1,16 +1,32 @@
 import { NextResponse, NextRequest } from 'next/server';
 import admin from '@/lib/firebase/admin';
 
+const coerceHospitals = (input: unknown): string[] => {
+  if (Array.isArray(input)) {
+    return input
+      .map((v) => String(v ?? '').trim())
+      .filter(Boolean)
+      .slice(0, 3);
+  }
+  const s = String(input ?? '').trim();
+  return s ? [s] : [];
+};
+
 // Handler untuk PUT (Mengedit dokter di list)
 export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await context.params; // ✅ Menggunakan await pada context.params
     const body = await request.json();
-    const { namaDokter, rumahSakit } = body;
+    const { namaDokter } = body;
+    const rumahSakit = coerceHospitals(body?.rumahSakit);
 
     // Validasi input
-    if (!namaDokter || !rumahSakit) {
+    if (!namaDokter || rumahSakit.length === 0) {
       return NextResponse.json({ error: 'Nama dokter dan rumah sakit wajib diisi.' }, { status: 400 });
+    }
+
+    if (rumahSakit.length > 3) {
+      return NextResponse.json({ error: 'Maksimal 3 rumah sakit.' }, { status: 400 });
     }
 
     const db = admin.firestore();

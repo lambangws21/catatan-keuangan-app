@@ -1,5 +1,9 @@
 import { NextResponse, NextRequest } from 'next/server';
 import admin from '@/lib/firebase/admin';
+import { sendTelegramMessage } from '@/lib/telegram';
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 // Handler untuk PUT (Mengedit jadwal)
 export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }) {
@@ -29,6 +33,21 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
       status,
       perawat,
     });
+
+    if (process.env.TELEGRAM_VISIT_NOTIFY === "1") {
+      const msg = [
+        "✏️ Jadwal Visit Diupdate",
+        "",
+        `Dokter: ${namaDokter}`,
+        `RS: ${rumahSakit}`,
+        `Perawat: ${perawat || "-"}`,
+        `Waktu: ${new Date(waktuVisit).toISOString()}`,
+        `Status: ${status}`,
+        `Catatan: ${note || "-"}`,
+      ].join("\n");
+      const r = await sendTelegramMessage(msg);
+      if (!r.ok) console.error("Telegram notify (update) gagal:", r.error);
+    }
 
     return NextResponse.json({ id, message: 'Jadwal berhasil diperbarui' }, { status: 200 });
   } catch (error) {

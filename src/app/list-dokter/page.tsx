@@ -10,7 +10,7 @@ import NurseLister from "@/components/nurse-list/nurse-lister";
 export interface Doctor {
   id: string;
   namaDokter: string;
-  rumahSakit: string;
+  rumahSakit: string[];
 }
 
 export default function DoctorsPage() {

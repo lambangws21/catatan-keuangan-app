@@ -288,24 +288,24 @@ export default function MealsMeetingManager({
     doc.save(`Meals_Metting_${exportTag()}.pdf`);
   };
 
-  const card = "rounded-3xl border border-white/10 bg-[var(--dash-surface)] shadow-[0_20px_60px_rgba(2,6,23,0.45)]";
+  const card = "rounded-3xl border border-white/10 bg-(--dash-surface)] shadow-[0_20px_60px_rgba(2,6,23,0.45)]";
 
   return (
     <motion.section
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`${card} p-6 text-[color:var(--dash-ink)]`}
+      className={`${card} p-6 text-(--dash-ink)]`}
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.4em] text-[color:var(--dash-muted)]">
+          <p className="text-[10px] uppercase tracking-[0.4em] text-(--dash-muted)]">
             Kategori Khusus
           </p>
           <h2 className="mt-1 flex items-center gap-2 text-xl font-semibold">
             <Handshake className="h-5 w-5 text-amber-300" />
             Meals Metting
           </h2>
-          <p className="mt-1 text-sm text-[color:var(--dash-muted)]">
+          <p className="mt-1 text-sm text-(--dash-muted)]">
             Simpan dan pantau pengeluaran kategori Meals Metting.
           </p>
         </div>
@@ -314,7 +314,7 @@ export default function MealsMeetingManager({
           <Button
             onClick={handleExportExcel}
             variant="secondary"
-            className="border border-white/10 bg-white/10 text-[color:var(--dash-ink)] hover:bg-white/15"
+            className="border border-white/10 bg-white/10 text-(--dash-ink)] hover:bg-white/15"
           >
             <FileDown className="mr-2 h-4 w-4" />
             Excel
@@ -322,7 +322,7 @@ export default function MealsMeetingManager({
           <Button
             onClick={handleExportPdf}
             variant="secondary"
-            className="border border-white/10 bg-white/10 text-[color:var(--dash-ink)] hover:bg-white/15"
+            className="border border-white/10 bg-white/10 text-(--dash-ink)] hover:bg-white/15"
           >
             <FileText className="mr-2 h-4 w-4" />
             PDF
@@ -337,9 +337,9 @@ export default function MealsMeetingManager({
                 Tambah
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[720px] border-white/10 bg-[var(--dash-surface-strong)] text-[color:var(--dash-ink)]">
+            <DialogContent className="sm:max-w-[720px] border-white/10 bg-(--dash-surface-strong)] text-(--dash-ink)]">
               <DialogHeader>
-                <DialogTitle className="text-[color:var(--dash-ink)]">
+                <DialogTitle className="text-(--dash-ink)]">
                   {editing ? "Edit Meals Metting" : "Input Meals Metting"}
                 </DialogTitle>
               </DialogHeader>
@@ -352,7 +352,7 @@ export default function MealsMeetingManager({
                       type="date"
                       value={tanggal}
                       onChange={(e) => setTanggal(e.target.value)}
-                      className="border-white/10 bg-white/5 text-[color:var(--dash-ink)]"
+                      className="border-white/10 bg-white/5 text-(--dash-ink)]"
                       required
                     />
                   </div>
@@ -363,7 +363,7 @@ export default function MealsMeetingManager({
                       placeholder="2.000.000"
                       value={jumlah || ""}
                       onValueChange={(v) => setJumlah(v)}
-                      className="border-white/10 bg-white/5 text-[color:var(--dash-ink)]"
+                      className="border-white/10 bg-white/5 text-(--dash-ink)]"
                       required
                     />
                   </div>
@@ -377,7 +377,7 @@ export default function MealsMeetingManager({
                       value={klaim}
                       onChange={(e) => setKlaim(e.target.value)}
                       placeholder="Contoh: Proyek A"
-                      className="border-white/10 bg-white/5 text-[color:var(--dash-ink)]"
+                      className="border-white/10 bg-white/5 text-(--dash-ink)]"
                       required
                     />
                   </div>
@@ -388,7 +388,7 @@ export default function MealsMeetingManager({
                       value={lokasi}
                       onChange={(e) => setLokasi(e.target.value)}
                       placeholder="Contoh: Cafe X"
-                      className="border-white/10 bg-white/5 text-[color:var(--dash-ink)]"
+                      className="border-white/10 bg-white/5 text-(--dash-ink)]"
                     />
                   </div>
                 </div>
@@ -401,7 +401,7 @@ export default function MealsMeetingManager({
                       value={peserta}
                       onChange={(e) => setPeserta(e.target.value)}
                       placeholder="Contoh: Pak A, Bu B"
-                      className="border-white/10 bg-white/5 text-[color:var(--dash-ink)]"
+                      className="border-white/10 bg-white/5 text-(--dash-ink)]"
                     />
                   </div>
                   <div className="grid gap-2">
@@ -410,7 +410,7 @@ export default function MealsMeetingManager({
                       id="meals-file"
                       type="file"
                       onChange={handleFileChange}
-                      className="border-white/10 bg-white/5 text-[color:var(--dash-ink)] file:rounded-md file:border-0 file:bg-amber-500 file:px-3 file:py-1 file:text-slate-950 hover:file:bg-amber-400"
+                      className="border-white/10 bg-white/5 text-(--dash-ink)] file:rounded-md file:border-0 file:bg-amber-500 file:px-3 file:py-1 file:text-slate-950 hover:file:bg-amber-400"
                     />
                   </div>
                 </div>
@@ -422,7 +422,7 @@ export default function MealsMeetingManager({
                     value={keterangan}
                     onChange={(e) => setKeterangan(e.target.value)}
                     placeholder="Catatan / tujuan meeting…"
-                    className="min-h-[110px] border-white/10 bg-white/5 text-[color:var(--dash-ink)]"
+                    className="min-h-[110px] border-white/10 bg-white/5 text-(--dash-ink)]"
                     required
                   />
                 </div>
@@ -458,7 +458,7 @@ export default function MealsMeetingManager({
                 ) : null}
 
                 <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-between">
-                  <div className="text-xs text-[color:var(--dash-muted)]">
+                  <div className="text-xs text-(--dash-muted)]">
                     Disimpan sebagai transaksi: <span className="font-semibold">{MEALS_TYPE}</span>
                   </div>
                   <Button
@@ -479,11 +479,11 @@ export default function MealsMeetingManager({
       {/* SUMMARY */}
       <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <p className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--dash-muted)]">
+          <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
             Total Meals
           </p>
           <div className="mt-2 flex items-center justify-between gap-3">
-            <div className="inline-flex items-center gap-2 text-[11px] text-[color:var(--dash-muted)]">
+            <div className="inline-flex items-center gap-2 text-[11px] text-(--dash-muted)]">
               <Wallet className="h-4 w-4" />
               <span>Jumlah</span>
             </div>
@@ -493,11 +493,11 @@ export default function MealsMeetingManager({
           </div>
         </div>
         <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <p className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--dash-muted)]">
+          <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
             Entri
           </p>
           <div className="mt-2 flex items-center justify-between gap-3">
-            <div className="inline-flex items-center gap-2 text-[11px] text-[color:var(--dash-muted)]">
+            <div className="inline-flex items-center gap-2 text-[11px] text-(--dash-muted)]">
               <Handshake className="h-4 w-4" />
               <span>Jumlah data</span>
             </div>
@@ -505,11 +505,11 @@ export default function MealsMeetingManager({
           </div>
         </div>
         <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <p className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--dash-muted)]">
+          <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
             Export
           </p>
           <div className="mt-2 flex items-center justify-between gap-3">
-            <div className="inline-flex items-center gap-2 text-[11px] text-[color:var(--dash-muted)]">
+            <div className="inline-flex items-center gap-2 text-[11px] text-(--dash-muted)]">
               <FileText className="h-4 w-4" />
               <span>Nama file</span>
             </div>
@@ -521,11 +521,11 @@ export default function MealsMeetingManager({
       {/* CONTENT */}
       <div className="mt-6">
         {isLoading ? (
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-8 text-sm text-[color:var(--dash-muted)]">
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-8 text-sm text-(--dash-muted)]">
             Memuat...
           </div>
         ) : meals.length === 0 ? (
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-10 text-center text-sm text-[color:var(--dash-muted)]">
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-10 text-center text-sm text-(--dash-muted)]">
             Belum ada data Meals Metting.
           </div>
         ) : (
@@ -544,7 +544,7 @@ export default function MealsMeetingManager({
                         <p className="text-sm font-semibold">
                           {formatCurrency(Number(tx.jumlah))}
                         </p>
-                        <p className="mt-1 text-xs text-[color:var(--dash-muted)]">
+                        <p className="mt-1 text-xs text-(--dash-muted)]">
                           {tx.klaim}
                         </p>
                       </div>
@@ -568,7 +568,7 @@ export default function MealsMeetingManager({
                       </div>
                     </div>
 
-                    <div className="mt-3 grid gap-2 text-xs text-[color:var(--dash-muted)]">
+                    <div className="mt-3 grid gap-2 text-xs text-(--dash-muted)]">
                       <p className="inline-flex items-center gap-2">
                         <CalendarDays className="h-4 w-4" />
                         <span className="tabular-nums">{tx.tanggal}</span>
@@ -594,7 +594,7 @@ export default function MealsMeetingManager({
                       {tx.fileUrl ? (
                         <Button
                           variant="secondary"
-                          className="mt-1 border border-white/10 bg-white/10 text-[color:var(--dash-ink)] hover:bg-white/15"
+                          className="mt-1 border border-white/10 bg-white/10 text-(--dash-ink)] hover:bg-white/15"
                           onClick={() => window.open(tx.fileUrl, "_blank")}
                         >
                           <ImageIcon className="mr-2 h-4 w-4" />
@@ -612,29 +612,29 @@ export default function MealsMeetingManager({
               <div className="max-h-[560px] overflow-auto">
                 <Table className="min-w-[980px]">
                   <TableHeader>
-                    <TableRow className="bg-[var(--dash-surface-strong)]">
-                      <TableHead className="sticky top-0 z-10 bg-[var(--dash-surface-strong)]">
+                    <TableRow className="bg-(--dash-surface-strong)]">
+                      <TableHead className="sticky top-0 text-slate-400 z-10 bg-(--dash-surface-strong)]">
                         Tanggal
                       </TableHead>
-                      <TableHead className="sticky top-0 z-10 bg-[var(--dash-surface-strong)]">
+                      <TableHead className="sticky top-0 text-slate-400 z-10 bg-(--dash-surface-strong)]">
                         Klaim
                       </TableHead>
-                      <TableHead className="sticky top-0 z-10 bg-[var(--dash-surface-strong)]">
+                      <TableHead className="sticky top-0 text-slate-400 z-10 bg-(--dash-surface-strong)]">
                         Lokasi
                       </TableHead>
-                      <TableHead className="sticky top-0 z-10 bg-[var(--dash-surface-strong)]">
+                      <TableHead className="sticky top-0 text-slate-400 z-10 bg-(--dash-surface-strong)]">
                         Peserta
                       </TableHead>
-                      <TableHead className="sticky top-0 z-10 bg-[var(--dash-surface-strong)]">
+                      <TableHead className="sticky top-0 text-slate-400 z-10 bg-(--dash-surface-strong)]">
                         Keterangan
                       </TableHead>
-                      <TableHead className="sticky top-0 z-10 bg-[var(--dash-surface-strong)] text-right">
+                      <TableHead className="sticky top-0 text-slate-400 z-10 bg-(--dash-surface-strong)] text-right">
                         Jumlah
                       </TableHead>
-                      <TableHead className="sticky top-0 z-10 bg-[var(--dash-surface-strong)] text-center">
+                      <TableHead className="sticky top-0 text-slate-400 z-10 bg-(--dash-surface-strong)] text-center">
                         Bukti
                       </TableHead>
-                      <TableHead className="sticky top-0 z-10 bg-[var(--dash-surface-strong)] text-center">
+                      <TableHead className="sticky top-0 text-slate-400 z-10 bg-(--dash-surface-strong)] text-center">
                         Aksi
                       </TableHead>
                     </TableRow>
@@ -646,7 +646,7 @@ export default function MealsMeetingManager({
                         <TableRow key={tx.id} className="border-white/10 hover:bg-white/5">
                           <TableCell className="tabular-nums">
                             <span className="inline-flex items-center gap-2">
-                              <CalendarDays className="h-4 w-4 text-[color:var(--dash-muted)]" />
+                              <CalendarDays className="h-4 w-4 text-(--dash-muted)]" />
                               {tx.tanggal}
                             </span>
                           </TableCell>
@@ -656,21 +656,21 @@ export default function MealsMeetingManager({
                           <TableCell className="max-w-[220px] truncate">
                             {meta.lokasi ? (
                               <span className="inline-flex items-center gap-2">
-                                <MapPin className="h-4 w-4 text-[color:var(--dash-muted)]" />
+                                <MapPin className="h-4 w-4 text-(--dash-muted)]" />
                                 <span className="truncate">{meta.lokasi}</span>
                               </span>
                             ) : (
-                              <span className="text-[color:var(--dash-muted)]">-</span>
+                              <span className="text-(--dash-muted)]">-</span>
                             )}
                           </TableCell>
-                          <TableCell className="max-w-[240px] truncate">
+                          <TableCell className="max-w-60 truncate">
                             {meta.peserta ? (
                               <span className="inline-flex items-center gap-2">
-                                <Users className="h-4 w-4 text-[color:var(--dash-muted)]" />
+                                <Users className="h-4 w-4 text-(--dash-muted)]" />
                                 <span className="truncate">{meta.peserta}</span>
                               </span>
                             ) : (
-                              <span className="text-[color:var(--dash-muted)]">-</span>
+                              <span className="text-(--dash-muted)]">-</span>
                             )}
                           </TableCell>
                           <TableCell className="max-w-[360px] whitespace-normal">
@@ -686,14 +686,14 @@ export default function MealsMeetingManager({
                               <Button
                                 variant="secondary"
                                 size="sm"
-                                className="border border-white/10 bg-white/10 text-[color:var(--dash-ink)] hover:bg-white/15"
+                                className="border border-white/10 bg-white/10 text-(--dash-ink)] hover:bg-white/15"
                                 onClick={() => window.open(tx.fileUrl, "_blank")}
                               >
                                 <ImageIcon className="mr-2 h-4 w-4" />
                                 Lihat
                               </Button>
                             ) : (
-                              <span className="text-[color:var(--dash-muted)]">-</span>
+                              <span className="text-(--dash-muted)]">-</span>
                             )}
                           </TableCell>
                           <TableCell className="text-center">

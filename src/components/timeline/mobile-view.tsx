@@ -32,7 +32,7 @@ export default function MobileTimeline({
 }: {
   schedules: Schedule[];
   isLoading: boolean;
-  doctors: { id: string; namaDokter: string; rumahSakit: string }[];
+  doctors: { id: string; namaDokter: string; rumahSakit: string[] }[];
   onRefresh: () => Promise<void>;
   onEdit: (schedule: Schedule) => void;
   onDelete: (scheduleId: string) => void;

@@ -27,7 +27,12 @@ import { toast } from "sonner";
 import { useTheme } from "next-themes";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
-import { ChevronLeft, ChevronRight, Search as SearchIcon } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Search as SearchIcon,
+  Stethoscope,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TimelineItem } from "@/components/visit-dokter/timeline-item";
 import {
@@ -258,14 +263,16 @@ export default function DailyTimelineView({
   }, [apiEndpoint]);
 
   /* Dokter List */
-  const doctorList = useMemo(() => {
-    const setDoc = new Set<string>();
-    schedules.forEach((s) => {
-      const name = (s.namaDokter || s.dokter || "Tidak diketahui").trim();
-      if (name) setDoc.add(name);
-    });
-    return [...setDoc];
-  }, [schedules]);
+	  const doctorList = useMemo(() => {
+	    const setDoc = new Set<string>();
+	    schedules.forEach((s) => {
+	      const name = (s.namaDokter || s.dokter || "Tidak diketahui").trim();
+	      if (name) setDoc.add(name);
+	    });
+	    return [...setDoc].sort((a, b) =>
+	      a.localeCompare(b, "id-ID", { sensitivity: "base" })
+	    );
+	  }, [schedules]);
 
   /* Filtering */
   const filteredForDay = useMemo(() => {
@@ -387,7 +394,7 @@ export default function DailyTimelineView({
       className={cn(
         "rounded-xl p-5 transition-all duration-300",
         theme === "dark"
-          ? "bg-gradient-to-br from-slate-900/70 via-slate-800/40 to-slate-900/30 border border-white/10 shadow-xl"
+          ? "bg-linear-to-br from-slate-900/70 via-slate-800/40 to-slate-900/30 border border-white/10 shadow-xl"
           : "bg-slate-600/80 border border-gray-200 shadow-lg"
       )}
     >
@@ -427,20 +434,31 @@ export default function DailyTimelineView({
             </Button>
           </div>
 
-          {/* Doctor filter */}
-          <Select value={doctorFilter} onValueChange={setDoctorFilter} >
-            <SelectTrigger className="w-[180px] rounded-full bg-slate-200">
-              <SelectValue placeholder="Filter dokter" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Semua Dokter</SelectItem>
-              {doctorList.map((d, i) => (
-                <SelectItem key={i} value={d} className="bg-white mt-1">
-                  {d}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+	          {/* Doctor filter */}
+	          <Select value={doctorFilter} onValueChange={setDoctorFilter}>
+	            <SelectTrigger className="w-[220px] rounded-full border border-slate-200 bg-white/70 text-slate-900 shadow-sm backdrop-blur dark:border-white/15 dark:bg-slate-950/70 dark:text-white">
+	              <div className="flex items-center gap-2">
+	                <Stethoscope className="h-4 w-4 text-cyan-400" />
+	                <SelectValue placeholder="Filter dokter" />
+	              </div>
+	            </SelectTrigger>
+	            <SelectContent
+	              position="popper"
+	              align="start"
+	              className="border border-slate-200 bg-white text-slate-900 shadow-xl dark:border-white/15 dark:bg-slate-950/95 dark:text-white backdrop-blur"
+	            >
+	              <SelectItem value="all">Semua Dokter</SelectItem>
+	              {doctorList.map((d, i) => (
+	                <SelectItem
+	                  key={i}
+	                  value={d}
+	                  className="focus:bg-slate-100 focus:text-slate-900 dark:focus:bg-white/10 dark:focus:text-white"
+	                >
+	                  {d}
+	                </SelectItem>
+	              ))}
+	            </SelectContent>
+	          </Select>
 
           {/* Search */}
           <div className="relative">
@@ -573,7 +591,7 @@ export default function DailyTimelineView({
               {/* Current Time Marker */}
               {isSameDay(currentDate, new Date()) && (
                 <div
-                  className="absolute left-0 w-full h-[2px] bg-red-500"
+                  className="absolute left-0 w-full h-0.5 bg-red-500"
                   style={{ top: `${getTopPosition(new Date())}px` }}
                 >
                   <div className="absolute -left-2 -top-2 w-4 h-4 bg-red-500 rounded-full animate-pulse" />

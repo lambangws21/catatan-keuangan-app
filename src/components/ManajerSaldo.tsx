@@ -183,18 +183,18 @@ export default function SaldoManager({
 
   return (
     <motion.div
-      className={`space-y-6 rounded-3xl ${cardBackground} p-6 text-[color:var(--dash-ink)]`}
+      className={`space-y-6 rounded-3xl ${cardBackground} p-6 text-(--dash-ink)]`}
       variants={containerVariants}
       initial="hidden"
       animate="visible"
     >
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.4em] text-[color:var(--dash-muted)]">
+          <p className="text-[10px] uppercase tracking-[0.4em] text-(--dash-muted)]">
             Riwayat Saldo
           </p>
           <h2 className="text-2xl font-semibold text-white">Sirkulasi Dana Terkini</h2>
-          <p className="text-sm text-[color:var(--dash-muted)]">
+          <p className="text-sm text-(--dash-muted)]">
             {totalEntries} entri dapat diekspor dengan cepat.
           </p>
         </div>
@@ -226,21 +226,21 @@ export default function SaldoManager({
         <div className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-inner">
           <div className="flex items-center gap-3">
             <Wallet className="h-5 w-5 text-emerald-300" />
-            <p className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--dash-muted)]">
+            <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
               Total Saldo
             </p>
           </div>
           <p className="mt-3 text-3xl font-semibold text-white">{formatCurrency(totalSaldo)}</p>
-          <p className="mt-2 text-[11px] text-[color:var(--dash-muted)]">
+          <p className="mt-2 text-[11px] text-(--dash-muted)]">
             {hasEntries ? `${totalEntries} transaksi` : "Belum ada data"}
           </p>
         </div>
         <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <p className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--dash-muted)]">
+          <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
             Entri terbaru
           </p>
           {latestEntries.length === 0 ? (
-            <p className="text-sm text-[color:var(--dash-muted)] mt-2">
+            <p className="text-sm text-(--dash-muted)] mt-2">
               Tambahkan saldo untuk melihat ringkasan.
             </p>
           ) : (
@@ -248,7 +248,7 @@ export default function SaldoManager({
               {latestEntries.map((item) => (
                 <li key={item.id} className="flex items-center justify-between">
                   <span className="font-medium">{item.tanggal}</span>
-                  <span className="text-[color:var(--dash-muted)]">{formatCurrency(Number(item.jumlah))}</span>
+                  <span className="text-(--dash-muted)]">{formatCurrency(Number(item.jumlah))}</span>
                 </li>
               ))}
             </ul>
@@ -357,7 +357,7 @@ export default function SaldoManager({
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.3em] text-[color:var(--dash-muted)]">
+                      <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.3em] text-(--dash-muted)]">
                         <CalendarDays className="h-4 w-4 text-emerald-200/70" />
                         <span>{item.tanggal}</span>
                       </p>
@@ -373,7 +373,7 @@ export default function SaldoManager({
                       </span>
                     </span>
                   </div>
-                  <p className="text-[10px] font-medium text-[color:var(--dash-muted)]">
+                  <p className="text-[10px] font-medium text-(--dash-muted)]">
                     Catatan: {item.keterangan || "—"}
                   </p>
                 </div>
@@ -400,7 +400,7 @@ export default function SaldoManager({
           </div>
         </>
       ) : (
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-8 text-center text-sm text-[color:var(--dash-muted)]">
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-8 text-center text-sm text-(--dash-muted)]">
           <ArchiveX className="mx-auto mb-3 h-10 w-10 text-white/60" />
           <p className="font-semibold text-white/90">Belum ada data saldo</p>
           <p>Tambahkan saldo agar riwayat dapat ditampilkan.</p>

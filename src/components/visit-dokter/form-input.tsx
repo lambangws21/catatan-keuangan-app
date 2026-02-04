@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, FormEvent, useEffect } from "react";
+import { useMemo, useState, FormEvent, useEffect } from "react";
 import { toast } from "sonner";
 import {
   Loader2,
@@ -37,7 +37,7 @@ import { Textarea } from "@/components/ui/textarea";
 interface Doctor {
   id: string;
   namaDokter: string;
-  rumahSakit: string;
+  rumahSakit: string[];
 }
 
 export interface ScheduleData {
@@ -137,18 +137,26 @@ export default function ScheduleForm({
     setFormData((prev) => ({ ...prev, status: value }));
   };
 
+  const selectedDoctor = useMemo(() => {
+    return doctorsList.find((doc) => doc.namaDokter === formData.namaDokter);
+  }, [doctorsList, formData.namaDokter]);
+
+  const rumahSakitSuggestions = useMemo(() => {
+    return selectedDoctor?.rumahSakit?.map((s) => String(s ?? "").trim()).filter(Boolean).slice(0, 3) ?? [];
+  }, [selectedDoctor]);
+
   // Handler untuk auto-fill saat dokter dipilih
-  const handleDoctorChange = (doctorName: string) => {
-    const selectedDoctor = doctorsList.find(
-      (doc) => doc.namaDokter === doctorName
-    );
-    if (selectedDoctor) {
-      setFormData((prev) => ({
-        ...prev,
-        namaDokter: selectedDoctor.namaDokter,
-        rumahSakit: selectedDoctor.rumahSakit,
-      }));
-    }
+  const handleDoctorTextChange = (doctorName: string) => {
+    setFormData((prev) => {
+      const next = { ...prev, namaDokter: doctorName };
+      const matched = doctorsList.find((doc) => doc.namaDokter === doctorName);
+
+      if (matched && prev.namaDokter !== doctorName) {
+        next.rumahSakit = matched.rumahSakit?.[0] ?? "";
+      }
+
+      return next;
+    });
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -227,21 +235,25 @@ export default function ScheduleForm({
             <Label htmlFor="namaDokter">Pilih Dokter</Label>
             <div className="relative">
               <Stethoscope className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Select
-                onValueChange={handleDoctorChange}
+              <Input
+                id="namaDokter"
+                name="namaDokter"
                 value={formData.namaDokter}
-              >
-                <SelectTrigger className="w-full pl-10">
-                  <SelectValue placeholder="Pilih dari daftar dokter..." />
-                </SelectTrigger>
-                <SelectContent className="bg-gray-700 text-white border-gray-600">
-                  {doctorsList.map((doc) => (
-                    <SelectItem key={doc.id} value={doc.namaDokter}>
-                      {doc.namaDokter} ({doc.rumahSakit})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onChange={(e) => handleDoctorTextChange(e.target.value)}
+                placeholder="Pilih dari daftar atau ketik manual..."
+                required
+                list="dokter-options"
+                className="pl-10"
+              />
+              <datalist id="dokter-options">
+                {doctorsList.map((doc) => (
+                  <option
+                    key={doc.id}
+                    value={doc.namaDokter}
+                    label={(doc.rumahSakit ?? []).join(" • ")}
+                  />
+                ))}
+              </datalist>
             </div>
           </div>
 
@@ -275,11 +287,20 @@ export default function ScheduleForm({
                 name="rumahSakit"
                 value={formData.rumahSakit}
                 onChange={handleChange}
-                placeholder="Akan terisi otomatis"
+                placeholder={
+                  rumahSakitSuggestions.length
+                    ? "Pilih dari daftar (boleh ketik manual)"
+                    : "Pilih dokter dulu"
+                }
                 required
                 className="pl-10"
-                readOnly
+                list="rumahSakit-options"
               />
+              <datalist id="rumahSakit-options">
+                {rumahSakitSuggestions.map((rs) => (
+                  <option key={rs} value={rs} />
+                ))}
+              </datalist>
             </div>
           </div>
           <div className="space-y-2">

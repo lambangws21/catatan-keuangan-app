@@ -1,6 +1,17 @@
 import { NextResponse } from 'next/server';
 import admin from '@/lib/firebase/admin';
 
+const coerceHospitals = (input: unknown): string[] => {
+  if (Array.isArray(input)) {
+    return input
+      .map((v) => String(v ?? '').trim())
+      .filter(Boolean)
+      .slice(0, 3);
+  }
+  const s = String(input ?? '').trim();
+  return s ? [s] : [];
+};
+
 // Handler untuk GET (Mengambil semua daftar dokter)
 export async function GET() {
   try {
@@ -15,7 +26,7 @@ export async function GET() {
       return {
         id: doc.id,
         namaDokter: data.namaDokter,
-        rumahSakit: data.rumahSakit,
+        rumahSakit: coerceHospitals(data.rumahSakit),
       };
     });
 
@@ -30,10 +41,15 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { namaDokter, rumahSakit } = body;
+    const { namaDokter } = body;
+    const rumahSakit = coerceHospitals(body?.rumahSakit);
 
-    if (!namaDokter || !rumahSakit) {
+    if (!namaDokter || rumahSakit.length === 0) {
       return NextResponse.json({ error: 'Semua field wajib diisi.' }, { status: 400 });
+    }
+
+    if (rumahSakit.length > 3) {
+      return NextResponse.json({ error: 'Maksimal 3 rumah sakit.' }, { status: 400 });
     }
 
     const db = admin.firestore();

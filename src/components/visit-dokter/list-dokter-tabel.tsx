@@ -18,11 +18,22 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+const coerceHospitals = (input: unknown): string[] => {
+  if (Array.isArray(input)) {
+    return input
+      .map((v) => String(v ?? "").trim())
+      .filter(Boolean)
+      .slice(0, 3);
+  }
+  const s = String(input ?? "").trim();
+  return s ? [s] : [];
+};
+
 // Tipe data dokter
 interface Doctor {
   id: string;
   namaDokter: string;
-  rumahSakit: string;
+  rumahSakit: string[];
 }
 interface DoctorListProps {
     doctorsData: Doctor[];
@@ -54,7 +65,7 @@ export default function DoctorList({ doctorsData, isLoading, onDataChange }: Doc
 
   // Fungsi untuk membuka modal dan mengisi data
   const handleOpenEditModal = (item: Doctor) => {
-    setItemToEdit({ ...item });
+    setItemToEdit({ ...item, rumahSakit: coerceHospitals(item.rumahSakit) });
     setIsEditModalOpen(true);
   };
 
@@ -70,17 +81,55 @@ export default function DoctorList({ doctorsData, isLoading, onDataChange }: Doc
     setItemToEdit((prev) => (prev ? { ...prev, [name]: value } : null));
   };
 
+  const setHospitalAt = (index: number, value: string) => {
+    if (!itemToEdit) return;
+    setItemToEdit((prev) => {
+      if (!prev) return prev;
+      const next = coerceHospitals(prev.rumahSakit);
+      next[index] = value;
+      return { ...prev, rumahSakit: next };
+    });
+  };
+
+  const addHospital = () => {
+    if (!itemToEdit) return;
+    setItemToEdit((prev) => {
+      if (!prev) return prev;
+      const next = coerceHospitals(prev.rumahSakit);
+      if (next.length >= 3) return prev;
+      next.push("");
+      return { ...prev, rumahSakit: next };
+    });
+  };
+
+  const removeHospital = (index: number) => {
+    if (!itemToEdit) return;
+    setItemToEdit((prev) => {
+      if (!prev) return prev;
+      const next = coerceHospitals(prev.rumahSakit).filter((_, i) => i !== index);
+      return { ...prev, rumahSakit: next.length ? next : [""] };
+    });
+  };
+
   // Fungsi untuk mengirim data update ke API
   const handleUpdate = async () => {
     if (!itemToEdit) return;
     
     try {
+      const hospitals = coerceHospitals(itemToEdit.rumahSakit)
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .slice(0, 3);
+
+      if (!itemToEdit.namaDokter.trim()) throw new Error("Nama dokter wajib diisi.");
+      if (hospitals.length === 0) throw new Error("Rumah sakit wajib diisi.");
+
       const response = await fetch(`/api/list-dokter/${itemToEdit.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           namaDokter: itemToEdit.namaDokter,
-          rumahSakit: itemToEdit.rumahSakit,
+          rumahSakit: hospitals,
         }),
       });
 
@@ -121,13 +170,13 @@ export default function DoctorList({ doctorsData, isLoading, onDataChange }: Doc
             <Table>
                 <TableHeader><TableRow className="border-gray-700 hover:bg-gray-800 sticky top-0 bg-gray-800 z-10"><TableHead>Nama Dokter</TableHead><TableHead>Rumah Sakit</TableHead><TableHead className="text-center">Aksi</TableHead></TableRow></TableHeader>
                 <motion.tbody variants={containerVariants} initial="hidden" animate="visible">
-                {doctorsData.map((item) => (
-                    <motion.tr key={item.id} className="border-b border-gray-700" variants={itemVariants}>
-                        <TableCell className="py-3 px-6 font-medium">{item.namaDokter}</TableCell>
-                        <TableCell className="py-3 px-6">{item.rumahSakit}</TableCell>
-                        <TableCell className="text-center py-3 px-6">
-                            <TooltipProvider>
-                                <div className="flex justify-center items-center gap-1">
+	                {doctorsData.map((item) => (
+	                    <motion.tr key={item.id} className="border-b border-gray-700" variants={itemVariants}>
+	                        <TableCell className="py-3 px-6 font-medium">{item.namaDokter}</TableCell>
+	                        <TableCell className="py-3 px-6">{coerceHospitals(item.rumahSakit).join(" • ")}</TableCell>
+	                        <TableCell className="text-center py-3 px-6">
+	                            <TooltipProvider>
+	                                <div className="flex justify-center items-center gap-1">
                                     <Tooltip>
                                         <TooltipTrigger asChild>
                                             <Button variant="ghost" size="icon" onClick={() => handleOpenEditModal(item)}>
@@ -168,19 +217,46 @@ export default function DoctorList({ doctorsData, isLoading, onDataChange }: Doc
                   onChange={handleEditFormChange}
                   className="bg-gray-700 border-gray-600"
                 />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="rumahSakit">Rumah Sakit</Label>
-                <Input
-                  id="rumahSakit"
-                  name="rumahSakit"
-                  value={itemToEdit.rumahSakit}
-                  onChange={handleEditFormChange}
-                  className="bg-gray-700 border-gray-600"
-                />
-              </div>
-            </div>
-          )}
+	              </div>
+	              <div className="space-y-2">
+	                <Label>Rumah Sakit (maksimal 3)</Label>
+	                <div className="space-y-2">
+	                  {coerceHospitals(itemToEdit.rumahSakit).map((value, idx) => (
+	                    <div key={idx} className="flex items-center gap-2">
+	                      <Input
+	                        value={value}
+	                        onChange={(e) => setHospitalAt(idx, e.target.value)}
+	                        required={idx === 0}
+	                        className="bg-gray-700 border-gray-600"
+	                      />
+	                      {coerceHospitals(itemToEdit.rumahSakit).length > 1 ? (
+	                        <Button
+	                          type="button"
+	                          variant="ghost"
+	                          size="icon"
+	                          onClick={() => removeHospital(idx)}
+	                          aria-label="Hapus rumah sakit"
+	                        >
+	                          <Trash2 className="h-4 w-4 text-red-500" />
+	                        </Button>
+	                      ) : null}
+	                    </div>
+	                  ))}
+	                </div>
+	                <div className="flex justify-end">
+	                  <Button
+	                    type="button"
+	                    variant="secondary"
+	                    onClick={addHospital}
+	                    disabled={coerceHospitals(itemToEdit.rumahSakit).length >= 3}
+	                    className="border border-white/10 bg-white/10 text-white hover:bg-white/15"
+	                  >
+	                    Tambah Rumah Sakit
+	                  </Button>
+	                </div>
+	              </div>
+	            </div>
+	          )}
           <DialogFooter>
             <Button variant="outline" onClick={handleCloseEditModal}>
               Batal
@@ -194,4 +270,3 @@ export default function DoctorList({ doctorsData, isLoading, onDataChange }: Doc
     </motion.div>
   );
 }
-

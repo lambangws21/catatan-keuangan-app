@@ -45,11 +45,11 @@ export default function ExpenseChartPro({ data }: ChartProps) {
   const activeItem = data[activeIndex];
 
   return (
-    <div className="rounded-3xl border border-white/10 bg-[var(--dash-surface)] p-5 sm:p-6 shadow-[0_20px_40px_rgba(2,6,23,0.45)] backdrop-blur space-y-6">
+    <div className="rounded-3xl border border-white/10 bg-(--dash-surface)] p-5 sm:p-6 shadow-[0_20px_40px_rgba(2,6,23,0.45)] backdrop-blur space-y-6">
 
       {/* HEADER */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h3 className="text-xl sm:text-2xl font-semibold font-[var(--font-display)] text-[color:var(--dash-ink)] flex items-center gap-2">
+        <h3 className="text-xl sm:text-2xl font-semibold font-(--font-display)] text-(--dash-ink)] flex items-center gap-2">
           <Zap className="w-5 h-5" />
           Distribusi Pengeluaran
         </h3>
@@ -57,7 +57,7 @@ export default function ExpenseChartPro({ data }: ChartProps) {
         <div className="flex flex-col sm:flex-row sm:items-center gap-3">
           <button
             onClick={() => setIsPlaying(!isPlaying)}
-            className="inline-flex items-center justify-center rounded-full bg-[var(--dash-accent)] p-2 text-slate-950 transition hover:scale-105"
+            className="inline-flex items-center justify-center rounded-full bg-(--dash-accent)] p-2 text-slate-950 transition hover:scale-105"
           >
             {isPlaying ? <Pause size={16} /> : <Play size={16} />}
           </button>
@@ -69,7 +69,7 @@ export default function ExpenseChartPro({ data }: ChartProps) {
             step="500"
             value={intervalSpeed}
             onChange={(e) => setIntervalSpeed(Number(e.target.value))}
-            className="w-full sm:w-36 accent-[color:var(--dash-accent)]"
+            className="w-full sm:w-36 accent-(--dash-accent)]"
           />
         </div>
       </div>
@@ -77,7 +77,7 @@ export default function ExpenseChartPro({ data }: ChartProps) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* PIE */}
-        <div className="min-h-[280px] sm:min-h-[320px]" style={{ width: "100%", height: 320 }}>
+        <div className="min-h-[280px] sm:min-h-80" style={{ width: "100%", height: 320 }}>
           <ResponsiveContainer>
             <PieChart>
               <Pie
@@ -112,22 +112,22 @@ export default function ExpenseChartPro({ data }: ChartProps) {
             animate={{ opacity: 1, y: 0 }}
             className="rounded-2xl border border-white/10 bg-white/5 p-5"
           >
-            <h4 className="text-lg font-semibold text-[color:var(--dash-ink)]">
+            <h4 className="text-lg font-semibold text-(--dash-ink)]">
               {activeItem?.name}
             </h4>
 
-            <p className="text-2xl font-semibold text-[color:var(--dash-ink)]">
+            <p className="text-2xl font-semibold text-(--dash-ink)]">
               {formatCurrency(activeItem?.value || 0)}
             </p>
 
-            <p className="text-sm text-[color:var(--dash-muted)]">
+            <p className="text-sm text-(--dash-muted)]">
               {((activeItem?.value / totalValue) * 100).toFixed(2)}%
               dari total
             </p>
 
             <div className="mt-3 w-full rounded-full bg-white/10 h-2 overflow-hidden">
               <div
-                className="h-full bg-[var(--dash-accent)] transition-all"
+                className="h-full bg-(--dash-accent)] transition-all"
                 style={{
                   width: `${(activeItem?.value / totalValue) * 100}%`,
                 }}
@@ -143,8 +143,8 @@ export default function ExpenseChartPro({ data }: ChartProps) {
                 onClick={() => setActiveIndex(i)}
                 className={`flex items-center gap-2 text-xs sm:text-sm p-2 rounded-full border border-white/10 transition ${
                   activeIndex === i
-                    ? "bg-white/20 text-[color:var(--dash-ink)]"
-                    : "bg-white/5 text-[color:var(--dash-muted)] hover:bg-white/10"
+                    ? "bg-white/20 text-(--dash-ink)]"
+                    : "bg-white/5 text-(--dash-muted)] hover:bg-white/10"
                 }`}
               >
                 <span

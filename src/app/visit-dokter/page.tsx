@@ -26,7 +26,7 @@ import type { Schedule } from "@/types/visit-dokter";
 export interface Doctor {
   id: string;
   namaDokter: string;
-  rumahSakit: string;
+  rumahSakit: string[];
 }
 
 export default function SchedulesPage() {
@@ -35,6 +35,9 @@ export default function SchedulesPage() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null);
+  const [notifEnabled, setNotifEnabled] = useState(false);
+
+  const REMIND_WITHIN_MINUTES = 60;
 
   // ========================
   // ✅ GENERATE REPEAT EVENT
@@ -98,6 +101,80 @@ export default function SchedulesPage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setNotifEnabled("Notification" in window && Notification.permission === "granted");
+  }, []);
+
+  const nextUpcoming = useMemo(() => {
+    const now = Date.now();
+    return schedules
+      .filter((s) => s.status === "Terjadwal")
+      .filter((s) => new Date(s.waktuVisit).getTime() >= now)
+      .sort((a, b) => new Date(a.waktuVisit).getTime() - new Date(b.waktuVisit).getTime())[0] ?? null;
+  }, [schedules]);
+
+  const upcomingSoon = useMemo(() => {
+    const now = Date.now();
+    const until = now + REMIND_WITHIN_MINUTES * 60_000;
+    return schedules
+      .filter((s) => s.status === "Terjadwal")
+      .filter((s) => {
+        const t = new Date(s.waktuVisit).getTime();
+        return t >= now && t <= until;
+      })
+      .sort((a, b) => new Date(a.waktuVisit).getTime() - new Date(b.waktuVisit).getTime());
+  }, [schedules]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!upcomingSoon.length) return;
+
+    const s = upcomingSoon[0];
+    const when = new Date(s.waktuVisit).getTime();
+    const minutes = Math.max(0, Math.round((when - Date.now()) / 60_000));
+    const key = `${s.id}:${s.waktuVisit}:${s.status}`;
+
+    try {
+      const last = sessionStorage.getItem("visit-reminder:last");
+      if (last === key) return;
+      sessionStorage.setItem("visit-reminder:last", key);
+    } catch {
+      // ignore
+    }
+
+    toast.message(
+      `⏰ Ada jadwal visit${minutes ? ` ${minutes} menit lagi` : ""}: ${s.namaDokter ?? "-"} (${s.rumahSakit ?? "-"})`,
+      { duration: 8000 }
+    );
+
+    if ("Notification" in window && Notification.permission === "granted") {
+      try {
+        new Notification("Reminder Visit Dokter", {
+          body: `${s.namaDokter ?? "-"} • ${s.rumahSakit ?? "-"} • ${minutes} menit lagi`,
+        });
+      } catch {
+        // ignore
+      }
+    }
+  }, [upcomingSoon]);
+
+  const requestBrowserNotification = async () => {
+    if (typeof window === "undefined") return;
+    if (!("Notification" in window)) {
+      toast.error("Browser tidak mendukung notifikasi.");
+      return;
+    }
+    try {
+      const p = await Notification.requestPermission();
+      const ok = p === "granted";
+      setNotifEnabled(ok);
+      toast[ok ? "success" : "error"](ok ? "Notifikasi diaktifkan." : "Notifikasi ditolak.");
+    } catch {
+      toast.error("Gagal meminta izin notifikasi.");
+    }
+  };
 
   // ========================
   // DELETE
@@ -209,11 +286,11 @@ export default function SchedulesPage() {
       <div className="pointer-events-none absolute -top-24 right-[-10%] h-64 w-64 rounded-full bg-[radial-gradient(circle_at_center,rgba(20,184,166,0.20),transparent_65%)] blur-3xl" />
       <div className="pointer-events-none absolute -bottom-32 left-[-15%] h-72 w-72 rounded-full bg-[radial-gradient(circle_at_center,rgba(245,158,11,0.18),transparent_70%)] blur-3xl" />
 
-      <div className="relative z-10 space-y-6 p-4 sm:p-6 lg:p-8 text-(--dash-ink)]">
-        <header className="rounded-3xl border border-white/10 bg-(--dash-surface)] p-5 sm:p-6 shadow-[0_20px_60px_rgba(2,6,23,0.45)] backdrop-blur">
-          <div className="flex flex-col gap-5">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              <div>
+	      <div className="relative z-10 space-y-6 p-4 sm:p-6 lg:p-8 text-(--dash-ink)]">
+	        <header className="rounded-3xl border border-white/10 bg-(--dash-surface)] p-5 sm:p-6 shadow-[0_20px_60px_rgba(2,6,23,0.45)] backdrop-blur">
+	          <div className="flex flex-col gap-5">
+	            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+	              <div>
                 <p className="text-[10px] uppercase tracking-[0.4em] text-(--dash-muted)]">
                   Visit Dokter
                 </p>
@@ -225,29 +302,63 @@ export default function SchedulesPage() {
                 </p>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  onClick={fetchData}
-                  variant="secondary"
-                  className="border border-white/10 bg-white/10 text-(--dash-ink)] hover:bg-white/15"
-                >
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Refresh
-                </Button>
-                <Button asChild variant="secondary" className="border border-white/10 bg-white/10 text-(--dash-ink)] hover:bg-white/15 text-slate-50">
-                  <Link href="/list-dokter">
-                    <ClipboardList className="mr-2 h-4 w-4" />
-                    List Dokter
-                  </Link>
-                </Button>
-                <ScheduleForm onFormSubmit={handleFormSubmit} doctorsList={doctors} />
-              </div>
-            </div>
+	              <div className="flex flex-wrap items-center gap-2">
+	                <Button
+	                  onClick={fetchData}
+	                  variant="secondary"
+	                  className="border border-white/10 bg-white/10 text-(--dash-ink)] hover:bg-white/15"
+	                >
+	                  <RefreshCw className="mr-2 h-4 w-4" />
+	                  Refresh
+	                </Button>
+	                <Button asChild variant="secondary" className="border border-white/10 bg-white/10 text-(--dash-ink)] hover:bg-white/15 text-slate-50">
+	                  <Link href="/list-dokter">
+	                    <ClipboardList className="mr-2 h-4 w-4" />
+	                    List Dokter
+	                  </Link>
+	                </Button>
+	                {!notifEnabled ? (
+	                  <Button
+	                    type="button"
+	                    onClick={requestBrowserNotification}
+	                    variant="secondary"
+	                    className="border border-cyan-500/30 bg-cyan-500/15 text-(--dash-ink)] hover:bg-cyan-500/20"
+	                  >
+	                    Aktifkan Notifikasi
+	                  </Button>
+	                ) : null}
+	                <ScheduleForm onFormSubmit={handleFormSubmit} doctorsList={doctors} />
+	              </div>
+	            </div>
 
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
-                  Hari Ini
+	            {nextUpcoming ? (
+	              <div className="rounded-2xl border border-cyan-500/25 bg-cyan-500/10 p-4">
+	                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+	                  <div className="min-w-0">
+	                    <p className="text-[10px] uppercase tracking-[0.4em] text-cyan-200/80">
+	                      Pengingat
+	                    </p>
+	                    <p className="mt-1 truncate text-sm font-semibold text-(--dash-ink)]">
+	                      Jadwal terdekat: {nextUpcoming.namaDokter ?? "-"} •{" "}
+	                      {nextUpcoming.rumahSakit ?? "-"}
+	                    </p>
+	                    <p className="mt-1 text-xs text-(--dash-muted)]">
+	                      {new Date(nextUpcoming.waktuVisit).toLocaleString("id-ID")}
+	                    </p>
+	                  </div>
+	                  <div className="text-xs text-(--dash-muted)]">
+	                    {upcomingSoon.length
+	                      ? `Dalam ${REMIND_WITHIN_MINUTES} menit ada ${upcomingSoon.length} jadwal.`
+	                      : null}
+	                  </div>
+	                </div>
+	              </div>
+	            ) : null}
+
+	            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+	              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+	                <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
+	                  Hari Ini
                 </p>
                 <p className="mt-2 text-lg font-semibold tabular-nums">
                   {stats.today}

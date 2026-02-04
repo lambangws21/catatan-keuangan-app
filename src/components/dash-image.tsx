@@ -135,7 +135,7 @@ export default function GalleryPage() {
                 style={{ objectFit: 'cover' }}
                 priority={index < 12}
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              <div className="absolute inset-0 bg-linear-to-t from-black/80 to-transparent flex items-end p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <p className="text-white text-xs font-semibold truncate">{item.keterangan}</p>
               </div>
             </motion.div>
@@ -146,7 +146,7 @@ export default function GalleryPage() {
       {/* Modal untuk Preview Gambar Beserta Datanya (diperbarui) */}
       <Dialog open={!!selectedItem} onOpenChange={(isOpen) => !isOpen && setSelectedItem(null)}>
         {/* Mengubah max-width untuk modal yang lebih besar */}
-        <DialogContent className="sm:max-w-2xl md:max-w-3xl lg:max-w-screen-xl w-auto bg-gray-800/80 backdrop-blur-lg border-gray-700 text-white p-6">
+        <DialogContent className="sm:max-w-2xl md:max-w-3xl lg:max-w-7xl w-auto bg-gray-800/80 backdrop-blur-lg border-gray-700 text-white p-6">
           <DialogHeader className="sr-only">
             <DialogTitle>Pratinjau Berkas: {selectedItem?.keterangan}</DialogTitle>
             <DialogDescription>Detail transaksi dan gambar berkas yang diperbesar.</DialogDescription>

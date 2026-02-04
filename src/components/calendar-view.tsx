@@ -64,7 +64,7 @@ export function CalendarWeekView({ events }: CalendarProps) {
           <div
             key={hour}
             // Tinggi 1 jam = 2 * tinggi slot 30 menit (h-8 * 2 = h-16)
-            className="h-16 flex-shrink-0 text-right pr-2"
+            className="h-16 shrink-0 text-right pr-2"
             style={{
               // Tempatkan label di tengah-tengah slot 1 jamnya
               // sedikit ke atas

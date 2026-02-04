@@ -94,7 +94,7 @@ export function TimelineItem({
         </div>
 
         {/* segitiga */}
-        <div className="absolute left-[-8px] top-3 w-0 h-0 border-t-8 border-t-transparent border-b-8 border-b-transparent border-r-8 border-r-gray-900"></div>
+        <div className="absolute -left-2 top-3 w-0 h-0 border-t-8 border-t-transparent border-b-8 border-b-transparent border-r-8 border-r-gray-900"></div>
       </div>
 
       {/* --- MAIN CONTENT --- */}

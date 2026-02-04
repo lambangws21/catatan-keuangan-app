@@ -59,6 +59,10 @@
 
 import { NextResponse } from 'next/server';
 import admin from '@/lib/firebase/admin';
+import { sendTelegramMessage } from '@/lib/telegram';
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 // =======================
 // GET - Ambil semua jadwal
@@ -130,6 +134,21 @@ export async function POST(request: Request) {
       perawat,
       createdAt: new Date(),
     });
+
+    if (process.env.TELEGRAM_VISIT_NOTIFY === "1") {
+      const msg = [
+        "📌 Jadwal Visit Baru",
+        "",
+        `Dokter: ${namaDokter}`,
+        `RS: ${rumahSakit}`,
+        `Perawat: ${perawat || "-"}`,
+        `Waktu: ${new Date(waktuVisit).toISOString()}`,
+        `Status: ${status}`,
+        `Catatan: ${note || "-"}`,
+      ].join("\n");
+      const r = await sendTelegramMessage(msg);
+      if (!r.ok) console.error("Telegram notify (create) gagal:", r.error);
+    }
 
     return NextResponse.json({
       message: 'Jadwal berhasil ditambahkan',

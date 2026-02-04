@@ -104,15 +104,15 @@ export default function FinancialChartTitan({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-3xl border border-white/10 bg-[var(--dash-surface)] p-5 sm:p-7 shadow-[0_20px_40px_rgba(2,6,23,0.45)] backdrop-blur space-y-6 min-h-[520px] sm:min-h-[620px]"
+      className="rounded-3xl border border-white/10 bg-(--dash-surface)] p-5 sm:p-7 shadow-[0_20px_40px_rgba(2,6,23,0.45)] backdrop-blur space-y-6 min-h-[520px] sm:min-h-[620px]"
     >
       {/* HEADER */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-2xl font-semibold font-[var(--font-display)] text-[color:var(--dash-ink)] flex items-center gap-2">
+        <h2 className="text-2xl font-semibold font-(--font-display)] text-(--dash-ink)] flex items-center gap-2">
           <Brain /> Financial Graph
         </h2>
 
-        <div className="flex items-center gap-2 text-sm text-[color:var(--dash-muted)]">
+        <div className="flex items-center gap-2 text-sm text-(--dash-muted)]">
           <TrendingUp size={18} />
           Analisis Tren Pengeluaran
         </div>
@@ -121,21 +121,21 @@ export default function FinancialChartTitan({
       {/* KPI PANEL */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <p className="text-xs text-[color:var(--dash-muted)]">Total Bulan Ini</p>
-          <h3 className="text-lg font-semibold text-[color:var(--dash-ink)]">
+          <p className="text-xs text-(--dash-muted)]">Total Bulan Ini</p>
+          <h3 className="text-lg font-semibold text-(--dash-ink)]">
             Rp {new Intl.NumberFormat("id-ID").format(totalExpense)}
           </h3>
         </div>
 
         <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <p className="text-xs text-[color:var(--dash-muted)]">Hari Tertinggi</p>
+          <p className="text-xs text-(--dash-muted)]">Hari Tertinggi</p>
           <h3 className="text-lg font-semibold text-amber-300">
             Tanggal {highestPoint.day}
           </h3>
         </div>
 
         <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <p className="text-xs text-[color:var(--dash-muted)]">Pengeluaran Maks</p>
+          <p className="text-xs text-(--dash-muted)]">Pengeluaran Maks</p>
           <h3 className="text-lg font-semibold text-emerald-300">
             Rp {new Intl.NumberFormat("id-ID").format(highestPoint.value)}
           </h3>

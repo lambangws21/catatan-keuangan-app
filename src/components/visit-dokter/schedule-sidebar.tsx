@@ -408,7 +408,7 @@ function SidebarItem({
       {/* STATUS DOT */}
       <div
         className={cn(
-          "w-2 h-2 rounded-full mt-2 flex-shrink-0",
+          "w-2 h-2 rounded-full mt-2 shrink-0",
           getStatusIndicator(schedule.status || "")
         )}
       />
