@@ -66,6 +66,8 @@ export default function OperationForm({
   const [isOpen, setIsOpen] = useState(false);
   const [formData, setFormData] = useState<OperationData>(initialFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const DRAFT_KEY = "draft:operasi:v1";
+  const [draftReady, setDraftReady] = useState(false);
 
   // Tentukan apakah ini mode edit berdasarkan keberadaan initialData
   const isEditMode = !!initialData;
@@ -79,6 +81,49 @@ export default function OperationForm({
       });
     }
   }, [initialData, isEditMode]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    if (isEditMode) return;
+    if (draftReady) return;
+
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) {
+        setDraftReady(true);
+        return;
+      }
+      const parsed = JSON.parse(raw) as Partial<OperationData>;
+      setFormData((prev) => ({
+        ...prev,
+        ...parsed,
+        jumlah:
+          typeof parsed.jumlah === "number"
+            ? parsed.jumlah
+            : prev.jumlah,
+      }));
+    } catch {
+      // ignore
+    } finally {
+      setDraftReady(true);
+    }
+  }, [DRAFT_KEY, draftReady, isEditMode, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    if (isEditMode) return;
+    if (!draftReady) return;
+
+    const t = window.setTimeout(() => {
+      try {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(formData));
+      } catch {
+        // ignore
+      }
+    }, 250);
+
+    return () => window.clearTimeout(t);
+  }, [DRAFT_KEY, draftReady, formData, isEditMode, isOpen]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -94,6 +139,12 @@ export default function OperationForm({
   const resetFormAndClose = useCallback(() => {
     setFormData(initialFormData); // Reset ke state awal yang kosong
     setIsOpen(false);
+    setDraftReady(false);
+    try {
+      localStorage.removeItem(DRAFT_KEY);
+    } catch {
+      // ignore
+    }
   }, []);
 
   const handleSubmit = async (e: FormEvent) => {
@@ -149,9 +200,15 @@ export default function OperationForm({
   );
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        setIsOpen(open);
+        if (open) setDraftReady(false);
+      }}
+    >
       <DialogTrigger asChild>{TriggerButton}</DialogTrigger>
-      <DialogContent className="sm:max-w-[625px] bg-gray-800/80 backdrop-blur-md border-gray-700 text-white">
+      <DialogContent className="w-[calc(100vw-1rem)] max-w-none max-h-[calc(100dvh-1rem)] overflow-y-auto bg-gray-800/80 backdrop-blur-md border-gray-700 text-white sm:max-w-[625px]">
         <DialogHeader>
           <DialogTitle className="text-cyan-400">
             {isEditMode ? "Edit" : "Input"} Data Operasi
@@ -299,7 +356,7 @@ export default function OperationForm({
               />
             </div>
           </motion.div>
-          <DialogFooter className="sticky bottom-0 bg-gray-800 pt-4 -mx-6 px-6">
+          <DialogFooter className="sticky bottom-0 bg-gray-800 pt-4 -mx-6 px-6 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
             <Button
               type="submit"
               disabled={isSubmitting}

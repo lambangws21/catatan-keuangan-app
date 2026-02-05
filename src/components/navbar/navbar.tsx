@@ -1,11 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { logOut } from "@/lib/AuthServices"; // PERBAIKAN: Path impor disesuaikan
-import { Bell, Settings, LogOut, Menu, Search, Home, Wallet, Palette, Check } from "lucide-react";
+import {
+  Bell,
+  CalendarDays,
+  Check,
+  Clock,
+  Home,
+  LogOut,
+  Menu,
+  Palette,
+  Search,
+  Settings,
+  Wallet,
+} from "lucide-react";
 import { useTheme } from "next-themes";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import {
@@ -14,6 +26,8 @@ import {
   type Notification,
 } from "@/lib/notificationService";
 import { navItems } from "@/components/navbar/sidebar";
+import { useVisitSchedules } from "@/hooks/use-visit-schedules";
+import { getVisitAlertsForNextDays } from "@/lib/visit-dokter-alerts";
 
 // Import komponen dari shadcn/ui
 import {
@@ -124,6 +138,7 @@ export default function Navbar() {
   const { user } = useAuth();
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
+  const { schedules: visitSchedules } = useVisitSchedules();
   const [pageTitle, setPageTitle] = useState("Dashboard");
   const [currentDate, setCurrentDate] = useState("");
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -132,6 +147,8 @@ export default function Navbar() {
   const [isThemeOpen, setThemeOpen] = useState(false);
   const [isProfileOpen, setProfileOpen] = useState(false);
   const hasUnread = notifications.some((n) => !n.isRead);
+  const visitAlerts = useMemo(() => getVisitAlertsForNextDays(visitSchedules, 1), [visitSchedules]);
+  const hasVisitAlert = visitAlerts.length > 0;
   const themeLabel =
     themeOptions.find((opt) => opt.value === theme)?.label ?? "Tema";
 
@@ -284,13 +301,73 @@ export default function Navbar() {
             <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="relative text-gray-300 hover:text-white hover:bg-gray-700 rounded-full">
                     <Bell className="h-5 w-5" />
-                    {hasUnread && <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-500"></span></span>}
+                    {(hasUnread || hasVisitAlert) && (
+                      <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-500"></span>
+                      </span>
+                    )}
                 </Button>
             </DropdownMenuTrigger>
             <AnimatePresence>
                 {isNotifOpen && (
-                    <DropdownMenuContent asChild className="w-96 bg-gray-900/80 backdrop-blur-xl border border-cyan-500/30 text-white shadow-2xl" align="end">
+                    <DropdownMenuContent
+                      asChild
+                      align="end"
+                      className="w-[calc(100vw-1rem)] bg-gray-900/80 backdrop-blur-xl border border-cyan-500/30 text-white shadow-2xl sm:w-96"
+                    >
                         <motion.div variants={dropdownVariants} initial="hidden" animate="visible" exit="exit" className="space-y-4 px-1 py-2">
+                            <div className="rounded-2xl border border-gray-800 bg-slate-900/80 p-4">
+                              <div className="flex items-center justify-between text-xs uppercase tracking-[0.25em] text-gray-500">
+                                <span className="inline-flex items-center gap-2">
+                                  <CalendarDays className="h-4 w-4 text-cyan-300" />
+                                  Visit Dokter
+                                </span>
+                                <Link
+                                  href="/visit-dokter"
+                                  className="text-cyan-300 transition hover:text-white"
+                                >
+                                  Buka
+                                </Link>
+                              </div>
+                              <div className="mt-3 space-y-2">
+                                {visitAlerts.length === 0 ? (
+                                  <p className="text-sm text-gray-400">
+                                    Tidak ada jadwal visit hari ini & besok.
+                                  </p>
+                                ) : (
+                                  visitAlerts.slice(0, 3).map((v) => {
+                                    const when = new Date(v.waktuVisit);
+                                    const dayLabel = v.dayOffset === 0 ? "Hari ini" : "Besok";
+                                    return (
+                                      <Link
+                                        key={v.id}
+                                        href="/visit-dokter"
+                                        className="block rounded-2xl border border-gray-800 bg-gradient-to-r from-slate-900/70 to-slate-900 px-3 py-2 text-sm text-gray-100 transition hover:border-cyan-500/50 hover:bg-cyan-900/40"
+                                      >
+                                        <div className="flex items-start justify-between gap-3">
+                                          <p className="font-semibold leading-snug">
+                                            {v.namaDokter}
+                                          </p>
+                                          <p className="inline-flex shrink-0 items-center gap-2 text-xs text-cyan-300">
+                                            <Clock className="h-4 w-4" />
+                                            {dayLabel}{" "}
+                                            {when.toLocaleTimeString("id-ID", {
+                                              hour: "2-digit",
+                                              minute: "2-digit",
+                                            })}
+                                          </p>
+                                        </div>
+                                        <p className="mt-1 text-xs text-gray-400">
+                                          {v.rumahSakit}
+                                        </p>
+                                      </Link>
+                                    );
+                                  })
+                                )}
+                              </div>
+                            </div>
+
                             <div className="rounded-2xl border border-gray-800 bg-gradient-to-br from-slate-900/60 to-slate-800/80 px-4 py-3">
                                 <div className="flex items-center justify-between gap-3">
                                   <DropdownMenuLabel className="text-sm">Notifikasi</DropdownMenuLabel>

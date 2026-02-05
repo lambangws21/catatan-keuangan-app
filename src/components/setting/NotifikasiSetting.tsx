@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/components/AuthProvider";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +18,7 @@ interface NotificationPreferences {
 }
 
 export default function NotificationSettings() {
-    const { user } = useAuth();
+    const { user, loading } = useAuth();
     const [settings, setSettings] = useState<NotificationPreferences>({
         weeklyReport: true,
         lowBalanceAlert: true,
@@ -29,6 +29,7 @@ export default function NotificationSettings() {
 
     // Ambil pengaturan saat komponen dimuat
     useEffect(() => {
+        if (loading) return;
         if (user) {
             getUserNotificationSettings(user.uid).then(data => {
                 if (data) {
@@ -39,7 +40,7 @@ export default function NotificationSettings() {
         } else {
             setIsLoading(false); // Berhenti loading jika tidak ada user
         }
-    }, [user]);
+    }, [user, loading]);
 
     const handleSettingChange = (key: keyof NotificationPreferences, value: boolean) => {
         setSettings(prev => ({ ...prev, [key]: value }));
@@ -110,4 +111,3 @@ export default function NotificationSettings() {
         </Card>
     );
 }
-

@@ -3,7 +3,7 @@
 import { useState, FormEvent, ChangeEvent, useEffect } from "react";
 import { storage } from "@/lib/firebase/client";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { Loader2 } from "lucide-react";
+import { Camera, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
 
@@ -46,6 +46,8 @@ export default function ExpenseForm({ onTransactionAdded }: ExpenseFormProps) {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const DRAFT_KEY = "draft:expense:v1";
+  const [draftReady, setDraftReady] = useState(false);
 
   useEffect(() => {
     // Membersihkan object URL saat komponen unmount untuk mencegah memory leak
@@ -75,6 +77,11 @@ export default function ExpenseForm({ onTransactionAdded }: ExpenseFormProps) {
     }
   };
 
+  const handleScanReceipt = () => {
+    const input = document.getElementById("receipt-capture") as HTMLInputElement | null;
+    input?.click();
+  };
+
   const resetForm = () => {
     setTanggal(new Date().toISOString().split("T")[0]);
     setJenisBiaya("Transportasi");
@@ -87,14 +94,78 @@ export default function ExpenseForm({ onTransactionAdded }: ExpenseFormProps) {
       URL.revokeObjectURL(previewUrl);
     }
     setPreviewUrl(null);
+    try {
+      localStorage.removeItem(DRAFT_KEY);
+    } catch {
+      // ignore
+    }
     const fileInput = document.getElementById("file-input") as HTMLInputElement;
     if (fileInput) fileInput.value = "";
+    const receiptInput = document.getElementById("receipt-capture") as HTMLInputElement;
+    if (receiptInput) receiptInput.value = "";
   };
 
     // Handler baru yang spesifik untuk CurrencyInput
     const handleJumlahChange = (value: number | undefined) => {
       setJumlah(value);
     };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    if (draftReady) return;
+
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) {
+        setDraftReady(true);
+        return;
+      }
+      const parsed = JSON.parse(raw) as {
+        tanggal?: string;
+        jenisBiaya?: string;
+        customJenisBiaya?: string;
+        keterangan?: string;
+        klaim?: string;
+        jumlah?: number;
+      };
+      if (typeof parsed.tanggal === "string") setTanggal(parsed.tanggal);
+      if (typeof parsed.jenisBiaya === "string") setJenisBiaya(parsed.jenisBiaya);
+      if (typeof parsed.customJenisBiaya === "string") setCustomJenisBiaya(parsed.customJenisBiaya);
+      if (typeof parsed.keterangan === "string") setKeterangan(parsed.keterangan);
+      if (typeof parsed.klaim === "string") setKlaim(parsed.klaim);
+      if (typeof parsed.jumlah === "number") setJumlah(parsed.jumlah);
+    } catch {
+      // ignore
+    } finally {
+      setDraftReady(true);
+    }
+  }, [DRAFT_KEY, draftReady, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    if (!draftReady) return;
+
+    const t = window.setTimeout(() => {
+      try {
+        localStorage.setItem(
+          DRAFT_KEY,
+          JSON.stringify({
+            tanggal,
+            jenisBiaya,
+            customJenisBiaya,
+            keterangan,
+            klaim,
+            jumlah,
+          })
+        );
+      } catch {
+        // ignore
+      }
+    }, 250);
+
+    return () => window.clearTimeout(t);
+  }, [DRAFT_KEY, draftReady, isOpen, tanggal, jenisBiaya, customJenisBiaya, keterangan, klaim, jumlah]);
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -136,6 +207,7 @@ export default function ExpenseForm({ onTransactionAdded }: ExpenseFormProps) {
       toast.success("Data berhasil disimpan!");
       setMessage("Data berhasil disimpan!");
       resetForm();
+      setDraftReady(false);
 
       setTimeout(() => setMessage(null), 1500);
 
@@ -148,13 +220,19 @@ export default function ExpenseForm({ onTransactionAdded }: ExpenseFormProps) {
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        setIsOpen(open);
+        if (open) setDraftReady(false);
+      }}
+    >
       <DialogTrigger asChild>
         <Button className="bg-cyan-600 text-white hover:bg-cyan-700 dark:bg-cyan-500 dark:hover:bg-cyan-400">
           Input Biaya Baru
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[700px] border-slate-200 bg-white text-slate-900 shadow-2xl dark:border-white/10 dark:bg-slate-950 dark:text-slate-100">
+      <DialogContent className="w-[calc(100vw-1rem)] max-w-none max-h-[calc(100dvh-1rem)] overflow-y-auto border-slate-200 bg-white text-slate-900 shadow-2xl dark:border-white/10 dark:bg-slate-950 dark:text-slate-100 sm:max-w-[700px]">
         <DialogHeader>
           <DialogTitle className="text-cyan-700 dark:text-cyan-300">
             Input Biaya Baru
@@ -242,12 +320,31 @@ export default function ExpenseForm({ onTransactionAdded }: ExpenseFormProps) {
           </div>
           
           <div className="grid gap-2">
-            <Label htmlFor="file-input">Upload Berkas (Opsional)</Label>
+            <div className="flex items-center justify-between gap-3">
+              <Label htmlFor="file-input">Upload Berkas (Opsional)</Label>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={handleScanReceipt}
+                className="h-8 rounded-full border border-slate-200 bg-slate-100 px-3 text-xs text-slate-900 hover:bg-slate-200 dark:border-white/10 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/15"
+              >
+                <Camera className="mr-2 h-4 w-4" />
+                Scan Struk
+              </Button>
+            </div>
             <Input
               id="file-input"
               type="file"
               onChange={handleFileChange}
               className="text-slate-500 file:rounded-md file:border-0 file:bg-cyan-600 file:px-3 file:py-1 file:text-white hover:file:bg-cyan-700 dark:text-slate-400 dark:file:bg-cyan-500 dark:hover:file:bg-cyan-400"
+            />
+            <Input
+              id="receipt-capture"
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={handleFileChange}
+              className="hidden"
             />
           </div>
 
@@ -279,15 +376,26 @@ export default function ExpenseForm({ onTransactionAdded }: ExpenseFormProps) {
             </p>
           )}
           
-          <DialogFooter className="sticky bottom-0 bg-white/90 pt-4 -mx-6 px-6 backdrop-blur dark:bg-slate-950/80">
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full bg-cyan-600 text-white hover:bg-cyan-700 dark:bg-cyan-500 dark:hover:bg-cyan-400"
-            >
-              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isSubmitting ? 'Menyimpan...' : 'Simpan Data'}
-            </Button>
+          <DialogFooter className="sticky bottom-0 bg-white/90 pt-4 -mx-6 px-6 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] backdrop-blur dark:bg-slate-950/80">
+            <div className="flex w-full gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={handleScanReceipt}
+                className="w-full border border-slate-200 bg-slate-100 text-slate-900 hover:bg-slate-200 dark:border-white/10 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/15"
+              >
+                <Camera className="mr-2 h-4 w-4" />
+                Scan
+              </Button>
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full bg-cyan-600 text-white hover:bg-cyan-700 dark:bg-cyan-500 dark:hover:bg-cyan-400"
+              >
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isSubmitting ? 'Menyimpan...' : 'Simpan'}
+              </Button>
+            </div>
           </DialogFooter>
         </form>
       </DialogContent>

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import TransactionManager from "@/components/transaction-manager";
 import MealsMeetingManager from "@/components/MealsMeetingManager";
+import { toast } from "sonner";
 
 import { Input } from "@/components/ui/input";
 import {
@@ -15,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Search, Calendar } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { getUserBudgetSettings, type BudgetSettings } from "@/lib/userSettingService";
 
 // =======================
 // ✅ TYPE DATA
@@ -35,6 +37,7 @@ export default function TransactionsPage() {
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"transaksi" | "meals">("transaksi");
+  const [budget, setBudget] = useState<BudgetSettings | null>(null);
 
   // ✅ FILTER STATE
   const [searchTerm, setSearchTerm] = useState("");
@@ -72,6 +75,16 @@ export default function TransactionsPage() {
   useEffect(() => {
     fetchTransactions();
   }, [fetchTransactions]);
+
+  useEffect(() => {
+    if (!user) {
+      setBudget(null);
+      return;
+    }
+    getUserBudgetSettings(user.uid)
+      .then((data) => setBudget(data))
+      .catch(() => setBudget(null));
+  }, [user]);
 
   useEffect(() => {
     if (selectedCategory === "Meals Metting") setActiveTab("meals");
@@ -132,6 +145,53 @@ export default function TransactionsPage() {
     return filteredBase.filter((tx) => tx.jenisBiaya !== "Meals Metting");
   }, [filteredBase]);
 
+  const monthKey = useMemo(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  }, []);
+
+  const monthExpenseTotal = useMemo(() => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).getTime();
+    return allTransactions
+      .filter((tx) => {
+        const t = new Date(tx.tanggal).getTime();
+        return t >= start && t <= end;
+      })
+      .reduce((sum, tx) => sum + Number(tx.jumlah || 0), 0);
+  }, [allTransactions]);
+
+  const budgetPercent = useMemo(() => {
+    if (!budget?.enabled) return null;
+    const limit = Number(budget.monthlyExpenseBudget || 0);
+    if (!Number.isFinite(limit) || limit <= 0) return null;
+    return Math.round((monthExpenseTotal / limit) * 100);
+  }, [budget, monthExpenseTotal]);
+
+  useEffect(() => {
+    if (!user) return;
+    if (!budget?.enabled) return;
+    if (budgetPercent === null) return;
+
+    const warnAt = Math.max(0, Math.min(100, Number(budget.warnAtPercent ?? 80)));
+    if (budgetPercent < warnAt) return;
+
+    const storageKey = `budget-alert:${user.uid}:${monthKey}`;
+    try {
+      if (localStorage.getItem(storageKey) === String(warnAt)) return;
+      localStorage.setItem(storageKey, String(warnAt));
+    } catch {
+      // ignore
+    }
+
+    if (budgetPercent >= 100) {
+      toast.error(`Budget bulan ini terlewati (${budgetPercent}%).`);
+    } else {
+      toast.warning(`Peringatan budget: ${budgetPercent}% dari limit bulan ini.`);
+    }
+  }, [budget, budgetPercent, user, monthKey]);
+
   // =======================
   // ✅ RENDER UI
   // =======================
@@ -148,6 +208,33 @@ export default function TransactionsPage() {
           </p>
         </div>
       </header>
+
+      {budget?.enabled && budgetPercent !== null ? (
+        <div className="rounded-xl border border-white/10 bg-gray-800/50 p-4">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-white">
+              Budget Bulan Ini:{" "}
+              <span className="font-semibold text-cyan-300">
+                {new Intl.NumberFormat("id-ID").format(monthExpenseTotal)}
+              </span>{" "}
+              /{" "}
+              <span className="font-semibold text-white">
+                {new Intl.NumberFormat("id-ID").format(budget.monthlyExpenseBudget)}
+              </span>{" "}
+              ({budgetPercent}%)
+            </p>
+            <p className="text-xs text-gray-400">
+              Peringatan di {budget.warnAtPercent}% • Ubah di menu Settings → Budget
+            </p>
+          </div>
+          <div className="mt-3 h-2 w-full rounded-full bg-white/10">
+            <div
+              className={`h-2 rounded-full ${budgetPercent >= 100 ? "bg-red-500" : budgetPercent >= Number(budget.warnAtPercent ?? 80) ? "bg-amber-400" : "bg-cyan-500"}`}
+              style={{ width: `${Math.min(100, Math.max(0, budgetPercent))}%` }}
+            />
+          </div>
+        </div>
+      ) : null}
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "transaksi" | "meals")} className="gap-4">
         <TabsList className="w-full  dark:bg-gray-800 dark:text-white justify-start overflow-x-auto bg-white/10 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">

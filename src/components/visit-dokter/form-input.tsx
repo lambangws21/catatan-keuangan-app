@@ -32,6 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import type { Schedule } from "@/types/visit-dokter";
 
 // Tipe data dokter (dari list dokter)
 interface Doctor {
@@ -55,6 +56,7 @@ interface ScheduleFormProps {
   onFormSubmit: () => Promise<void>;
   initialData?: ScheduleData & { id: string };
   doctorsList?: Doctor[];
+  schedulesList?: Schedule[];
 }
 
 /**
@@ -104,10 +106,14 @@ export default function ScheduleForm({
   onFormSubmit,
   initialData,
   doctorsList = [],
+  schedulesList = [],
 }: ScheduleFormProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [formData, setFormData] = useState<ScheduleData>(initialFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [ignoreConflicts, setIgnoreConflicts] = useState(false);
+  const DRAFT_KEY = "draft:visit-dokter:v1";
+  const [draftReady, setDraftReady] = useState(false);
 
   const isEditMode = !!initialData;
 
@@ -120,13 +126,118 @@ export default function ScheduleForm({
         perawat: initialData.perawat ?? "",
       });
     } else if (!isEditMode && isOpen) {
-      // Mengatur ulang ke waktu saat ini saat membuat baru
-      setFormData({
-        ...initialFormData,
-        waktuVisit: formatDateTimeForInput(new Date().toISOString()),
-      });
+      // Mengatur ulang / restore draft saat membuat baru
+      let restored = false;
+      try {
+        const raw = localStorage.getItem(DRAFT_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw) as Partial<ScheduleData>;
+          setFormData((prev) => ({
+            ...prev,
+            ...initialFormData,
+            ...parsed,
+            waktuVisit:
+              typeof parsed.waktuVisit === "string" && parsed.waktuVisit
+                ? parsed.waktuVisit
+                : formatDateTimeForInput(new Date().toISOString()),
+          }));
+          restored = true;
+        }
+      } catch {
+        // ignore
+      }
+      if (!restored) {
+        setFormData({
+          ...initialFormData,
+          waktuVisit: formatDateTimeForInput(new Date().toISOString()),
+        });
+      }
     }
+    setIgnoreConflicts(false);
+    if (isOpen) setDraftReady(true);
   }, [initialData, isEditMode, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    if (!draftReady) return;
+    if (isEditMode) return;
+
+    const t = window.setTimeout(() => {
+      try {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(formData));
+      } catch {
+        // ignore
+      }
+    }, 250);
+
+    return () => window.clearTimeout(t);
+  }, [DRAFT_KEY, draftReady, formData, isEditMode, isOpen]);
+
+  const VISIT_DURATION_MINUTES = 60;
+
+  const clampMonthlyOccurrence = (base: Date, year: number, monthIndex: number) => {
+    const day = base.getDate();
+    const hours = base.getHours();
+    const minutes = base.getMinutes();
+    const lastDay = new Date(year, monthIndex + 1, 0).getDate();
+    const d = new Date(base);
+    d.setFullYear(year);
+    d.setMonth(monthIndex, Math.min(day, lastDay));
+    d.setHours(hours, minutes, 0, 0);
+    return d;
+  };
+
+  const conflictItems = useMemo(() => {
+    if (!Array.isArray(schedulesList) || schedulesList.length === 0) return [];
+    if (!formData.waktuVisit) return [];
+    if (formData.status !== "Terjadwal") return [];
+
+    const candidate = new Date(formData.waktuVisit);
+    if (Number.isNaN(candidate.getTime())) return [];
+    const candidateStart = candidate.getTime();
+    const candidateEnd = candidateStart + VISIT_DURATION_MINUTES * 60_000;
+
+    return schedulesList
+      .filter((s) => {
+        if (!s) return false;
+        if (s.status && s.status !== "Terjadwal") return false;
+        if ((s as unknown as { isVirtual?: boolean }).isVirtual) return false;
+        if (initialData?.id && s.id === initialData.id) return false;
+        if (!s.waktuVisit) return false;
+        return true;
+      })
+      .map((s) => {
+        const base = new Date(s.waktuVisit);
+        if (Number.isNaN(base.getTime())) return null;
+
+        const repeat = s.repeat || "once";
+        const occ =
+          repeat === "monthly"
+            ? clampMonthlyOccurrence(base, candidate.getFullYear(), candidate.getMonth())
+            : base;
+
+        const start = occ.getTime();
+        const end = start + VISIT_DURATION_MINUTES * 60_000;
+
+        const overlaps = candidateStart < end && start < candidateEnd;
+        if (!overlaps) return null;
+
+        return {
+          id: s.id,
+          namaDokter: s.namaDokter || s.dokter || "-",
+          rumahSakit: s.rumahSakit || "-",
+          perawat: s.perawat || "-",
+          waktuVisit: occ.toISOString(),
+        };
+      })
+      .filter(Boolean) as Array<{
+      id: string;
+      namaDokter: string;
+      rumahSakit: string;
+      perawat: string;
+      waktuVisit: string;
+    }>;
+  }, [schedulesList, formData.waktuVisit, formData.status, initialData?.id]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -161,6 +272,11 @@ export default function ScheduleForm({
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+
+    if (conflictItems.length && !ignoreConflicts) {
+      toast.error("Ada bentrok jadwal. Centang 'Tetap simpan' untuk lanjut.");
+      return;
+    }
 
     setIsSubmitting(true);
 
@@ -202,6 +318,14 @@ export default function ScheduleForm({
       toast.success(
         `Jadwal berhasil ${isEditMode ? "diperbarui" : "disimpan"}!`
       );
+      if (!isEditMode) {
+        try {
+          localStorage.removeItem(DRAFT_KEY);
+        } catch {
+          // ignore
+        }
+        setDraftReady(false);
+      }
       setIsOpen(false);
     } catch (error) {
       toast.error((error as Error).message);
@@ -224,7 +348,7 @@ export default function ScheduleForm({
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>{TriggerButton}</DialogTrigger>
-      <DialogContent className="sm:max-w-[425px] overflow-hidden bg-gray-800/80 backdrop-blur-md border-gray-700 text-white p-8">
+      <DialogContent className="w-[calc(100vw-1rem)] max-w-none max-h-[calc(100dvh-1rem)] overflow-hidden bg-gray-800/80 backdrop-blur-md border-gray-700 text-white p-8 sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="text-cyan-400">
             {isEditMode ? "Edit" : "Input"} Jadwal Visit
@@ -317,6 +441,38 @@ export default function ScheduleForm({
                 className="pl-10"
               />
             </div>
+            {conflictItems.length ? (
+              <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
+                <p className="font-semibold text-amber-200">
+                  Bentrok jadwal terdeteksi ({conflictItems.length})
+                </p>
+                <ul className="mt-2 space-y-1 text-xs text-amber-100/90">
+                  {conflictItems.slice(0, 5).map((c) => (
+                    <li key={c.id} className="flex flex-wrap gap-x-2">
+                      <span className="font-semibold">
+                        {new Date(c.waktuVisit).toLocaleString("id-ID")}
+                      </span>
+                      <span>• {c.namaDokter}</span>
+                      <span>• {c.rumahSakit}</span>
+                      <span>• {c.perawat}</span>
+                    </li>
+                  ))}
+                </ul>
+                {conflictItems.length > 5 ? (
+                  <p className="mt-2 text-xs text-amber-100/70">
+                    (+{conflictItems.length - 5} lainnya)
+                  </p>
+                ) : null}
+                <label className="mt-3 flex cursor-pointer items-center gap-2 text-xs text-amber-100">
+                  <input
+                    type="checkbox"
+                    checked={ignoreConflicts}
+                    onChange={(e) => setIgnoreConflicts(e.target.checked)}
+                  />
+                  Tetap simpan (abaikan bentrok)
+                </label>
+              </div>
+            ) : null}
           </div>
           <div className="space-y-2">
             <Label htmlFor="note">Catatan / Note</Label>
@@ -386,7 +542,7 @@ export default function ScheduleForm({
             </Select>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
             <Button
               type="submit"
               disabled={isSubmitting}

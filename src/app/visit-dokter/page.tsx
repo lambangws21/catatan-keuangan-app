@@ -42,6 +42,19 @@ export default function SchedulesPage() {
   // ========================
   // ✅ GENERATE REPEAT EVENT
   // ========================
+  const clampMonthlyOccurrence = (base: Date, year: number, monthIndex: number) => {
+    const day = base.getDate();
+    const hours = base.getHours();
+    const minutes = base.getMinutes();
+    const lastDay = new Date(year, monthIndex + 1, 0).getDate();
+
+    const d = new Date(base);
+    d.setFullYear(year);
+    d.setMonth(monthIndex, Math.min(day, lastDay));
+    d.setHours(hours, minutes, 0, 0);
+    return d;
+  };
+
   const generateRecurringEvents = (events: Schedule[]): Schedule[] => {
     const result: Schedule[] = [];
 
@@ -50,8 +63,10 @@ export default function SchedulesPage() {
 
       if (event.repeat === "monthly") {
         for (let i = 1; i <= 6; i++) {
-          const date = new Date(event.waktuVisit);
-          date.setMonth(date.getMonth() + i);
+          const base = new Date(event.waktuVisit);
+          const y = base.getFullYear();
+          const m = base.getMonth();
+          const date = clampMonthlyOccurrence(base, y, m + i);
 
           result.push({
             ...event,
@@ -311,6 +326,16 @@ export default function SchedulesPage() {
 	                  <RefreshCw className="mr-2 h-4 w-4" />
 	                  Refresh
 	                </Button>
+                  <Button
+                    asChild
+                    variant="secondary"
+                    className="border border-white/10 bg-white/10 text-(--dash-ink)] hover:bg-white/15 text-slate-50"
+                  >
+                    <a href="/api/visit-dokter/ics" target="_blank" rel="noreferrer">
+                      <CalendarDays className="mr-2 h-4 w-4" />
+                      Export ICS
+                    </a>
+                  </Button>
 	                <Button asChild variant="secondary" className="border border-white/10 bg-white/10 text-(--dash-ink)] hover:bg-white/15 text-slate-50">
 	                  <Link href="/list-dokter">
 	                    <ClipboardList className="mr-2 h-4 w-4" />
@@ -327,7 +352,11 @@ export default function SchedulesPage() {
 	                    Aktifkan Notifikasi
 	                  </Button>
 	                ) : null}
-	                <ScheduleForm onFormSubmit={handleFormSubmit} doctorsList={doctors} />
+	                <ScheduleForm
+	                  onFormSubmit={handleFormSubmit}
+	                  doctorsList={doctors}
+	                  schedulesList={baseSchedules}
+	                />
 	              </div>
 	            </div>
 
@@ -562,6 +591,7 @@ export default function SchedulesPage() {
                 }}
                 doctorsList={doctors}
                 onFormSubmit={handleFormSubmit}
+                schedulesList={baseSchedules}
               />
             </div>
           ) : null}

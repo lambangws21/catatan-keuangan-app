@@ -105,7 +105,11 @@ export default function MobileTimeline({
               List Dokter
             </Link>
           </Button>
-          <ScheduleForm onFormSubmit={onRefresh} doctorsList={doctors} />
+          <ScheduleForm
+            onFormSubmit={onRefresh}
+            doctorsList={doctors}
+            schedulesList={schedules}
+          />
         </div>
       </header>
 

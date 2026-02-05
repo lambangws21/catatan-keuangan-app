@@ -25,6 +25,13 @@ interface NotificationPreferences {
     largeTransactionAlert: boolean;
 }
 
+// Tipe untuk pengaturan budget
+export interface BudgetSettings {
+    monthlyExpenseBudget: number; // dalam IDR
+    enabled: boolean;
+    warnAtPercent: number; // 0-100
+}
+
 // --- FUNGSI UNTUK NOTIFIKASI ---
 
 /**
@@ -64,6 +71,45 @@ export async function updateUserNotificationSettings(uid: string, settings: Noti
         // Gunakan setDoc dengan merge: true untuk membuat atau memperbarui
         // sub-objek 'notificationSettings' tanpa menimpa data pengguna lain.
         await setDoc(userDocRef, { notificationSettings: settings }, { merge: true });
+        return { error: null };
+    } catch (error: unknown) {
+        return { error: error instanceof Error ? error.message : "Terjadi kesalahan tidak diketahui." };
+    }
+}
+
+// --- FUNGSI UNTUK BUDGET ---
+
+const defaultBudgetSettings: BudgetSettings = {
+    monthlyExpenseBudget: 0,
+    enabled: false,
+    warnAtPercent: 80,
+};
+
+export async function getUserBudgetSettings(uid: string): Promise<BudgetSettings> {
+    try {
+        const userDocRef = doc(db, "users", uid);
+        const docSnap = await getDoc(userDocRef);
+
+        if (docSnap.exists() && docSnap.data().budgetSettings) {
+            const raw = docSnap.data().budgetSettings as Partial<BudgetSettings>;
+            return {
+                monthlyExpenseBudget: Number(raw.monthlyExpenseBudget ?? 0),
+                enabled: Boolean(raw.enabled ?? false),
+                warnAtPercent: Math.max(0, Math.min(100, Number(raw.warnAtPercent ?? 80))),
+            };
+        }
+
+        return defaultBudgetSettings;
+    } catch (error) {
+        console.error("Error mengambil budget settings:", error);
+        return defaultBudgetSettings;
+    }
+}
+
+export async function updateUserBudgetSettings(uid: string, settings: BudgetSettings): Promise<{ error: string | null }> {
+    try {
+        const userDocRef = doc(db, "users", uid);
+        await setDoc(userDocRef, { budgetSettings: settings }, { merge: true });
         return { error: null };
     } catch (error: unknown) {
         return { error: error instanceof Error ? error.message : "Terjadi kesalahan tidak diketahui." };
@@ -139,4 +185,3 @@ export async function deleteCategory(uid: string, categoryId: string): Promise<{
         return { error: error instanceof Error ? error.message : "Gagal menghapus kategori." };
     }
 }
-

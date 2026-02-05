@@ -7,6 +7,7 @@ import {
   ArrowLeft,
   ArrowRight,
   CalendarDays,
+  SlidersHorizontal,
   FileDown,
   FileText,
   Hospital,
@@ -32,6 +33,15 @@ import {
 import { Input } from "@/components/ui/input";
 import Spinner from "./Spinner";
 import OperationForm from "@/components/OperationForm";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 import jsPDF from "jspdf";
 import "jspdf-autotable";
@@ -56,6 +66,35 @@ interface ManagerProps {
   onDataChange: () => Promise<void>;
   user: User;
 }
+
+type ColumnKey =
+  | "tanggal"
+  | "dokter"
+  | "tindakan"
+  | "rumahSakit"
+  | "jumlah"
+  | "klaim"
+  | "perawat";
+
+const COLUMN_DEFS: Array<{ key: ColumnKey; label: string }> = [
+  { key: "tanggal", label: "Tanggal" },
+  { key: "dokter", label: "Dokter" },
+  { key: "tindakan", label: "Tindakan" },
+  { key: "rumahSakit", label: "Rumah Sakit" },
+  { key: "jumlah", label: "Jumlah" },
+  { key: "klaim", label: "Klaim" },
+  { key: "perawat", label: "Perawat" },
+];
+
+const DEFAULT_COLUMNS: Record<ColumnKey, boolean> = {
+  tanggal: true,
+  dokter: true,
+  tindakan: true,
+  rumahSakit: true,
+  jumlah: true,
+  klaim: true,
+  perawat: true,
+};
 
 // =========================
 // HELPERS
@@ -93,11 +132,76 @@ export default function OperationManager({
   onDataChange,
   user,
 }: ManagerProps) {
+  const STORAGE_KEY = "operation-manager:filters:v1";
+  const COLUMNS_KEY = "operation-manager:columns:v1";
   const [filterFrom, setFilterFrom] = useState("");
   const [filterTo, setFilterTo] = useState("");
   const [filterQuery, setFilterQuery] = useState("");
   const [pageSize, setPageSize] = useState(10);
   const [page, setPage] = useState(0);
+  const [columns, setColumns] = useState<Record<ColumnKey, boolean>>(DEFAULT_COLUMNS);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as {
+        filterFrom?: string;
+        filterTo?: string;
+        filterQuery?: string;
+        pageSize?: number;
+      };
+      if (typeof parsed.filterFrom === "string") setFilterFrom(parsed.filterFrom);
+      if (typeof parsed.filterTo === "string") setFilterTo(parsed.filterTo);
+      if (typeof parsed.filterQuery === "string") setFilterQuery(parsed.filterQuery);
+      if (typeof parsed.pageSize === "number" && Number.isFinite(parsed.pageSize)) {
+        setPageSize(Math.max(1, Math.min(100, Math.floor(parsed.pageSize))));
+      }
+    } catch {
+      // ignore
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(COLUMNS_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as Partial<Record<ColumnKey, boolean>>;
+      setColumns((prev) => ({
+        ...prev,
+        ...Object.fromEntries(
+          COLUMN_DEFS.map(({ key }) => [key, typeof parsed[key] === "boolean" ? parsed[key] : prev[key]])
+        ),
+      }));
+    } catch {
+      // ignore
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ filterFrom, filterTo, filterQuery, pageSize })
+      );
+    } catch {
+      // ignore
+    }
+  }, [filterFrom, filterTo, filterQuery, pageSize]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(COLUMNS_KEY, JSON.stringify(columns));
+    } catch {
+      // ignore
+    }
+  }, [columns]);
+
+  const setColumnKey = useCallback((key: ColumnKey, value: boolean) => {
+    setColumns((prev) => ({ ...prev, [key]: value }));
+  }, []);
 
   // =========================
   // PRESET FILTER
@@ -465,21 +569,55 @@ export default function OperationManager({
               </span>
             </div>
 
-            <div className="flex items-center gap-2">
-              <label className="text-[11px] font-medium text-(--dash-muted)]">
-                Rows
-              </label>
-              <select
-                value={pageSize}
-                onChange={(e) => setPageSize(Number(e.target.value))}
-                className="h-9 rounded-md border border-white/10 bg-white/5 px-3 text-sm text-(--dash-ink)]"
-              >
-                {[10, 25, 50, 100].map((n) => (
-                  <option key={n} value={n}>
-                    {n}
-                  </option>
-                ))}
-              </select>
+            <div className="flex flex-wrap items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="border border-white/10 bg-white/10 text-(--dash-ink)] hover:bg-white/15"
+                  >
+                    <SlidersHorizontal className="mr-2 h-4 w-4" />
+                    Kolom
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className="w-64 border border-white/15 bg-slate-950/95 text-white shadow-xl backdrop-blur"
+                >
+                  <DropdownMenuLabel>Tampilkan kolom</DropdownMenuLabel>
+                  {COLUMN_DEFS.map((c) => (
+                    <DropdownMenuCheckboxItem
+                      key={c.key}
+                      checked={columns[c.key]}
+                      onCheckedChange={(v) => setColumnKey(c.key, Boolean(v))}
+                    >
+                      {c.label}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setColumns(DEFAULT_COLUMNS)}>
+                    Reset ke default
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <div className="flex items-center gap-2">
+                <label className="text-[11px] font-medium text-(--dash-muted)]">
+                  Rows
+                </label>
+                <select
+                  value={pageSize}
+                  onChange={(e) => setPageSize(Number(e.target.value))}
+                  className="h-9 rounded-md border border-white/10 bg-white/5 px-3 text-sm text-(--dash-ink)]"
+                >
+                  {[10, 25, 50, 100].map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 
@@ -488,27 +626,41 @@ export default function OperationManager({
               <Table className="min-w-[980px]">
                 <TableHeader>
                   <TableRow className="bg-(--dash-surface-strong)]">
-                    <TableHead className="sticky top-0 z-10 bg-(--dash-surface-strong)]">
-                      Tanggal
-                    </TableHead>
-                    <TableHead className="sticky top-0 z-10 bg-(--dash-surface-strong)]">
-                      Dokter
-                    </TableHead>
-                    <TableHead className="sticky top-0 z-10 bg-(--dash-surface-strong)]">
-                      Tindakan
-                    </TableHead>
-                    <TableHead className="sticky top-0 z-10 bg-(--dash-surface-strong)]">
-                      Rumah Sakit
-                    </TableHead>
-                    <TableHead className="sticky top-0 z-10 bg-(--dash-surface-strong)] text-right">
-                      Jumlah
-                    </TableHead>
-                    <TableHead className="sticky top-0 z-10 bg-(--dash-surface-strong)]">
-                      Klaim
-                    </TableHead>
-                    <TableHead className="sticky top-0 z-10 bg-(--dash-surface-strong)]">
-                      Perawat
-                    </TableHead>
+                    {columns.tanggal ? (
+                      <TableHead className="sticky top-0 z-10 bg-(--dash-surface-strong)]">
+                        Tanggal
+                      </TableHead>
+                    ) : null}
+                    {columns.dokter ? (
+                      <TableHead className="sticky top-0 z-10 bg-(--dash-surface-strong)]">
+                        Dokter
+                      </TableHead>
+                    ) : null}
+                    {columns.tindakan ? (
+                      <TableHead className="sticky top-0 z-10 bg-(--dash-surface-strong)]">
+                        Tindakan
+                      </TableHead>
+                    ) : null}
+                    {columns.rumahSakit ? (
+                      <TableHead className="sticky top-0 z-10 bg-(--dash-surface-strong)]">
+                        Rumah Sakit
+                      </TableHead>
+                    ) : null}
+                    {columns.jumlah ? (
+                      <TableHead className="sticky top-0 z-10 bg-(--dash-surface-strong)] text-right">
+                        Jumlah
+                      </TableHead>
+                    ) : null}
+                    {columns.klaim ? (
+                      <TableHead className="sticky top-0 z-10 bg-(--dash-surface-strong)]">
+                        Klaim
+                      </TableHead>
+                    ) : null}
+                    {columns.perawat ? (
+                      <TableHead className="sticky top-0 z-10 bg-(--dash-surface-strong)]">
+                        Perawat
+                      </TableHead>
+                    ) : null}
                     <TableHead className="sticky top-0 z-10 bg-(--dash-surface-strong)] text-center">
                       Aksi
                     </TableHead>
@@ -535,57 +687,71 @@ export default function OperationManager({
                         key={item.id}
                         className="border-white/10 hover:bg-white/5"
                       >
-                        <TableCell className="tabular-nums">
-                          <span className="inline-flex items-center gap-2">
-                            <CalendarDays className="h-4 w-4 text-(--dash-muted)]" />
-                            {item.date}
-                          </span>
-                        </TableCell>
-                        <TableCell className="max-w-[220px]">
-                          <span className="inline-flex items-center gap-2">
-                            <UserRound className="h-4 w-4 text-(--dash-muted)]" />
-                            <span className="truncate">{item.dokter}</span>
-                          </span>
-                        </TableCell>
-                        <TableCell className="whitespace-normal">
-                          <span className="inline-flex items-start gap-2">
-                            <Stethoscope className="mt-0.5 h-4 w-4 text-(--dash-muted)]" />
-                            <span className="max-w-[340px] wrap-break-word">
-                              {item.tindakanOperasi}
+                        {columns.tanggal ? (
+                          <TableCell className="tabular-nums">
+                            <span className="inline-flex items-center gap-2">
+                              <CalendarDays className="h-4 w-4 text-(--dash-muted)]" />
+                              {item.date}
                             </span>
-                          </span>
-                        </TableCell>
-                        <TableCell className="whitespace-normal">
-                          <span className="inline-flex items-start gap-2">
-                            <Hospital className="mt-0.5 h-4 w-4 text-(--dash-muted)]" />
-                            <span className="max-w-[260px] wrap-break-word">
-                              {item.rumahSakit}
+                          </TableCell>
+                        ) : null}
+                        {columns.dokter ? (
+                          <TableCell className="max-w-[220px]">
+                            <span className="inline-flex items-center gap-2">
+                              <UserRound className="h-4 w-4 text-(--dash-muted)]" />
+                              <span className="truncate">{item.dokter}</span>
                             </span>
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-right font-semibold tabular-nums">
-                          {formatCurrency(Number(item.jumlah))}
-                        </TableCell>
-                        <TableCell>
-                          <span
-                            className={`inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold ${klaimTone}`}
-                          >
-                            {item.klaim}
-                          </span>
-                        </TableCell>
-                        <TableCell className="whitespace-normal" title={item.namaPerawat}>
-                          <span className="inline-flex items-start gap-2">
-                            <Users className="mt-0.5 h-4 w-4 text-(--dash-muted)]" />
-                            <span className="wrap-break-word">
-                              {nursePrimary}{" "}
-                              {nurseExtra && (
-                                <span className="ml-1 text-[11px] font-semibold text-(--dash-muted)]">
-                                  {nurseExtra}
-                                </span>
-                              )}
+                          </TableCell>
+                        ) : null}
+                        {columns.tindakan ? (
+                          <TableCell className="whitespace-normal">
+                            <span className="inline-flex items-start gap-2">
+                              <Stethoscope className="mt-0.5 h-4 w-4 text-(--dash-muted)]" />
+                              <span className="max-w-[340px] wrap-break-word">
+                                {item.tindakanOperasi}
+                              </span>
                             </span>
-                          </span>
-                        </TableCell>
+                          </TableCell>
+                        ) : null}
+                        {columns.rumahSakit ? (
+                          <TableCell className="whitespace-normal">
+                            <span className="inline-flex items-start gap-2">
+                              <Hospital className="mt-0.5 h-4 w-4 text-(--dash-muted)]" />
+                              <span className="max-w-[260px] wrap-break-word">
+                                {item.rumahSakit}
+                              </span>
+                            </span>
+                          </TableCell>
+                        ) : null}
+                        {columns.jumlah ? (
+                          <TableCell className="text-right font-semibold tabular-nums">
+                            {formatCurrency(Number(item.jumlah))}
+                          </TableCell>
+                        ) : null}
+                        {columns.klaim ? (
+                          <TableCell>
+                            <span
+                              className={`inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold ${klaimTone}`}
+                            >
+                              {item.klaim}
+                            </span>
+                          </TableCell>
+                        ) : null}
+                        {columns.perawat ? (
+                          <TableCell className="whitespace-normal" title={item.namaPerawat}>
+                            <span className="inline-flex items-start gap-2">
+                              <Users className="mt-0.5 h-4 w-4 text-(--dash-muted)]" />
+                              <span className="wrap-break-word">
+                                {nursePrimary}{" "}
+                                {nurseExtra && (
+                                  <span className="ml-1 text-[11px] font-semibold text-(--dash-muted)]">
+                                    {nurseExtra}
+                                  </span>
+                                )}
+                              </span>
+                            </span>
+                          </TableCell>
+                        ) : null}
                         <TableCell className="text-center">
                           <div className="inline-flex items-center gap-1">
                             <OperationForm

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/components/AuthProvider";
 import { updateUserPassword, deleteUserAccount } from "@/lib/AuthServices";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useEffect, useState, FormEvent } from "react";
 import { Loader2, Landmark } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import { toast } from "sonner";
@@ -34,17 +34,67 @@ export default function SaldoForm({ onSaldoAdded }: SaldoFormProps) {
   const [jumlah, setJumlah] = useState<number | undefined>(undefined);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const DRAFT_KEY = "draft:saldo:v1";
+  const [draftReady, setDraftReady] = useState(false);
 
   const resetForm = () => {
     setTanggal(new Date().toISOString().split("T")[0]);
     setKeterangan("");
     setJumlah(undefined);
+    try {
+      localStorage.removeItem(DRAFT_KEY);
+    } catch {
+      // ignore
+    }
   };
   
   // Handler baru yang spesifik untuk CurrencyInput
   const handleJumlahChange = (value: number | undefined) => {
     setJumlah(value);
   };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    if (draftReady) return;
+
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) {
+        setDraftReady(true);
+        return;
+      }
+      const parsed = JSON.parse(raw) as {
+        tanggal?: string;
+        keterangan?: string;
+        jumlah?: number;
+      };
+      if (typeof parsed.tanggal === "string") setTanggal(parsed.tanggal);
+      if (typeof parsed.keterangan === "string") setKeterangan(parsed.keterangan);
+      if (typeof parsed.jumlah === "number") setJumlah(parsed.jumlah);
+    } catch {
+      // ignore
+    } finally {
+      setDraftReady(true);
+    }
+  }, [DRAFT_KEY, draftReady, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    if (!draftReady) return;
+
+    const t = window.setTimeout(() => {
+      try {
+        localStorage.setItem(
+          DRAFT_KEY,
+          JSON.stringify({ tanggal, keterangan, jumlah })
+        );
+      } catch {
+        // ignore
+      }
+    }, 250);
+
+    return () => window.clearTimeout(t);
+  }, [DRAFT_KEY, draftReady, isOpen, tanggal, keterangan, jumlah]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -83,6 +133,7 @@ export default function SaldoForm({ onSaldoAdded }: SaldoFormProps) {
       await onSaldoAdded();
       toast.success("Data saldo berhasil disimpan!");
       resetForm();
+      setDraftReady(false);
 
     } catch (error) {
       toast.error((error as Error).message);
@@ -92,7 +143,13 @@ export default function SaldoForm({ onSaldoAdded }: SaldoFormProps) {
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        setIsOpen(open);
+        if (open) setDraftReady(false);
+      }}
+    >
       <DialogTrigger asChild>
         <Button
           variant="outline"
@@ -102,7 +159,7 @@ export default function SaldoForm({ onSaldoAdded }: SaldoFormProps) {
             <span className="hidden md:inline">Input Saldo</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px] border-slate-200 bg-white text-slate-900 shadow-2xl dark:border-white/10 dark:bg-slate-950 dark:text-slate-100">
+      <DialogContent className="w-[calc(100vw-1rem)] max-w-none max-h-[calc(100dvh-1rem)] overflow-y-auto border-slate-200 bg-white text-slate-900 shadow-2xl dark:border-white/10 dark:bg-slate-950 dark:text-slate-100 sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="text-cyan-700 dark:text-cyan-300">
             Input Saldo Baru
@@ -145,7 +202,7 @@ export default function SaldoForm({ onSaldoAdded }: SaldoFormProps) {
             />
           </div>
           
-          <DialogFooter>
+          <DialogFooter className="pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
             <Button
               type="submit"
               disabled={isSubmitting}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/components/AuthProvider";
 import { toast } from "sonner";
 import { Loader2, PlusCircle, Edit, Trash2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,7 +35,7 @@ interface Category {
 }
 
 export default function CategorySettings() {
-    const { user } = useAuth();
+    const { user, loading } = useAuth();
     const [categories, setCategories] = useState<Category[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
@@ -46,13 +46,17 @@ export default function CategorySettings() {
     
     // PERBAIKAN: Bungkus fetchCategories dengan useCallback
     const fetchCategories = useCallback(async () => {
+        if (loading) return;
         if (user) {
             setIsLoading(true);
             const userCategories = await getUserCategories(user.uid);
             setCategories(userCategories);
             setIsLoading(false);
+        } else {
+            setCategories([]);
+            setIsLoading(false);
         }
-    }, [user]);
+    }, [user, loading]);
 
     // PERBAIKAN: Gunakan fetchCategories yang sudah di-memoize
     useEffect(() => {
@@ -190,4 +194,3 @@ export default function CategorySettings() {
         </Card>
     );
 }
-

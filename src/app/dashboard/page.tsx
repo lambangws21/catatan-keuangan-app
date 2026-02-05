@@ -231,10 +231,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import FinancialChart from "@/components/financial-chart";
 import FinancialReportPDF from "@/components/financial-report";
 import { Button } from "@/components/ui/button";
-import { Sun, Moon } from "lucide-react";
+import Link from "next/link";
+import { CalendarDays, Clock, Hospital, Stethoscope, Sun, Moon } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MealsMeetingManager from "@/components/MealsMeetingManager";
+import { useVisitSchedules } from "@/hooks/use-visit-schedules";
+import { getVisitAlertsForNextDays } from "@/lib/visit-dokter-alerts";
 
 /* types (same as before) */
 interface Transaction {
@@ -256,6 +259,7 @@ interface Saldo {
 export default function DashboardPage() {
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
+  const { schedules: visitSchedules } = useVisitSchedules();
 
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [allSaldoData, setAllSaldoData] = useState<Saldo[]>([]);
@@ -324,6 +328,32 @@ export default function DashboardPage() {
   const filteredTransactionsNonMeals = useMemo(() => {
     return filteredTransactions.filter((tx) => tx.jenisBiaya !== "Meals Metting");
   }, [filteredTransactions]);
+
+  const visitAlerts = useMemo(() => {
+    return getVisitAlertsForNextDays(visitSchedules, 1);
+  }, [visitSchedules]);
+
+  const formatCurrency = useCallback((value: number) => {
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
+    }).format(value);
+  }, []);
+
+  const totalPengeluaranBulanIni = useMemo(() => {
+    return filteredTransactions.reduce((sum, tx) => sum + Number(tx.jumlah || 0), 0);
+  }, [filteredTransactions]);
+
+  const saldoTerbaru = useMemo(() => {
+    if (!filteredSaldoData.length) return null;
+    return filteredSaldoData.reduce<Saldo | null>((latest, cur) => {
+      if (!latest) return cur;
+      return new Date(cur.tanggal).getTime() > new Date(latest.tanggal).getTime() ? cur : latest;
+    }, null);
+  }, [filteredSaldoData]);
+
+  const nextVisitAlert = visitAlerts[0] ?? null;
 
   const years = Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - i);
   const months = [
@@ -407,6 +437,150 @@ export default function DashboardPage() {
             </div>
           </div>
         </header>
+
+        {/* WIDGET RINGKAS (MOBILE) */}
+        <section className="sm:hidden">
+          <div className="flex gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <Link
+              href="/visit-dokter"
+              className="min-w-[220px] rounded-3xl border border-white/10 bg-[var(--dash-surface-strong)] p-4 text-[color:var(--dash-ink)] shadow-[0_16px_40px_rgba(2,6,23,0.35)]"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[10px] uppercase tracking-[0.35em] text-[color:var(--dash-muted)]">
+                  Visit
+                </p>
+                <span className="inline-flex items-center gap-2 text-xs text-cyan-300">
+                  <CalendarDays className="h-4 w-4" />
+                  {visitAlerts.length ? `${visitAlerts.length} alert` : "Aman"}
+                </span>
+              </div>
+              <p className="mt-2 text-sm font-semibold">
+                {nextVisitAlert ? nextVisitAlert.namaDokter : "Tidak ada jadwal"}
+              </p>
+              <p className="mt-1 text-xs text-[color:var(--dash-muted)]">
+                {nextVisitAlert
+                  ? `${new Date(nextVisitAlert.waktuVisit).toLocaleString("id-ID")}`
+                  : "Hari ini & besok kosong"}
+              </p>
+            </Link>
+
+            <Link
+              href="/transaction-manager"
+              className="min-w-[220px] rounded-3xl border border-white/10 bg-[var(--dash-surface-strong)] p-4 text-[color:var(--dash-ink)] shadow-[0_16px_40px_rgba(2,6,23,0.35)]"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[10px] uppercase tracking-[0.35em] text-[color:var(--dash-muted)]">
+                  Pengeluaran
+                </p>
+                <span className="inline-flex items-center gap-2 text-xs text-[color:var(--dash-muted)]">
+                  Bulan ini
+                </span>
+              </div>
+              <p className="mt-2 text-lg font-semibold tabular-nums">
+                {formatCurrency(totalPengeluaranBulanIni)}
+              </p>
+              <p className="mt-1 text-xs text-[color:var(--dash-muted)]">
+                Tap untuk input/scan struk
+              </p>
+            </Link>
+
+            <Link
+              href="/saldo"
+              className="min-w-[220px] rounded-3xl border border-white/10 bg-[var(--dash-surface-strong)] p-4 text-[color:var(--dash-ink)] shadow-[0_16px_40px_rgba(2,6,23,0.35)]"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[10px] uppercase tracking-[0.35em] text-[color:var(--dash-muted)]">
+                  Saldo
+                </p>
+                <span className="text-xs text-[color:var(--dash-muted)]">
+                  {filteredSaldoData.length} item
+                </span>
+              </div>
+              <p className="mt-2 text-sm font-semibold">
+                {saldoTerbaru ? "Update terakhir" : "Belum ada data"}
+              </p>
+              <p className="mt-1 text-xs text-[color:var(--dash-muted)]">
+                {saldoTerbaru
+                  ? `${saldoTerbaru.tanggal} • ${formatCurrency(saldoTerbaru.jumlah)}`
+                  : "Input saldo untuk mulai"}
+              </p>
+            </Link>
+          </div>
+        </section>
+
+        {/* DETAIL VISIT (TABLET/DESKTOP) */}
+        <section className="hidden sm:block dashboard-surface rounded-3xl border border-white/10 bg-[var(--dash-surface-strong)] p-4 sm:p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
+              <p className="text-[10px] uppercase tracking-[0.4em] text-[color:var(--dash-muted)]">
+                Visit Dokter
+              </p>
+              <h2 className="mt-2 text-lg font-semibold font-[var(--font-display)] text-[color:var(--dash-ink)]">
+                Alert jadwal hari ini & besok
+              </h2>
+              <p className="mt-1 text-sm text-[color:var(--dash-muted)]">
+                Pantau jadwal terdekat tanpa buka halaman visit.
+              </p>
+            </div>
+
+            <Button
+              asChild
+              variant="secondary"
+              className="border border-white/10 bg-white/10 text-[color:var(--dash-ink)] hover:bg-white/15"
+            >
+              <Link href="/visit-dokter">
+                <CalendarDays className="mr-2 h-4 w-4" />
+                Buka Visit Dokter
+              </Link>
+            </Button>
+          </div>
+
+          {visitAlerts.length ? (
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {visitAlerts.slice(0, 3).map((v) => {
+                const when = new Date(v.waktuVisit);
+                const dayLabel = v.dayOffset === 0 ? "Hari ini" : "Besok";
+                return (
+                  <Link
+                    key={v.id}
+                    href="/visit-dokter"
+                    className="group rounded-2xl border border-white/10 bg-white/5 p-4 transition hover:border-cyan-500/40 hover:bg-cyan-500/10"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] font-semibold text-cyan-200/90">
+                        {dayLabel}
+                      </span>
+                      <span className="inline-flex items-center gap-2 text-xs text-[color:var(--dash-muted)]">
+                        <Clock className="h-4 w-4 text-cyan-300" />
+                        {when.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                    </div>
+
+                    <div className="mt-3 space-y-2">
+                      <p className="inline-flex items-center gap-2 text-sm font-semibold text-[color:var(--dash-ink)]">
+                        <Stethoscope className="h-4 w-4 text-[color:var(--dash-muted)]" />
+                        <span className="truncate">{v.namaDokter}</span>
+                      </p>
+                      <p className="inline-flex items-center gap-2 text-xs text-[color:var(--dash-muted)]">
+                        <Hospital className="h-4 w-4 text-[color:var(--dash-muted)]" />
+                        <span className="truncate">{v.rumahSakit}</span>
+                      </p>
+                      {v.perawat ? (
+                        <p className="text-xs text-[color:var(--dash-muted)]">
+                          Perawat: <span className="font-semibold text-[color:var(--dash-ink)]">{v.perawat}</span>
+                        </p>
+                      ) : null}
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-[color:var(--dash-muted)]">
+              Tidak ada jadwal visit terdekat (hari ini & besok).
+            </div>
+          )}
+        </section>
 
         {/* MOBILE: minimal, no long scroll */}
         <div className="lg:hidden">

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { UserCircle, LayoutGrid, Bell, Table2 } from "lucide-react";
+import { UserCircle, LayoutGrid, Bell, Table2, PiggyBank } from "lucide-react";
 import {
   Tabs,
   TabsList,
@@ -11,20 +11,17 @@ import {
 
 import ProfileSettings from "@/components/setting/profilSetting";
 import NotificationSettings from "@/components/setting/NotifikasiSetting";
-import PlaceholderTab from "@/components/setting/placeHolderSetting";
+import CategorySettings from "@/components/setting/categofrySetting";
 import TableSetting from "@/components/setting/TableSetting";
+import BudgetSetting from "@/components/setting/BudgetSetting";
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("profile");
 
   const tabContent = {
     profile: <ProfileSettings />,
-    categories: (
-      <PlaceholderTab
-        title="Manajemen Kategori"
-        description="Tambah, edit, atau hapus kategori pengeluaran Anda."
-      />
-    ),
+    categories: <CategorySettings />,
+    budget: <BudgetSetting />,
     notifications: <NotificationSettings />,
     table: <TableSetting />,
   };
@@ -62,6 +59,12 @@ export default function SettingsPage() {
             className="justify-start gap-3 px-4 py-2 data-[state=active]:bg-cyan-600/20 data-[state=active]:text-cyan-300"
           >
             <LayoutGrid className="h-5 w-5" /> Kategori
+          </TabsTrigger>
+          <TabsTrigger
+            value="budget"
+            className="justify-start gap-3 px-4 py-2 data-[state=active]:bg-cyan-600/20 data-[state=active]:text-cyan-300"
+          >
+            <PiggyBank className="h-5 w-5" /> Budget
           </TabsTrigger>
           <TabsTrigger
             value="notifications"
