@@ -10,6 +10,7 @@ import SaldoManager from "@/components/ManajerSaldo";
 import {useAuth} from "@/components/AuthProvider";// Komponen yang ada di Canvas Anda
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MealsMeetingManager from "@/components/MealsMeetingManager";
+import { isCountedAsExpense } from "@/lib/transactions";
 
 
 
@@ -22,6 +23,7 @@ interface Transaction {
   jumlah: number;
   klaim: 'Ya' | 'Tidak' | string;
   fileUrl?: string;
+  sumberBiaya?: string | null;
 }
 
 interface Saldo {
@@ -85,7 +87,7 @@ export default function Home() {
   }, [user, fetchTransactions, fetchSaldo]); // Tambahkan user di sini juga
 
   const transactionsNonMeals = useMemo(() => {
-    return transactions.filter((tx) => tx.jenisBiaya !== "Meals Metting");
+    return transactions.filter((tx) => isCountedAsExpense(tx));
   }, [transactions]);
 
   return (

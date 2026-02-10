@@ -5,6 +5,7 @@ import { useAuth } from "@/components/AuthProvider";
 import TransactionManager from "@/components/transaction-manager";
 import MealsMeetingManager from "@/components/MealsMeetingManager";
 import { toast } from "sonner";
+import { isCountedAsExpense } from "@/lib/transactions";
 
 import { Input } from "@/components/ui/input";
 import {
@@ -29,6 +30,7 @@ interface Transaction {
   jumlah: number;
   klaim: string;
   fileUrl?: string;
+  sumberBiaya?: string | null;
 }
 
 export default function TransactionsPage() {
@@ -142,7 +144,7 @@ export default function TransactionsPage() {
   }, [allTransactions, selectedCategory, searchTerm, startDate, endDate, activeTab]);
 
   const filteredTransactionsNonMeals = useMemo(() => {
-    return filteredBase.filter((tx) => tx.jenisBiaya !== "Meals Metting");
+    return filteredBase.filter((tx) => isCountedAsExpense(tx));
   }, [filteredBase]);
 
   const monthKey = useMemo(() => {
@@ -159,6 +161,7 @@ export default function TransactionsPage() {
         const t = new Date(tx.tanggal).getTime();
         return t >= start && t <= end;
       })
+      .filter((tx) => isCountedAsExpense(tx))
       .reduce((sum, tx) => sum + Number(tx.jumlah || 0), 0);
   }, [allTransactions]);
 

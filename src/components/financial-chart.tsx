@@ -14,6 +14,7 @@ import {
 } from "recharts";
 import { Brain, TrendingUp } from "lucide-react";
 import { useTheme } from "next-themes";
+import { isCountedAsExpense } from "@/lib/transactions";
 
 /* ================= TYPES ================= */
 
@@ -21,6 +22,7 @@ export interface Transaction {
   tanggal: string;
   jenisBiaya: string;
   jumlah: number;
+  sumberBiaya?: string | null;
 }
 
 interface TrendItem {
@@ -50,6 +52,7 @@ export default function FinancialChartTitan({
     const map = new Map<string, number>();
 
     transactions.forEach((t) => {
+      if (!isCountedAsExpense(t)) return;
       const day = new Date(t.tanggal).getDate().toString().padStart(2, "0");
       map.set(day, (map.get(day) ?? 0) + t.jumlah);
     });

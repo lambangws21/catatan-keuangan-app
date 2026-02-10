@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   Table,
   TableCell,
@@ -65,6 +65,7 @@ interface ManagerProps {
   isLoading: boolean;
   onDataChange: () => Promise<void>;
   user: User;
+  compact?: boolean;
 }
 
 type ColumnKey =
@@ -131,6 +132,7 @@ export default function OperationManager({
   isLoading,
   onDataChange,
   user,
+  compact = false,
 }: ManagerProps) {
   const STORAGE_KEY = "operation-manager:filters:v1";
   const COLUMNS_KEY = "operation-manager:columns:v1";
@@ -140,6 +142,7 @@ export default function OperationManager({
   const [pageSize, setPageSize] = useState(10);
   const [page, setPage] = useState(0);
   const [columns, setColumns] = useState<Record<ColumnKey, boolean>>(DEFAULT_COLUMNS);
+  const isCompact = compact;
 
   useEffect(() => {
     try {
@@ -160,7 +163,7 @@ export default function OperationManager({
     } catch {
       // ignore
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   useEffect(() => {
@@ -177,7 +180,7 @@ export default function OperationManager({
     } catch {
       // ignore
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   useEffect(() => {
@@ -297,6 +300,10 @@ export default function OperationManager({
   const handleExportCSV = () => {
     if (filteredData.length === 0) return toast.error("Data kosong");
 
+    const exportData = filteredData
+      .slice()
+      .sort((a, b) => String(a.date).localeCompare(String(b.date)));
+
     const headers = [
       "Tanggal",
       "Dokter",
@@ -307,7 +314,7 @@ export default function OperationManager({
       "Perawat",
     ];
 
-    const rows = filteredData.map((op) =>
+    const rows = exportData.map((op) =>
       [
         escapeCSV(op.date),
         escapeCSV(op.dokter),
@@ -338,6 +345,10 @@ export default function OperationManager({
   const handleExportPDF = () => {
     if (filteredData.length === 0) return toast.error("Data kosong");
 
+    const exportData = filteredData
+      .slice()
+      .sort((a, b) => String(a.date).localeCompare(String(b.date)));
+
     const doc = new jsPDF();
 
     const tableCols = [
@@ -349,7 +360,7 @@ export default function OperationManager({
       "Klaim",
       "Perawat",
     ];
-    const tableRows = filteredData.map((op) => [
+    const tableRows = exportData.map((op) => [
       op.date,
       op.dokter,
       op.tindakanOperasi,
@@ -390,6 +401,18 @@ export default function OperationManager({
     const start = pageSafe * pageSize;
     return filteredData.slice(start, start + pageSize);
   }, [filteredData, pageSafe, pageSize]);
+
+  const tableBounceKey = useMemo(() => {
+    return [
+      pageSafe,
+      pageSize,
+      filterFrom || "-",
+      filterTo || "-",
+      filterQuery || "-",
+      totalFiltered,
+      JSON.stringify(columns),
+    ].join("|");
+  }, [pageSafe, pageSize, filterFrom, filterTo, filterQuery, totalFiltered, columns]);
 
   // =========================
   // RENDER
@@ -440,7 +463,7 @@ export default function OperationManager({
       </div>
 
       {/* FILTER BAR */}
-      <div className="mt-6 grid grid-cols-1 gap-3 lg:grid-cols-12">
+      <div className="mt-5 grid grid-cols-1 gap-3 lg:grid-cols-12">
         <div className="lg:col-span-3">
           <label className="mb-1 block text-[11px] font-medium text-(--dash-muted)]">
             Dari tanggal
@@ -464,13 +487,13 @@ export default function OperationManager({
           />
         </div>
         <div className="lg:col-span-4">
-          <label className="mb-1 block text-[11px] font-medium text-(--dash-muted)]">
+          <label className="mb-1 block text-[11px] font-xs text-(--dash-muted)]">
             Pencarian
           </label>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-(--dash-muted)]" />
             <Input
-              placeholder="Dokter / tindakan / RS / klaim / perawat…"
+              placeholder="cari..."
               value={filterQuery}
               onChange={(e) => setFilterQuery(e.target.value)}
               className="border-white/10 bg-white/5 pl-10 text-(--dash-ink)]"
@@ -497,8 +520,7 @@ export default function OperationManager({
             variant="secondary"
             className="border border-white/10 bg-white/5 text-(--dash-muted)] hover:bg-white/10"
           >
-            <RotateCcw className="mr-2 h-4 w-4" />
-            Reset
+            <RotateCcw className=" h-4 w-4" />
           </Button>
         </div>
       </div>
@@ -622,8 +644,15 @@ export default function OperationManager({
           </div>
 
           <div className="mt-3 overflow-auto rounded-2xl border border-white/10 bg-white/5">
-            <div className="max-h-[560px] overflow-auto">
-              <Table className="min-w-[980px]">
+            <div className="max-h-[460px] overflow-auto">
+              <Table
+                className={[
+                  "min-w-[850px]",
+                  isCompact
+                    ? "text-[13px] [&_td]:px-2 [&_td]:py-1.5 [&_th]:px-2 [&_th]:h-9 [&_th]:text-[11px]"
+                    : "",
+                ].join(" ")}
+              >
                 <TableHeader>
                   <TableRow className="bg-(--dash-surface-strong)]">
                     {columns.tanggal ? (
@@ -666,8 +695,9 @@ export default function OperationManager({
                     </TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>
-                  {pagedData.map((item) => {
+                <TableBody key={tableBounceKey}>
+                  <AnimatePresence initial={false}>
+                    {pagedData.map((item, idx) => {
                     const nurses = String(item.namaPerawat || "")
                       .split(/\r?\n/)
                       .map((s) => s.trim())
@@ -683,30 +713,40 @@ export default function OperationManager({
                         : "text-amber-300";
 
                     return (
-                      <TableRow
+                      <motion.tr
                         key={item.id}
+                        initial={{ opacity: 0, y: 10, scale: 0.992 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 6, scale: 0.992 }}
+                        transition={{
+                          type: "spring",
+                          stiffness: 520,
+                          damping: 34,
+                          mass: 0.6,
+                          delay: Math.min(0.18, idx * 0.015),
+                        }}
                         className="border-white/10 hover:bg-white/5"
                       >
                         {columns.tanggal ? (
                           <TableCell className="tabular-nums">
-                            <span className="inline-flex items-center gap-2">
-                              <CalendarDays className="h-4 w-4 text-(--dash-muted)]" />
+                            <span className={isCompact ? "inline-flex items-center gap-1.5" : "inline-flex items-center gap-2"}>
+                              <CalendarDays className={isCompact ? "h-3.5 w-3.5 text-(--dash-muted)]" : "h-4 w-4 text-(--dash-muted)]"} />
                               {item.date}
                             </span>
                           </TableCell>
                         ) : null}
                         {columns.dokter ? (
                           <TableCell className="max-w-[220px]">
-                            <span className="inline-flex items-center gap-2">
-                              <UserRound className="h-4 w-4 text-(--dash-muted)]" />
+                            <span className={isCompact ? "inline-flex items-center gap-1.5" : "inline-flex items-center gap-2"}>
+                              <UserRound className={isCompact ? "h-3.5 w-3.5 text-(--dash-muted)]" : "h-4 w-4 text-(--dash-muted)]"} />
                               <span className="truncate">{item.dokter}</span>
                             </span>
                           </TableCell>
                         ) : null}
                         {columns.tindakan ? (
                           <TableCell className="whitespace-normal">
-                            <span className="inline-flex items-start gap-2">
-                              <Stethoscope className="mt-0.5 h-4 w-4 text-(--dash-muted)]" />
+                            <span className={isCompact ? "inline-flex items-start gap-1.5" : "inline-flex items-start gap-2"}>
+                              <Stethoscope className={isCompact ? "mt-0.5 h-3.5 w-3.5 text-(--dash-muted)]" : "mt-0.5 h-4 w-4 text-(--dash-muted)]"} />
                               <span className="max-w-[340px] wrap-break-word">
                                 {item.tindakanOperasi}
                               </span>
@@ -715,8 +755,8 @@ export default function OperationManager({
                         ) : null}
                         {columns.rumahSakit ? (
                           <TableCell className="whitespace-normal">
-                            <span className="inline-flex items-start gap-2">
-                              <Hospital className="mt-0.5 h-4 w-4 text-(--dash-muted)]" />
+                            <span className={isCompact ? "inline-flex items-start gap-1.5" : "inline-flex items-start gap-2"}>
+                              <Hospital className={isCompact ? "mt-0.5 h-3.5 w-3.5 text-(--dash-muted)]" : "mt-0.5 h-4 w-4 text-(--dash-muted)]"} />
                               <span className="max-w-[260px] wrap-break-word">
                                 {item.rumahSakit}
                               </span>
@@ -731,7 +771,11 @@ export default function OperationManager({
                         {columns.klaim ? (
                           <TableCell>
                             <span
-                              className={`inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold ${klaimTone}`}
+                              className={[
+                                "inline-flex items-center rounded-full border border-white/10 bg-white/5 font-semibold",
+                                isCompact ? "px-2.5 py-0.5 text-[10px]" : "px-3 py-1 text-[11px]",
+                                klaimTone,
+                              ].join(" ")}
                             >
                               {item.klaim}
                             </span>
@@ -739,12 +783,12 @@ export default function OperationManager({
                         ) : null}
                         {columns.perawat ? (
                           <TableCell className="whitespace-normal" title={item.namaPerawat}>
-                            <span className="inline-flex items-start gap-2">
-                              <Users className="mt-0.5 h-4 w-4 text-(--dash-muted)]" />
+                            <span className={isCompact ? "inline-flex items-start gap-1.5" : "inline-flex items-start gap-2"}>
+                              <Users className={isCompact ? "mt-0.5 h-3.5 w-3.5 text-(--dash-muted)]" : "mt-0.5 h-4 w-4 text-(--dash-muted)]"} />
                               <span className="wrap-break-word">
                                 {nursePrimary}{" "}
                                 {nurseExtra && (
-                                  <span className="ml-1 text-[11px] font-semibold text-(--dash-muted)]">
+                                  <span className={isCompact ? "ml-1 text-[10px] font-semibold text-(--dash-muted)]" : "ml-1 text-[11px] font-semibold text-(--dash-muted)]"}>
                                     {nurseExtra}
                                   </span>
                                 )}
@@ -753,7 +797,7 @@ export default function OperationManager({
                           </TableCell>
                         ) : null}
                         <TableCell className="text-center">
-                          <div className="inline-flex items-center gap-1">
+                          <div className={isCompact ? "inline-flex items-center gap-0.5" : "inline-flex items-center gap-1"}>
                             <OperationForm
                               onFormSubmit={onDataChange}
                               initialData={{
@@ -773,13 +817,14 @@ export default function OperationManager({
                               onClick={() => handleDelete(item.id)}
                               className="text-rose-300 hover:bg-white/10 hover:text-rose-200"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className={isCompact ? "h-3.5 w-3.5" : "h-4 w-4"} />
                             </Button>
                           </div>
                         </TableCell>
-                      </TableRow>
+                      </motion.tr>
                     );
                   })}
+                  </AnimatePresence>
                 </TableBody>
               </Table>
             </div>

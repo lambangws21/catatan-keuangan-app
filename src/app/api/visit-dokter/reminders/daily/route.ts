@@ -111,9 +111,7 @@ export async function POST(req: NextRequest) {
   const targetDate =
     body.targetDate || formatDateYMD(new Date(now.getTime() + daysAhead * 864e5), timeZone);
 
-  const [targetYear, targetMonth, _targetDay] = targetDate
-    .split("-")
-    .map((v) => Number(v));
+  const [targetYear, targetMonth] = targetDate.split("-").map((v) => Number(v));
   const targetMonthIndex = targetMonth - 1;
 
   const shouldSend =

@@ -61,6 +61,7 @@ export async function PUT(
       jumlah: Number(rawBody.jumlah),
       klaim: rawBody.klaim || null,
       fileUrl: rawBody.fileUrl || null,
+      sumberBiaya: rawBody.sumberBiaya || null,
     };
 
     // Validasi field
@@ -91,6 +92,7 @@ export async function PUT(
       jumlah: body.jumlah,
       klaim: body.klaim,
       fileUrl: body.fileUrl,
+      sumberBiaya: body.sumberBiaya,
       updatedAt: new Date(),
     });
 

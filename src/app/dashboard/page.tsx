@@ -238,6 +238,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MealsMeetingManager from "@/components/MealsMeetingManager";
 import { useVisitSchedules } from "@/hooks/use-visit-schedules";
 import { getVisitAlertsForNextDays } from "@/lib/visit-dokter-alerts";
+import { isCountedAsExpense } from "@/lib/transactions";
 
 /* types (same as before) */
 interface Transaction {
@@ -248,6 +249,7 @@ interface Transaction {
   jumlah: number;
   klaim: 'Ya' | 'Tidak' | string;
   fileUrl?: string;
+  sumberBiaya?: string | null;
 }
 interface Saldo {
   id: string;
@@ -325,8 +327,8 @@ export default function DashboardPage() {
     });
   }, [allSaldoData, selectedMonth, selectedYear]);
 
-  const filteredTransactionsNonMeals = useMemo(() => {
-    return filteredTransactions.filter((tx) => tx.jenisBiaya !== "Meals Metting");
+  const expenseTransactions = useMemo(() => {
+    return filteredTransactions.filter((tx) => isCountedAsExpense(tx));
   }, [filteredTransactions]);
 
   const visitAlerts = useMemo(() => {
@@ -342,7 +344,9 @@ export default function DashboardPage() {
   }, []);
 
   const totalPengeluaranBulanIni = useMemo(() => {
-    return filteredTransactions.reduce((sum, tx) => sum + Number(tx.jumlah || 0), 0);
+    return filteredTransactions
+      .filter((tx) => isCountedAsExpense(tx))
+      .reduce((sum, tx) => sum + Number(tx.jumlah || 0), 0);
   }, [filteredTransactions]);
 
   const saldoTerbaru = useMemo(() => {
@@ -644,7 +648,7 @@ export default function DashboardPage() {
 
             <TabsContent value="transaksi">
               <TransactionManager
-                transactions={filteredTransactionsNonMeals}
+                transactions={expenseTransactions}
                 isLoading={isLoading}
                 onDataChange={fetchTransactions}
               />
@@ -713,7 +717,7 @@ export default function DashboardPage() {
             </div>
             <div className="min-w-0">
               <TransactionManager
-                transactions={filteredTransactionsNonMeals}
+                transactions={expenseTransactions}
                 isLoading={isLoading}
                 onDataChange={fetchTransactions}
               />

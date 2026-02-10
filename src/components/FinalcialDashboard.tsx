@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import SummaryCards from "@/components/SummaryCards";
 import ExpenseChart from "@/components/ExpenseChart";
+import { isCountedAsExpense } from "@/lib/transactions";
 
 // Definisikan tipe data yang konsisten
 interface Transaction {
@@ -15,6 +16,7 @@ interface Transaction {
   jumlah: number;
   klaim: 'Ya' | 'Tidak' | string;
   fileUrl?: string;
+  sumberBiaya?: string | null;
 }
 
 interface Saldo {
@@ -46,15 +48,16 @@ export default function FinancialDashboard({ transactions, saldoData, isLoading,
     // Pastikan data adalah array sebelum melakukan operasi
     const validSaldoData = Array.isArray(saldoData) ? saldoData : [];
     const validTransactions = Array.isArray(transactions) ? transactions : [];
+    const expenseTransactions = validTransactions.filter((tx) => isCountedAsExpense(tx));
 
     // Gunakan data yang diterima apa adanya (bisa all-time atau hasil filter bulanan dari parent).
     const totalPemasukan = validSaldoData.reduce((sum, item) => sum + Number(item.jumlah), 0);
-    const totalPengeluaran = validTransactions.reduce((sum, tx) => sum + Number(tx.jumlah), 0);
+    const totalPengeluaran = expenseTransactions.reduce((sum, tx) => sum + Number(tx.jumlah), 0);
     const saldoSaatIni = totalPemasukan - totalPengeluaran;
     const pemasukanCount = validSaldoData.length;
-    const pengeluaranCount = validTransactions.length;
+    const pengeluaranCount = expenseTransactions.length;
     
-    const dataGrafikPengeluaran = validTransactions
+    const dataGrafikPengeluaran = expenseTransactions
       .reduce((acc, tx) => {
         const kategori = tx.jenisBiaya;
         const existing = acc.find(item => item.name === kategori);

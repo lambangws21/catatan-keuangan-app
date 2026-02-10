@@ -37,17 +37,28 @@ export default function OperasiGoogleForm({ embedded, onClose }: OperasiGoogleFo
   const dragStartX = useRef(0);
   const dragStartW = useRef(0);
 
+  const VIEWMODE_KEY = embedded ? "operasi:viewMode:embedded:v1" : "operasi:viewMode:v1";
+  const LEFT_WIDTH_KEY = embedded ? "operasi:leftWidth:embedded:v1" : "operasi:leftWidth:v1";
+  const isMobile = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(max-width: 767px)").matches;
+  }, []);
+
   const [viewMode, setViewMode] = useState<"split" | "form" | "materials">(() => {
     if (typeof window === "undefined") return "split";
-    const raw = window.localStorage.getItem("operasi:viewMode");
-    if (raw === "form" || raw === "materials" || raw === "split") return raw;
+    const raw = window.localStorage.getItem(VIEWMODE_KEY);
+    if (raw === "form" || raw === "materials" || raw === "split") {
+      if (embedded && isMobile && raw === "split") return "form";
+      return raw;
+    }
+    if (embedded && isMobile) return "form";
     return "split";
   });
   const viewModeRef = useRef(viewMode);
 
   const [leftWidth, setLeftWidth] = useState<number>(() => {
     if (typeof window === "undefined") return 460;
-    const raw = window.localStorage.getItem("operasi:leftWidth");
+    const raw = window.localStorage.getItem(LEFT_WIDTH_KEY);
     const parsed = raw ? Number(raw) : NaN;
     return Number.isFinite(parsed) ? parsed : 460;
   });
@@ -65,12 +76,12 @@ export default function OperasiGoogleForm({ embedded, onClose }: OperasiGoogleFo
   }, [embedUrl]);
 
   const resetView = () => {
-    setViewMode("split");
+    setViewMode(embedded && isMobile ? "form" : "split");
     setLeftWidth(460);
     if (typeof window !== "undefined") {
       try {
-        window.localStorage.removeItem("operasi:viewMode");
-        window.localStorage.removeItem("operasi:leftWidth");
+        window.localStorage.removeItem(VIEWMODE_KEY);
+        window.localStorage.removeItem(LEFT_WIDTH_KEY);
       } catch {
         // ignore
       }
@@ -79,13 +90,13 @@ export default function OperasiGoogleForm({ embedded, onClose }: OperasiGoogleFo
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    window.localStorage.setItem("operasi:leftWidth", String(leftWidth));
-  }, [leftWidth]);
+    window.localStorage.setItem(LEFT_WIDTH_KEY, String(leftWidth));
+  }, [leftWidth, LEFT_WIDTH_KEY]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    window.localStorage.setItem("operasi:viewMode", viewMode);
-  }, [viewMode]);
+    window.localStorage.setItem(VIEWMODE_KEY, viewMode);
+  }, [viewMode, VIEWMODE_KEY]);
 
   useEffect(() => {
     viewModeRef.current = viewMode;
@@ -131,10 +142,10 @@ export default function OperasiGoogleForm({ embedded, onClose }: OperasiGoogleFo
       >
         <div className="space-y-0.5">
           {embedded ? (
-            <div className="text-sm font-semibold">Google Form Operasi</div>
+            <div className="text-xs font-semibold">Google Form Operasi</div>
           ) : (
             <>
-              <div className="text-xl font-bold">Operasi</div>
+              <div className="text-md font-bold">Operasi</div>
               <div className="text-xs text-muted-foreground">
                 Split view: kiri untuk pilih implant/material, kanan untuk isi Google Form.
               </div>
@@ -144,13 +155,23 @@ export default function OperasiGoogleForm({ embedded, onClose }: OperasiGoogleFo
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1 flex-wrap">
             {embedded && onClose ? (
-              <Button type="button" variant="outline" size="sm" onClick={onClose}>
-                Kembali ke Manajemen Operasi
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 px-2 text-[11px]"
+                onClick={onClose}
+              >
+                Kembali
               </Button>
             ) : null}
             <Button
               type="button"
               size="sm"
+              className={cn(
+                "h-7 px-2 text-[11px]",
+                embedded ? "hidden md:inline-flex" : ""
+              )}
               variant={viewMode === "split" ? "default" : "outline"}
               onClick={() => setViewMode("split")}
               title="Tampilkan 2 panel"
@@ -160,6 +181,7 @@ export default function OperasiGoogleForm({ embedded, onClose }: OperasiGoogleFo
             <Button
               type="button"
               size="sm"
+              className="h-7 px-2 text-[11px]"
               variant={viewMode === "materials" ? "default" : "outline"}
               onClick={() => setViewMode("materials")}
               title="Hanya daftar implant/material"
@@ -169,6 +191,7 @@ export default function OperasiGoogleForm({ embedded, onClose }: OperasiGoogleFo
             <Button
               type="button"
               size="sm"
+              className="h-7 px-2 text-[11px]"
               variant={viewMode === "form" ? "default" : "outline"}
               onClick={() => setViewMode("form")}
               title="Hanya Google Form"
@@ -179,6 +202,7 @@ export default function OperasiGoogleForm({ embedded, onClose }: OperasiGoogleFo
               type="button"
               size="sm"
               variant="outline"
+              className="h-7 px-2 text-[11px]"
               onClick={resetView}
               title="Reset tampilan (kalau panel hilang)"
             >
@@ -189,18 +213,18 @@ export default function OperasiGoogleForm({ embedded, onClose }: OperasiGoogleFo
             type="button"
             variant="outline"
             size="sm"
+            className="h-7 w-7 p-0"
             onClick={() => setIframeKey((k) => k + 1)}
           >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Reload Form
+            <RefreshCw className="h-4 w-4" />
           </Button>
-          <Button type="button" size="sm" asChild>
+          <Button type="button" size="sm" className="h-7 px-2 text-[11px]" asChild>
             <a
               href={openUrl}
               target={GOOGLE_FORM_WINDOW_NAME}
               rel="noopener noreferrer"
             >
-              <ExternalLink className="h-4 w-4 mr-2" />
+              <ExternalLink className="h-4 w-4 mr-1.5" />
               Open Form
             </a>
           </Button>

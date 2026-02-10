@@ -125,7 +125,11 @@ async function listVisitsForDate(
   });
 
   items.sort((a, b) => a.ts - b.ts);
-  return items.map(({ ts: _ts, ...rest }) => rest);
+  return items.map((it) => {
+    const { ts, ...rest } = it;
+    void ts;
+    return rest;
+  });
 }
 
 function buildVisitMessage(title: string, targetDate: string, items: Awaited<ReturnType<typeof listVisitsForDate>>) {

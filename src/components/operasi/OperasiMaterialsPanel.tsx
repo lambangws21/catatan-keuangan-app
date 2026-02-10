@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   IMPLANT_MATERIALS,
   type ImplantMaterialItem,
@@ -233,15 +234,15 @@ export function OperasiMaterialsList({
         }}
         className={cx(
           "w-full text-left",
-          isCompact ? "rounded-lg border bg-background p-2" : "rounded-xl border bg-background p-3",
+          isCompact ? "rounded-lg border bg-background p-2" : "rounded-xl border bg-background p-1",
           "active:scale-[0.99] transition",
           checked && "border-primary/40 bg-muted/40"
         )}
       >
-        <div className="flex items-start justify-between gap-2">
+        <div className="flex items-start justify-between gap-1">
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="shrink-0">
+            <div className="flex items-center gap-1">
+              <Badge variant="outline" className="shrink-0 text-[9px]">
                 {item.procedure}
               </Badge>
               {checked && (
@@ -252,16 +253,16 @@ export function OperasiMaterialsList({
               )}
             </div>
 
-            <div className="mt-2 font-medium leading-snug wrap-break-words">
+            <div className="mt-2 font-[9px] leading-snug wrap-break-words">
               {item.implant}
             </div>
 
-            <div className="mt-1 text-xs text-muted-foreground wrap-break-words">
+            <div className="mt-1 text-[9px] text-muted-foreground wrap-break-words">
               {item.vendor ? item.vendor : "—"}
             </div>
 
             {isCompact ? (
-              <div className="mt-2 text-xs text-muted-foreground">
+              <div className="mt-1 text-[8px] text-muted-foreground">
                 <span className="font-medium text-foreground">Material:</span>{" "}
                 <span className="text-foreground/90">{item.material}</span>
                 <span className="mx-2 text-muted-foreground/60">•</span>
@@ -269,25 +270,25 @@ export function OperasiMaterialsList({
                 <span className="text-foreground/90">{item.component ?? "-"}</span>
               </div>
             ) : (
-              <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+              <div className="mt-1 grid grid-cols-2 gap-2 text-[9px]">
                 <div className="rounded-lg bg-muted/40 p-2">
                   <div className="text-muted-foreground">Component</div>
                   <div className="font-medium wrap-break-words">{item.component ?? "-"}</div>
                 </div>
-                <div className="rounded-lg bg-muted/40 p-2">
+                <div className="rounded-lg bg-muted/40 p-1">
                   <div className="text-muted-foreground">Material</div>
-                  <div className="font-medium wrap-break-words">{item.material}</div>
+                  <div className="font-light wrap-break-words">{item.material}</div>
                 </div>
               </div>
             )}
 
-            <div className="mt-2">
+            <div className="mt-1">
               {!notes ? (
-                <div className="text-xs text-muted-foreground">Notes: -</div>
+                <div className="text-[9px] text-muted-foreground">Notes: -</div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <div className="min-w-0 flex-1 text-xs text-foreground/80 wrap-break-words">
-                    <span className="text-muted-foreground">Notes: </span>
+                  <div className="min-w-0 flex-1 text-[9px] text-foreground/80 wrap-break-words">
+                    <span className="text-muted-foreground ">Notes: </span>
                     {notesPreview}
                   </div>
                   <Button
@@ -342,33 +343,48 @@ export function OperasiMaterialsList({
     <div
       className={cx(
         "h-full min-h-0 flex flex-col w-full",
-        isCompact ? "gap-2 text-[13px]" : "gap-3"
+        isCompact ? "gap-2 text-[12px]" : "gap-3"
       )}
     >
       {/* HEADER */}
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className={cx(isCompact ? "text-base" : "text-lg", "font-semibold leading-tight")}>
             Operasi
           </div>
-          <div className="text-xs text-muted-foreground">
+          <div className="text-[8px] text-muted-foreground">
             Pilih implant/material lalu copy ke Google Form.
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant="secondary" className="shrink-0">
+          <Badge variant="secondary" className="shrink-0 text-[8px]">
             {selectedItems.length} selected
           </Badge>
-          {copyStatus && <Badge variant="outline">{copyStatus}</Badge>}
+          <AnimatePresence initial={false} mode="popLayout">
+            {copyStatus ? (
+              <motion.div
+                key={copyStatus}
+                initial={{ opacity: 0, y: -4, scale: 0.92 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -4, scale: 0.96 }}
+                transition={{ type: "spring", stiffness: 700, damping: 22, mass: 0.5 }}
+              >
+                <Badge variant="outline" className="text-[10px]">
+                  {copyStatus}
+                </Badge>
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
         </div>
       </div>
 
       {/* SEARCH + FILTER (friendly) */}
       <Card className="py-0 gap-0">
-        <div className={cx(isCompact ? "p-2 space-y-2" : "p-3 space-y-3")}>
+        <div className={cx(isCompact ? "p-1 space-y-2" : "p-2 space-y-2")}>
           <Input
             placeholder="Search implant / material / vendor…"
             value={query}
+           
             onChange={(e) => setQuery(e.target.value)}
           />
 
@@ -377,7 +393,7 @@ export function OperasiMaterialsList({
             <Tabs value={procedure} onValueChange={(v) => setProcedure(v as typeof procedure)}>
               <TabsList className="w-full flex overflow-x-auto justify-start">
                 {PROCEDURE_OPTIONS.map((opt) => (
-                  <TabsTrigger key={opt.value} value={opt.value} className="shrink-0">
+                  <TabsTrigger key={opt.value} value={opt.value} className="shrink-0 text-[9px]">
                     {opt.label}
                   </TabsTrigger>
                 ))}
@@ -386,13 +402,14 @@ export function OperasiMaterialsList({
           </div>
 
           {/* Desktop: Buttons */}
-          <div className={cx(forceList ? "flex" : "hidden md:flex", "flex-wrap gap-2")}>
+          <div className={cx(forceList ? "flex" : "hidden md:flex", "flex-wrap gap-1")}>
             {PROCEDURE_OPTIONS.map((opt) => (
               <Button
                 key={opt.value}
                 type="button"
                 variant={procedure === opt.value ? "default" : "outline"}
                 size="sm"
+                className="text-[9px]"
                 onClick={() => setProcedure(opt.value)}
               >
                 {opt.label}
@@ -400,11 +417,11 @@ export function OperasiMaterialsList({
             ))}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <Button type="button" variant="outline" size="sm" onClick={selectAllFiltered}>
+          <div className="flex flex-wrap items-center gap-1 ">
+            <Button type="button" variant="outline" size="sm" className="text-[9px]" onClick={selectAllFiltered}>
               Select filtered
             </Button>
-            <Button type="button" variant="outline" size="sm" onClick={clearSelected}>
+            <Button type="button" variant="outline" size="sm" className="text-[9px]" onClick={clearSelected}>
               Clear
             </Button>
             <div className="flex-1" />
@@ -587,11 +604,11 @@ export function OperasiMaterialsList({
             <div className="text-xs text-muted-foreground">
               Paste hasilnya ke field implant/material di form.
             </div>
-            <div className="flex items-center gap-2">
-              <Button type="button" variant="outline" onClick={copyNotes} disabled={!notesText}>
+            <div className="flex items-center gap-1 text-xs">
+              <Button type="button" className="text-[9px] px-1 " variant="outline" onClick={copyNotes} disabled={!notesText}>
                 Copy Notes
               </Button>
-              <Button type="button" onClick={copySummary} disabled={!summary}>
+              <Button type="button" className="text-[9px] px-1 " onClick={copySummary} disabled={!summary}>
                 Copy Summary
               </Button>
             </div>
@@ -601,11 +618,11 @@ export function OperasiMaterialsList({
 
           <Collapsible open={summaryOpen} onOpenChange={setSummaryOpen}>
             <div className="flex items-center justify-between gap-2">
-              <div className="text-sm font-medium">
+              <div className="text-sm font-xs">
                 Summary {summary ? <span className="text-muted-foreground">({selectedItems.length})</span> : ""}
               </div>
               <CollapsibleTrigger asChild>
-                <Button type="button" variant="outline" size="sm" disabled={!summary}>
+                <Button type="button" variant="outline" size="sm" className="text-[8px]" disabled={!summary}>
                   {summaryOpen ? "Hide" : "Show"}
                 </Button>
               </CollapsibleTrigger>

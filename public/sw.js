@@ -1,4 +1,3 @@
-/* eslint-disable no-restricted-globals */
 const CACHE_VERSION = "pwa-v1";
 const APP_SHELL = [
   "/offline.html",

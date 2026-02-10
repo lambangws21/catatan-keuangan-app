@@ -45,6 +45,18 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { CurrencyInput } from "@/components/CurencyInput";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  MEALS_TYPE,
+  normalizeMealsPaymentSource,
+  type MealsPaymentSource,
+} from "@/lib/transactions";
 
 interface Transaction {
   id: string;
@@ -54,6 +66,7 @@ interface Transaction {
   jumlah: number;
   klaim: string;
   fileUrl?: string;
+  sumberBiaya?: MealsPaymentSource | string | null;
 }
 
 interface MealsMeetingManagerProps {
@@ -61,8 +74,6 @@ interface MealsMeetingManagerProps {
   isLoading: boolean;
   onDataChange: () => Promise<void>;
 }
-
-const MEALS_TYPE = "Meals Metting";
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat("id-ID", {
@@ -125,8 +136,9 @@ export default function MealsMeetingManager({
   const [editing, setEditing] = useState<Transaction | null>(null);
 
   const [tanggal, setTanggal] = useState(new Date().toISOString().split("T")[0]);
-  const [jumlah, setJumlah] = useState<number | undefined>(undefined);
-  const [klaim, setKlaim] = useState("");
+  const [jumlah, setJumlah] = useState<number | undefined>(350_000);
+  const [klaim, setKlaim] = useState("Lambang");
+  const [sumberBiaya, setSumberBiaya] = useState<MealsPaymentSource>("deposit");
   const [keterangan, setKeterangan] = useState("");
   const [lokasi, setLokasi] = useState("");
   const [peserta, setPeserta] = useState("");
@@ -141,8 +153,9 @@ export default function MealsMeetingManager({
 
   const resetForm = () => {
     setTanggal(new Date().toISOString().split("T")[0]);
-    setJumlah(undefined);
-    setKlaim("");
+    setJumlah(350_000);
+    setKlaim("Lambang");
+    setSumberBiaya("deposit");
     setKeterangan("");
     setLokasi("");
     setPeserta("");
@@ -162,6 +175,7 @@ export default function MealsMeetingManager({
     setTanggal(tx.tanggal);
     setJumlah(Number(tx.jumlah));
     setKlaim(tx.klaim || "");
+    setSumberBiaya(normalizeMealsPaymentSource(tx.sumberBiaya) ?? "deposit");
     const meta = extractMeta(tx.keterangan || "");
     setKeterangan(meta.note);
     setLokasi(meta.lokasi);
@@ -202,6 +216,7 @@ export default function MealsMeetingManager({
         jumlah: Number(jumlah),
         klaim: klaim.trim(),
         fileUrl,
+        sumberBiaya,
       };
 
       const url = editing ? `/api/transactions/${editing.id}` : "/api/transactions";
@@ -245,11 +260,13 @@ export default function MealsMeetingManager({
 
   const handleExportExcel = () => {
     if (!meals.length) return toast.error("Data kosong");
-    const dataToExport = meals.map((tx) => {
+    const sorted = meals.slice().sort((a, b) => a.tanggal.localeCompare(b.tanggal));
+    const dataToExport = sorted.map((tx) => {
       const meta = extractMeta(tx.keterangan || "");
       return {
         Tanggal: tx.tanggal,
         Klaim: tx.klaim,
+        "Sumber Biaya": normalizeMealsPaymentSource(tx.sumberBiaya) ?? "deposit",
         Lokasi: meta.lokasi,
         Peserta: meta.peserta,
         Keterangan: meta.note,
@@ -274,9 +291,10 @@ export default function MealsMeetingManager({
     if (!meals.length) return toast.error("Data kosong");
     const doc = new jsPDF();
     doc.text(`Laporan Meals Metting (${exportTag()})`, 14, 16);
+    const sorted = meals.slice().sort((a, b) => a.tanggal.localeCompare(b.tanggal));
     autoTable(doc, {
       head: [["Tanggal", "Klaim", "Keterangan", "Jumlah"]],
-      body: meals.map((tx) => [
+      body: sorted.map((tx) => [
         tx.tanggal,
         tx.klaim,
         stripMetaLines(tx.keterangan || ""),
@@ -337,7 +355,7 @@ export default function MealsMeetingManager({
                 Tambah
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[720px] border-white/10 bg-(--dash-surface-strong)] text-(--dash-ink)]">
+            <DialogContent className="sm:max-w-[720px] border-white/10 bg-slate-950 text-(--dash-ink)]">
               <DialogHeader>
                 <DialogTitle className="text-(--dash-ink)]">
                   {editing ? "Edit Meals Metting" : "Input Meals Metting"}
@@ -382,14 +400,17 @@ export default function MealsMeetingManager({
                     />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="meals-lokasi">Lokasi (opsional)</Label>
-                    <Input
-                      id="meals-lokasi"
-                      value={lokasi}
-                      onChange={(e) => setLokasi(e.target.value)}
-                      placeholder="Contoh: Cafe X"
-                      className="border-white/10 bg-white/5 text-(--dash-ink)]"
-                    />
+                    <Label>Sumber Biaya</Label>
+                    <Select value={sumberBiaya} onValueChange={(v) => setSumberBiaya(v as MealsPaymentSource)}>
+                      <SelectTrigger className="border-white/10 bg-white/5 text-(--dash-ink)]">
+                        <SelectValue placeholder="Pilih sumber biaya" />
+                      </SelectTrigger>
+                      <SelectContent className="border-white/10 bg-(--dash-surface-strong)] text-(--dash-ink)]">
+                        <SelectItem value="deposit">Deposit</SelectItem>
+                        <SelectItem value="mandiri">Mandiri</SelectItem>
+                        <SelectItem value="kantor">Kantor</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 
@@ -405,6 +426,19 @@ export default function MealsMeetingManager({
                     />
                   </div>
                   <div className="grid gap-2">
+                    <Label htmlFor="meals-lokasi">Lokasi (opsional)</Label>
+                    <Input
+                      id="meals-lokasi"
+                      value={lokasi}
+                      onChange={(e) => setLokasi(e.target.value)}
+                      placeholder="Contoh: Cafe X"
+                      className="border-white/10 bg-white/5 text-(--dash-ink)]"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="grid gap-2">
                     <Label htmlFor="meals-file">Bukti (opsional)</Label>
                     <Input
                       id="meals-file"
@@ -412,6 +446,14 @@ export default function MealsMeetingManager({
                       onChange={handleFileChange}
                       className="border-white/10 bg-white/5 text-(--dash-ink)] file:rounded-md file:border-0 file:bg-amber-500 file:px-3 file:py-1 file:text-slate-950 hover:file:bg-amber-400"
                     />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label className="text-(--dash-muted)]">Info</Label>
+                    <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-(--dash-muted)]">
+                      {sumberBiaya === "deposit"
+                        ? "Deposit: masuk hitung pengeluaran"
+                        : "Mandiri/Kantor: tidak masuk pengeluaran"}
+                    </div>
                   </div>
                 </div>
 
@@ -729,4 +771,3 @@ export default function MealsMeetingManager({
     </motion.section>
   );
 }
-

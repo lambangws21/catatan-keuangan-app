@@ -29,6 +29,49 @@ export interface Doctor {
   rumahSakit: string[];
 }
 
+// ========================
+// ✅ GENERATE REPEAT EVENT
+// ========================
+const clampMonthlyOccurrence = (base: Date, year: number, monthIndex: number) => {
+  const day = base.getDate();
+  const hours = base.getHours();
+  const minutes = base.getMinutes();
+  const lastDay = new Date(year, monthIndex + 1, 0).getDate();
+
+  const d = new Date(base);
+  d.setFullYear(year);
+  d.setMonth(monthIndex, Math.min(day, lastDay));
+  d.setHours(hours, minutes, 0, 0);
+  return d;
+};
+
+const generateRecurringEvents = (events: Schedule[]): Schedule[] => {
+  const result: Schedule[] = [];
+
+  events.forEach((event) => {
+    result.push({ ...event, sourceId: event.id, isVirtual: false });
+
+    if (event.repeat === "monthly") {
+      for (let i = 1; i <= 6; i++) {
+        const base = new Date(event.waktuVisit);
+        const y = base.getFullYear();
+        const m = base.getMonth();
+        const date = clampMonthlyOccurrence(base, y, m + i);
+
+        result.push({
+          ...event,
+          id: `${event.id}-r${i}`,
+          waktuVisit: date.toISOString(),
+          sourceId: event.id,
+          isVirtual: true,
+        });
+      }
+    }
+  });
+
+  return result;
+};
+
 export default function SchedulesPage() {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [baseSchedules, setBaseSchedules] = useState<Schedule[]>([]);
@@ -38,49 +81,6 @@ export default function SchedulesPage() {
   const [notifEnabled, setNotifEnabled] = useState(false);
 
   const REMIND_WITHIN_MINUTES = 60;
-
-  // ========================
-  // ✅ GENERATE REPEAT EVENT
-  // ========================
-  const clampMonthlyOccurrence = (base: Date, year: number, monthIndex: number) => {
-    const day = base.getDate();
-    const hours = base.getHours();
-    const minutes = base.getMinutes();
-    const lastDay = new Date(year, monthIndex + 1, 0).getDate();
-
-    const d = new Date(base);
-    d.setFullYear(year);
-    d.setMonth(monthIndex, Math.min(day, lastDay));
-    d.setHours(hours, minutes, 0, 0);
-    return d;
-  };
-
-  const generateRecurringEvents = (events: Schedule[]): Schedule[] => {
-    const result: Schedule[] = [];
-
-    events.forEach(event => {
-      result.push({ ...event, sourceId: event.id, isVirtual: false });
-
-      if (event.repeat === "monthly") {
-        for (let i = 1; i <= 6; i++) {
-          const base = new Date(event.waktuVisit);
-          const y = base.getFullYear();
-          const m = base.getMonth();
-          const date = clampMonthlyOccurrence(base, y, m + i);
-
-          result.push({
-            ...event,
-            id: `${event.id}-r${i}`,
-            waktuVisit: date.toISOString(),
-            sourceId: event.id,
-            isVirtual: true,
-          });
-        }
-      }
-    });
-
-    return result;
-  };
 
   // ========================
   // ✅ FETCH DATA

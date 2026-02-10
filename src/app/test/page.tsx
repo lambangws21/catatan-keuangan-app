@@ -113,7 +113,7 @@ export default function OperasiPage() {
     <div className="min-h-svh p-4 bg-background ">
       <div className="mb-3 flex items-center justify-between gap-2">
         <div className="space-y-0.5">
-          <div className="text-xl font-bold">Operasi</div>
+          <div className="text-sm font-bold">Operasi</div>
           <div className="text-xs text-muted-foreground">
             Split view: kiri untuk pilih implant/material, kanan untuk isi Google Form.
           </div>

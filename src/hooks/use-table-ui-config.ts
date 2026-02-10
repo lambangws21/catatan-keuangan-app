@@ -83,12 +83,14 @@ export function useTableUiConfig() {
       },
       body: JSON.stringify(patch),
     });
-    const json = await res.json().catch(() => ({}));
+    const json: unknown = await res.json().catch(() => null);
     if (!res.ok) {
-      const message =
-        (json && typeof json === "object" && "error" in json && (json as any).error) ||
-        `HTTP ${res.status}`;
-      throw new Error(String(message));
+      let message = `HTTP ${res.status}`;
+      if (json && typeof json === "object" && "error" in json) {
+        const err = (json as Record<string, unknown>).error;
+        if (typeof err === "string" && err.trim()) message = err;
+      }
+      throw new Error(message);
     }
     await mutate();
     return json as ApiResponse;
@@ -106,4 +108,3 @@ export function useTableUiConfig() {
     saveRemote,
   };
 }
-

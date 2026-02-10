@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     
     // PERBAIKAN 1: Baca 'fileUrl' dari body request
-    const { tanggal, jenisBiaya, keterangan, jumlah, klaim, fileUrl } = body;
+    const { tanggal, jenisBiaya, keterangan, jumlah, klaim, fileUrl, sumberBiaya } = body;
 
     if (!tanggal || !jenisBiaya || !keterangan || !jumlah) {
       return NextResponse.json({ error: 'Field wajib tidak boleh kosong' }, { status: 400 });
@@ -47,11 +47,12 @@ export async function POST(request: Request) {
       jumlah: Number(jumlah),
       klaim,
       fileUrl: fileUrl || null, // Simpan URL, atau null jika tidak ada
+      sumberBiaya: sumberBiaya || null,
       createdAt: new Date(),
     });
 
     // Mengembalikan data yang baru dibuat agar bisa langsung digunakan jika perlu
-    const responseData = { tanggal, jenisBiaya, keterangan, jumlah: Number(jumlah), klaim, fileUrl };
+    const responseData = { tanggal, jenisBiaya, keterangan, jumlah: Number(jumlah), klaim, fileUrl, sumberBiaya };
     return NextResponse.json({ message: 'Transaksi berhasil ditambahkan', data: responseData }, { status: 201 });
 
   } catch (error) {

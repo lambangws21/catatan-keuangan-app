@@ -326,9 +326,10 @@ export default function ExpenseForm({ onTransactionAdded }: ExpenseFormProps) {
                 type="button"
                 variant="secondary"
                 onClick={handleScanReceipt}
-                className="h-8 rounded-full border border-slate-200 bg-slate-100 px-3 text-xs text-slate-900 hover:bg-slate-200 dark:border-white/10 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/15"
+                size="sm"
+                className="h-7 rounded-full border border-slate-200 bg-slate-100 px-3 text-[11px] text-slate-900 hover:bg-slate-200 dark:border-white/10 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/15"
               >
-                <Camera className="mr-2 h-4 w-4" />
+                <Camera className="mr-2 h-3.5 w-3.5" />
                 Scan Struk
               </Button>
             </div>
@@ -376,23 +377,25 @@ export default function ExpenseForm({ onTransactionAdded }: ExpenseFormProps) {
             </p>
           )}
           
-          <DialogFooter className="sticky bottom-0 bg-white/90 pt-4 -mx-6 px-6 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] backdrop-blur dark:bg-slate-950/80">
+          <DialogFooter className="sticky bottom-0 bg-white/90 pt-3 -mx-6 px-6 pb-[calc(env(safe-area-inset-bottom)+0.6rem)] backdrop-blur dark:bg-slate-950/80">
             <div className="flex w-full gap-2">
               <Button
                 type="button"
                 variant="secondary"
                 onClick={handleScanReceipt}
-                className="w-full border border-slate-200 bg-slate-100 text-slate-900 hover:bg-slate-200 dark:border-white/10 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/15"
+                size="sm"
+                className="flex-1 h-9 border border-slate-200 bg-slate-100 px-3 text-xs text-slate-900 hover:bg-slate-200 dark:border-white/10 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/15"
               >
-                <Camera className="mr-2 h-4 w-4" />
+                <Camera className="mr-2 h-3.5 w-3.5" />
                 Scan
               </Button>
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full bg-cyan-600 text-white hover:bg-cyan-700 dark:bg-cyan-500 dark:hover:bg-cyan-400"
+                size="sm"
+                className="flex-1 h-9 bg-cyan-600 px-3 text-xs text-white hover:bg-cyan-700 dark:bg-cyan-500 dark:hover:bg-cyan-400"
               >
-                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isSubmitting && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}
                 {isSubmitting ? 'Menyimpan...' : 'Simpan'}
               </Button>
             </div>

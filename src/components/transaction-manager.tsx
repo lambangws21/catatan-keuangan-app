@@ -73,6 +73,7 @@ interface Transaction {
   jumlah: number;
   klaim: string;
   fileUrl?: string;
+  sumberBiaya?: string | null;
 }
 
 interface TransactionManagerProps {
@@ -123,13 +124,16 @@ export default function TransactionManager({
   }, [transactions]);
 
   const handleExportExcel = () => {
-    const dataToExport = transactions.map((tx) => ({
+    const dataToExport = transactions
+      .slice()
+      .sort((a, b) => a.tanggal.localeCompare(b.tanggal))
+      .map((tx) => ({
       Tanggal: tx.tanggal,
       Keterangan: tx.keterangan,
       "Jenis Biaya": tx.jenisBiaya,
       Jumlah: Number(tx.jumlah),
       Klaim: tx.klaim,
-    }));
+      }));
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Data Transaksi");
@@ -146,9 +150,10 @@ export default function TransactionManager({
   const handleExportPdf = () => {
     const doc = new jsPDF();
     doc.text("Laporan Riwayat Transaksi", 14, 16);
+    const sorted = transactions.slice().sort((a, b) => a.tanggal.localeCompare(b.tanggal));
     autoTable(doc, {
       head: [["Tanggal", "Keterangan", "Jenis Biaya", "Jumlah", "Klaim"]],
-      body: transactions.map((tx) => [
+      body: sorted.map((tx) => [
         tx.tanggal,
         tx.keterangan,
         tx.jenisBiaya,
