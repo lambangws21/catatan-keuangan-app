@@ -354,10 +354,11 @@ export default function DailyTimelineView({
       });
 
       const img = canvas.toDataURL("image/png");
-      const pdf = new jsPDF("p", "pt", "a4");
+      const pdf = new jsPDF("p", "mm", "a4");
 
       const pageWidth = pdf.internal.pageSize.getWidth();
-      const imgWidth = pageWidth - 40;
+      const margin = 10;
+      const imgWidth = pageWidth - margin * 2;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
       pdf.setFontSize(16);
@@ -365,11 +366,11 @@ export default function DailyTimelineView({
         `Laporan Visit — ${format(currentDate, "d MMM yyyy", {
           locale: LOCALE_ID,
         })}`,
-        20,
-        40
+        margin,
+        12
       );
 
-      pdf.addImage(img, "PNG", 20, 60, imgWidth, imgHeight);
+      pdf.addImage(img, "PNG", margin, 18, imgWidth, imgHeight);
       pdf.save(`visit-${format(currentDate, "yyyy-MM-dd")}.pdf`);
 
       toast.success("PDF berhasil dibuat!", { id: "pdf" });

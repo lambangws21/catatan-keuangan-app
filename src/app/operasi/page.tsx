@@ -4,8 +4,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/AuthProvider';
 import { toast } from 'sonner';
-import { FileDown, FileText, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight, FileDown, FileText, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import OperasiGoogleForm from '@/components/operasi/GoogleFormTabs';
 
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -47,6 +48,8 @@ export default function OperationsPage() {
   const [operations, setOperations] = useState<Operation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
+  const [googleFormState, setGoogleFormState] = useState<'open' | 'minimized'>('minimized');
+  const isGoogleFormOpen = googleFormState === 'open';
 
   // ======================
   // ✅ FETCH DATA
@@ -181,8 +184,8 @@ export default function OperationsPage() {
   // ======================
   // ✅ UI FINAL
   // ======================
-  return (
-    <div className="space-y-8">
+  const manageContent = (
+    <>
       {/* ================= HEADER ================= */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div>
@@ -196,6 +199,25 @@ export default function OperationsPage() {
         </div>
 
         <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => setGoogleFormState((s) => (s === 'open' ? 'minimized' : 'open'))}
+            className="border border-white/10 bg-white/10 text-(--dash-ink)] hover:bg-white/15"
+          >
+            {isGoogleFormOpen ? (
+              <>
+                <ChevronRight className="mr-2 h-4 w-4" />
+                Minimize Form
+              </>
+            ) : (
+              <>
+                <ChevronLeft className="mr-2 h-4 w-4" />
+                Buka Google Form
+              </>
+            )}
+          </Button>
+
           <Button
             onClick={handleExportExcel}
             disabled={isExporting || operations.length === 0}
@@ -220,14 +242,56 @@ export default function OperationsPage() {
 
       {/* ================= DASHBOARD ================= */}
       <OperationDashboard operations={operations} isLoading={isLoading} />
+    </>
+  );
 
-      {/* ================= TABLE + FILTER ================= */}
-      <OperationManager
-        operationsData={operations}
-        isLoading={isLoading}
-        onDataChange={fetchOperations}
-        user={user}
-      />
+  return (
+    <div className="space-y-8">
+      {manageContent}
+
+      <div
+        className={[
+          'grid grid-cols-1 gap-6',
+          'md:items-start md:transition-[grid-template-columns] md:duration-300 md:ease-in-out',
+          isGoogleFormOpen
+            ? 'md:grid-cols-[minmax(0,1fr)_minmax(420px,680px)]'
+            : 'md:grid-cols-[minmax(0,1fr)_0px]',
+        ].join(' ')}
+      >
+        <div className="min-w-0">
+          <OperationManager
+            operationsData={operations}
+            isLoading={isLoading}
+            onDataChange={fetchOperations}
+            user={user}
+          />
+        </div>
+
+        <div
+          className={[
+            'min-w-0 md:sticky md:top-24 md:h-[calc(100vh-7rem)]',
+            !isGoogleFormOpen ? 'hidden md:block' : '',
+          ].join(' ')}
+        >
+          <div className="h-full overflow-hidden rounded-3xl border border-white/10 bg-(--dash-surface) text-(--dash-ink) shadow-[0_20px_60px_rgba(2,6,23,0.45)]">
+            {isGoogleFormOpen ? (
+              <OperasiGoogleForm embedded onClose={() => setGoogleFormState('minimized')} />
+            ) : null}
+          </div>
+        </div>
+      </div>
+
+      {!isGoogleFormOpen ? (
+        <button
+          type="button"
+          onClick={() => setGoogleFormState('open')}
+          className="hidden md:flex fixed right-0 top-1/2 -translate-y-1/2 items-center gap-2 rounded-l-xl border border-white/10 bg-(--dash-surface) px-3 py-3 text-(--dash-ink) shadow-[0_20px_60px_rgba(2,6,23,0.35)] hover:bg-white/10"
+          title="Buka Google Form"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          <span className="text-xs font-semibold tracking-wide">Google Form</span>
+        </button>
+      ) : null}
     </div>
   );
 }

@@ -652,31 +652,31 @@ export default function OperationDashboard({
             >
               {showAnyAnalysisBody ? (
                 <>
-                  {visibility.analysisCaseSummary ? (
-                    <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                        <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
-                          Kasus Dominan
-                        </p>
+	                  {visibility.analysisCaseSummary ? (
+	                    <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+	                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+	                        <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
+	                          Kasus Dominan
+	                        </p>
                         <p className="mt-2 text-lg font-semibold text-amber-300">
                           {isLoading ? "…" : dominantCase}
                         </p>
-                        <p className="mt-1 text-[11px] text-(--dash-muted)]">
-                          Filter: Hip Knee.
-                        </p>
-                      </div>
-                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                        <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
-                          Knee
-                        </p>
+	                        <p className="mt-1 text-[11px] text-(--dash-muted)]">
+	                          Filter: Hip Knee.
+	                        </p>
+	                      </div>
+	                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+	                        <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
+	                          Knee
+	                        </p>
                         <p className="mt-2 text-lg font-semibold tabular-nums">
                           {isLoading ? "…" : `${kneeCount} operasi`}
                         </p>
-                      </div>
-                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                        <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
-                          Hip
-                        </p>
+	                      </div>
+	                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+	                        <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
+	                          Hip
+	                        </p>
                         <p className="mt-2 text-lg font-semibold tabular-nums">
                           {isLoading ? "…" : `${hipCount} operasi`}
                         </p>
@@ -684,36 +684,36 @@ export default function OperationDashboard({
                     </div>
                   ) : null}
 
-                  {visibility.analysisCodeCounts ? (
-                    <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                        <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
-                          Bipolar (Hip)
-                        </p>
+	                  {visibility.analysisCodeCounts ? (
+	                    <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+	                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+	                        <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
+	                          Bipolar (Hip)
+	                        </p>
                         <p className="mt-2 text-lg font-semibold tabular-nums">
                           {isLoading ? "…" : bipolarCount}
                         </p>
-                      </div>
-                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                        <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
-                          THR (Hip)
-                        </p>
+	                      </div>
+	                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+	                        <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
+	                          THR (Hip)
+	                        </p>
                         <p className="mt-2 text-lg font-semibold tabular-nums">
                           {isLoading ? "…" : thrCount}
                         </p>
-                      </div>
-                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                        <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
-                          TKR (Knee)
-                        </p>
+	                      </div>
+	                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+	                        <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
+	                          TKR (Knee)
+	                        </p>
                         <p className="mt-2 text-lg font-semibold tabular-nums">
                           {isLoading ? "…" : tkrCount}
                         </p>
-                      </div>
-                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                        <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
-                          UKA (Knee)
-                        </p>
+	                      </div>
+	                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+	                        <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
+	                          UKA (Knee)
+	                        </p>
                         <p className="mt-2 text-lg font-semibold tabular-nums">
                           {isLoading ? "…" : ukaCount}
                         </p>
@@ -721,25 +721,25 @@ export default function OperationDashboard({
                     </div>
                   ) : null}
 
-                  {visibility.analysisTopOperators && topOperators.length ? (
-                    <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4">
-                      <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
-                        Top Operator
-                      </p>
+	                  {visibility.analysisTopOperators && topOperators.length ? (
+	                    <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+	                      <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
+	                        Top Operator
+	                      </p>
                       <div className="mt-3 flex flex-wrap gap-2">
                         {topOperators.map((op) => (
-                          <span
-                            key={op.name}
-                            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold text-(--dash-ink)]"
-                          >
-                            <UserRound className="h-3.5 w-3.5 text-(--dash-muted)]" />
-                            <span className="max-w-[200px] truncate">
-                              {op.name}
-                            </span>
-                            <span className="text-(--dash-muted)] tabular-nums">
-                              {op.value}
-                            </span>
-                          </span>
+	                          <span
+	                            key={op.name}
+	                            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold text-(--dash-ink)]"
+	                          >
+	                            <UserRound className="h-3.5 w-3.5 text-(--dash-muted)]" />
+	                            <span className="max-w-[200px] truncate">
+	                              {op.name}
+	                            </span>
+	                            <span className="text-(--dash-muted)] tabular-nums">
+	                              {op.value}
+	                            </span>
+	                          </span>
                         ))}
                       </div>
                     </div>

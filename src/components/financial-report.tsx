@@ -83,9 +83,9 @@ export default function FinancialReportPDF({
       }
 
       // PDF SETUP
-      const pdf = new jsPDF("p", "pt", "a4");
+      const pdf = new jsPDF("p", "mm", "a4");
       const pageWidth = pdf.internal.pageSize.getWidth();
-      const margin = 20;
+      const margin = 10;
       const imgWidth = pageWidth - margin * 2;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
@@ -93,10 +93,10 @@ export default function FinancialReportPDF({
       pdf.text(
         title || `Laporan Keuangan ${format(new Date(), "MMMM yyyy")}`,
         margin,
-        30
+        12
       );
 
-      pdf.addImage(imgData, "PNG", margin, 45, imgWidth, imgHeight);
+      pdf.addImage(imgData, "PNG", margin, 18, imgWidth, imgHeight);
       pdf.save(`laporan-keuangan-${format(new Date(), "yyyy-MM-dd")}.pdf`);
 
       document.body.removeChild(wrapper);
@@ -111,7 +111,8 @@ export default function FinancialReportPDF({
       <div className="hidden" aria-hidden>
         <div
           ref={ref}
-          className="p-6 w-[800px] bg-white dark:bg-slate-900 text-black dark:text-white"
+          className="bg-white dark:bg-slate-900 text-black dark:text-white"
+          style={{ width: "190mm", padding: "10mm", boxSizing: "border-box" }}
           id="pdf-capture"
         >
           <h2 className="text-lg font-bold mb-4">
