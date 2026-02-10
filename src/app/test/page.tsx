@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ExternalLink, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import  OperasiMaterialsPanel  from "@/components/operasi/OperasiMaterialsPanel";
+import { OperasiMaterialsList } from "@/components/operasi/OperasiMaterialsPanel";
 
 const RAW_FORM_URL =
   "https://docs.google.com/forms/u/0/d/e/1FAIpQLSfaqN8MwjyAb4RzkX6afr_OYop5_WLYmPF7fEnWCe3inlWQ3w/formResponse";
@@ -47,6 +47,15 @@ export default function OperasiPage() {
 
   const [iframeKey, setIframeKey] = useState(0);
   const embedUrl = useMemo(() => toEmbeddableGoogleFormUrl(RAW_FORM_URL), []);
+  const openUrl = useMemo(() => {
+    try {
+      const u = new URL(embedUrl);
+      u.searchParams.delete("embedded");
+      return u.toString();
+    } catch {
+      return embedUrl;
+    }
+  }, [embedUrl]);
 
   const resetView = () => {
     setViewMode("split");
@@ -116,7 +125,7 @@ export default function OperasiPage() {
               size="sm"
               variant={viewMode === "split" ? "default" : "outline"}
               onClick={() => setViewMode("split")}
-              title="Tampilkan 2 window"
+              title="Tampilkan 2 panel"
             >
               Split
             </Button>
@@ -160,7 +169,7 @@ export default function OperasiPage() {
             Reload Form
           </Button>
           <Button type="button" asChild>
-            <a href={embedUrl} target="_blank" rel="noreferrer">
+            <a href={openUrl} target="operasi-google-form" rel="noopener noreferrer">
               <ExternalLink className="h-4 w-4 mr-2" />
               Open Form
             </a>
@@ -178,7 +187,7 @@ export default function OperasiPage() {
             style={{ width: viewMode === "split" ? leftWidth : "100%" }}
           >
             <div className="h-full min-h-0 p-3 overflow-hidden  ">
-              <OperasiMaterialsPanel />
+              <OperasiMaterialsList density="compact" forceList />
             </div>
           </div>
         )}

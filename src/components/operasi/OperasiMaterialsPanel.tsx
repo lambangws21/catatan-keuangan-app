@@ -39,6 +39,13 @@ const PROCEDURE_OPTIONS: Array<{ label: string; value: "ALL" | ImplantProcedure 
 const DEFAULT_FORM_URL =
   "https://docs.google.com/forms/d/e/1FAIpQLSfaqN8MwjyAb4RzkX6afr_OYop5_WLYmPF7fEnWCe3inlWQ3w/viewform?embedded=true";
 
+const GOOGLE_FORM_WINDOW_NAME = "operasi-google-form";
+
+function openSingleGoogleFormWindow(url: string) {
+  const win = window.open(url, GOOGLE_FORM_WINDOW_NAME, "noopener,noreferrer");
+  win?.focus();
+}
+
 function normalizeGoogleFormUrl(raw: string): { embedUrl: string; openUrl: string } {
   try {
     const url = new URL(raw);
@@ -102,7 +109,14 @@ function cx(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(" ");
 }
 
-function MaterialsPanel() {
+export function OperasiMaterialsList({
+  density = "default",
+  forceList = false,
+}: {
+  density?: "default" | "compact";
+  forceList?: boolean;
+}) {
+  const isCompact = density === "compact";
   const [query, setQuery] = useState("");
   const [procedure, setProcedure] = useState<"ALL" | ImplantProcedure>("ALL");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
@@ -219,7 +233,7 @@ function MaterialsPanel() {
         }}
         className={cx(
           "w-full text-left",
-          "rounded-xl border bg-background p-3",
+          isCompact ? "rounded-lg border bg-background p-2" : "rounded-xl border bg-background p-3",
           "active:scale-[0.99] transition",
           checked && "border-primary/40 bg-muted/40"
         )}
@@ -246,16 +260,26 @@ function MaterialsPanel() {
               {item.vendor ? item.vendor : "—"}
             </div>
 
-            <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
-              <div className="rounded-lg bg-muted/40 p-2">
-                <div className="text-muted-foreground">Component</div>
-                <div className="font-medium wrap-break-words">{item.component ?? "-"}</div>
+            {isCompact ? (
+              <div className="mt-2 text-xs text-muted-foreground">
+                <span className="font-medium text-foreground">Material:</span>{" "}
+                <span className="text-foreground/90">{item.material}</span>
+                <span className="mx-2 text-muted-foreground/60">•</span>
+                <span className="font-medium text-foreground">Comp:</span>{" "}
+                <span className="text-foreground/90">{item.component ?? "-"}</span>
               </div>
-              <div className="rounded-lg bg-muted/40 p-2">
-                <div className="text-muted-foreground">Material</div>
-                <div className="font-medium wrap-break-words">{item.material}</div>
+            ) : (
+              <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                <div className="rounded-lg bg-muted/40 p-2">
+                  <div className="text-muted-foreground">Component</div>
+                  <div className="font-medium wrap-break-words">{item.component ?? "-"}</div>
+                </div>
+                <div className="rounded-lg bg-muted/40 p-2">
+                  <div className="text-muted-foreground">Material</div>
+                  <div className="font-medium wrap-break-words">{item.material}</div>
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="mt-2">
               {!notes ? (
@@ -270,7 +294,7 @@ function MaterialsPanel() {
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 shrink-0"
+                    className={cx(isCompact ? "h-7 w-7 shrink-0" : "h-8 w-8 shrink-0")}
                     onClick={(e) => {
                       e.stopPropagation();
                       void copyText(notes, "Notes copied");
@@ -285,7 +309,7 @@ function MaterialsPanel() {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 shrink-0"
+                      className={cx(isCompact ? "h-7 w-7 shrink-0" : "h-8 w-8 shrink-0")}
                       onClick={(e) => {
                         e.stopPropagation();
                         setNotesDialogId(item.id);
@@ -315,11 +339,18 @@ function MaterialsPanel() {
   };
 
   return (
-    <div className="h-full min-h-0 flex flex-col gap-3 w-full">
+    <div
+      className={cx(
+        "h-full min-h-0 flex flex-col w-full",
+        isCompact ? "gap-2 text-[13px]" : "gap-3"
+      )}
+    >
       {/* HEADER */}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="text-lg font-semibold leading-tight">Operasi</div>
+          <div className={cx(isCompact ? "text-base" : "text-lg", "font-semibold leading-tight")}>
+            Operasi
+          </div>
           <div className="text-xs text-muted-foreground">
             Pilih implant/material lalu copy ke Google Form.
           </div>
@@ -334,7 +365,7 @@ function MaterialsPanel() {
 
       {/* SEARCH + FILTER (friendly) */}
       <Card className="py-0 gap-0">
-        <div className="p-3 space-y-3">
+        <div className={cx(isCompact ? "p-2 space-y-2" : "p-3 space-y-3")}>
           <Input
             placeholder="Search implant / material / vendor…"
             value={query}
@@ -342,7 +373,7 @@ function MaterialsPanel() {
           />
 
           {/* Mobile: Tabs (lebih rapih) */}
-          <div className="md:hidden">
+          <div className={cx(forceList ? "hidden" : "md:hidden")}>
             <Tabs value={procedure} onValueChange={(v) => setProcedure(v as typeof procedure)}>
               <TabsList className="w-full flex overflow-x-auto justify-start">
                 {PROCEDURE_OPTIONS.map((opt) => (
@@ -355,7 +386,7 @@ function MaterialsPanel() {
           </div>
 
           {/* Desktop: Buttons */}
-          <div className="hidden md:flex flex-wrap gap-2">
+          <div className={cx(forceList ? "flex" : "hidden md:flex", "flex-wrap gap-2")}>
             {PROCEDURE_OPTIONS.map((opt) => (
               <Button
                 key={opt.value}
@@ -385,7 +416,11 @@ function MaterialsPanel() {
       {/* LIST (mobile) + TABLE (desktop) */}
       <div className="flex-1 min-h-0">
         {/* Mobile list */}
-        <div className="md:hidden h-full overflow-auto space-y-2 pb-2">
+        <div
+          className={cx(
+            forceList ? "h-full overflow-auto space-y-2 pb-2" : "md:hidden h-full overflow-auto space-y-2 pb-2"
+          )}
+        >
           {filtered.map((item) => (
             <MobileRow key={item.id} item={item} />
           ))}
@@ -397,9 +432,14 @@ function MaterialsPanel() {
         </div>
 
         {/* Desktop table */}
-        <Card className="hidden md:flex h-full min-h-0 overflow-hidden py-0 gap-0">
+        <Card
+          className={cx(
+            forceList ? "hidden" : "hidden md:flex",
+            "h-full min-h-0 overflow-hidden py-0 gap-0"
+          )}
+        >
           <div className="h-full overflow-auto">
-            <table className="w-full table-fixed text-sm">
+            <table className={cx("w-full table-fixed", isCompact ? "text-xs" : "text-sm")}>
               <colgroup>
                 <col className="w-8" />
                 <col className="w-10" />
@@ -410,12 +450,16 @@ function MaterialsPanel() {
               </colgroup>
               <thead className="sticky top-0 bg-background border-b">
                 <tr className="text-left">
-                  <th className="px-3 py-2 w-8">Sel</th>
-                  <th className="px-3 py-2 w-10">Proc</th>
-                  <th className="px-3 py-2">Implant</th>
-                  <th className="px-3 py-2 w-16">Component</th>
-                  <th className="px-3 py-2 w-16">Material</th>
-                  <th className="px-3 py-2 w-16">Notes</th>
+                  <th className={cx(isCompact ? "px-2 py-1.5" : "px-3 py-2", "w-8")}>Sel</th>
+                  <th className={cx(isCompact ? "px-2 py-1.5" : "px-3 py-2", "w-10")}>Proc</th>
+                  <th className={cx(isCompact ? "px-2 py-1.5" : "px-3 py-2")}>Implant</th>
+                  <th className={cx(isCompact ? "px-2 py-1.5" : "px-3 py-2", "w-16")}>
+                    Component
+                  </th>
+                  <th className={cx(isCompact ? "px-2 py-1.5" : "px-3 py-2", "w-16")}>
+                    Material
+                  </th>
+                  <th className={cx(isCompact ? "px-2 py-1.5" : "px-3 py-2", "w-16")}>Notes</th>
                 </tr>
               </thead>
 
@@ -438,16 +482,23 @@ function MaterialsPanel() {
                         checked && "bg-muted/30"
                       )}
                     >
-                      <td className="px-3 py-2 align-top">
+                      <td className={cx(isCompact ? "px-2 py-1.5" : "px-3 py-2", "align-top")}>
                         <input
                           type="checkbox"
                           checked={checked}
                           onChange={() => toggleSelected(item.id)}
                         />
                       </td>
-                      <td className="px-3 py-2 align-top font-medium">{item.procedure}</td>
+                      <td
+                        className={cx(
+                          isCompact ? "px-2 py-1.5" : "px-3 py-2",
+                          "align-top font-medium"
+                        )}
+                      >
+                        {item.procedure}
+                      </td>
 
-                      <td className="px-3 py-2 align-top">
+                      <td className={cx(isCompact ? "px-2 py-1.5" : "px-3 py-2", "align-top")}>
                         <button
                           type="button"
                           className="w-full text-left"
@@ -462,18 +513,25 @@ function MaterialsPanel() {
                         </button>
                       </td>
 
-                      <td className="px-3 py-2 align-top wrap-break-words">
+                      <td
+                        className={cx(
+                          isCompact ? "hidden lg:table-cell px-2 py-1.5" : "px-3 py-2",
+                          "align-top wrap-break-words"
+                        )}
+                      >
                         {item.component ?? "-"}
                       </td>
 
-                      <td className="px-3 py-2 align-top wrap-break-words">{item.material}</td>
+                      <td className={cx(isCompact ? "px-2 py-1.5" : "px-3 py-2", "align-top wrap-break-words")}>
+                        {item.material}
+                      </td>
 
-                      <td className="px-3 py-2 align-top">
+                      <td className={cx(isCompact ? "px-2 py-1.5" : "px-3 py-2", "align-top")}>
                         {!notes ? (
                           <span className="text-muted-foreground">-</span>
                         ) : (
                           <div className="flex items-center gap-2">
-                            <div className="min-w-0 flex-1">
+                            <div className={cx(isCompact ? "hidden 2xl:block min-w-0 flex-1" : "min-w-0 flex-1")}>
                               <div className="line-clamp-2 text-xs text-foreground/80 wrap-break-words">
                                 {notesPreview}
                               </div>
@@ -634,7 +692,7 @@ export default function OperasiMaterialsPanel({
       {layout === "stacked" ? (
         <div className="flex flex-col gap-4 md:h-[calc(10s0vh-88px)] md:min-h-[640px] ">
           <div className="min-h-0 md:h-[420px] md:overflow-hidden">
-            <MaterialsPanel />
+            <OperasiMaterialsList />
           </div>
 
           <Card className="flex-1 min-h-0 py-1  gap-0 overflow-hidden">
@@ -654,7 +712,7 @@ export default function OperasiMaterialsPanel({
                   type="button"
                   size="sm"
                   variant="outline"
-                  onClick={() => window.open(openUrl, "_blank", "noopener,noreferrer")}
+                  onClick={() => openSingleGoogleFormWindow(openUrl)}
                 >
                   <ExternalLink className="h-4 w-4" />
                   Open
@@ -680,7 +738,7 @@ export default function OperasiMaterialsPanel({
               mobileView !== "materials" && "hidden md:block"
             )}
           >
-            <MaterialsPanel />
+            <OperasiMaterialsList />
           </div>
 
           <div
@@ -706,7 +764,7 @@ export default function OperasiMaterialsPanel({
                     type="button"
                     size="sm"
                     variant="outline"
-                    onClick={() => window.open(openUrl, "_blank", "noopener,noreferrer")}
+                    onClick={() => openSingleGoogleFormWindow(openUrl)}
                   >
                     <ExternalLink className="h-4 w-4" />
                     Open
