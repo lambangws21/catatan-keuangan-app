@@ -5,7 +5,7 @@ import { useAuth } from "@/components/AuthProvider";
 import TransactionManager from "@/components/transaction-manager";
 import MealsMeetingManager from "@/components/MealsMeetingManager";
 import { toast } from "sonner";
-import { isCountedAsExpense } from "@/lib/transactions";
+import { isCountedAsExpense, isReimbursement } from "@/lib/transactions";
 
 import { Input } from "@/components/ui/input";
 import {
@@ -121,31 +121,44 @@ export default function TransactionsPage() {
         if (activeTab === "meals") return tx.jenisBiaya === "Meals Metting";
         return selectedCategory === "all" || tx.jenisBiaya === selectedCategory;
       })
-      .filter((tx) => {
-        return tx.keterangan
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase());
-      })
+      .filter((tx) => tx.keterangan.toLowerCase().includes(searchTerm.toLowerCase()))
       .filter((tx) => {
         if (!startDate && !endDate) return true;
-
         const txDate = new Date(tx.tanggal).getTime();
         const start = startDate ? new Date(startDate).getTime() : null;
-        const end = endDate
-          ? new Date(endDate + "T23:59:59").getTime()
-          : null;
-
+        const end = endDate ? new Date(endDate + "T23:59:59").getTime() : null;
         if (start && end) return txDate >= start && txDate <= end;
         if (start) return txDate >= start;
         if (end) return txDate <= end;
-
         return true;
       });
   }, [allTransactions, selectedCategory, searchTerm, startDate, endDate, activeTab]);
 
+  // Untuk tab transaksi: selalu ambil seluruh transaksi (bukan hanya view tab) lalu filter expense.
+  const expenseBase = useMemo(() => {
+    return allTransactions
+      .filter((tx) => selectedCategory === "all" || tx.jenisBiaya === selectedCategory)
+      .filter((tx) => tx.keterangan.toLowerCase().includes(searchTerm.toLowerCase()))
+      .filter((tx) => {
+        if (!startDate && !endDate) return true;
+        const txDate = new Date(tx.tanggal).getTime();
+        const start = startDate ? new Date(startDate).getTime() : null;
+        const end = endDate ? new Date(endDate + "T23:59:59").getTime() : null;
+        if (start && end) return txDate >= start && txDate <= end;
+        if (start) return txDate >= start;
+        if (end) return txDate <= end;
+        return true;
+      });
+  }, [allTransactions, selectedCategory, searchTerm, startDate, endDate]);
+
   const filteredTransactionsNonMeals = useMemo(() => {
-    return filteredBase.filter((tx) => isCountedAsExpense(tx));
-  }, [filteredBase]);
+    return expenseBase.filter((tx) => isCountedAsExpense(tx));
+  }, [expenseBase]);
+
+  // Reimbursement list: Meals Metting yang dibayar personal/mandiri.
+  const reimbursementList = useMemo(() => {
+    return expenseBase.filter((tx) => isReimbursement(tx));
+  }, [expenseBase]);
 
   const monthKey = useMemo(() => {
     const now = new Date();
@@ -313,6 +326,7 @@ export default function TransactionsPage() {
         <TabsContent value="transaksi">
           <TransactionManager
             transactions={filteredTransactionsNonMeals}
+            reimbursements={reimbursementList}
             isLoading={isLoading}
             onDataChange={fetchTransactions}
           />

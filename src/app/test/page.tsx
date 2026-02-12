@@ -1,224 +1,373 @@
-"use client";
+'use client';
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
-import { ExternalLink, RefreshCw } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { OperasiMaterialsList } from "@/components/operasi/OperasiMaterialsPanel";
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/components/AuthProvider';
+import { toast } from 'sonner';
+import { ChevronLeft, ChevronRight, FileDown, FileText, Sparkles } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import OperasiGoogleForm from '@/components/operasi/GoogleFormTabs';
+import { AnimatePresence, motion } from 'framer-motion';
 
-const RAW_FORM_URL =
-  "https://docs.google.com/forms/u/0/d/e/1FAIpQLSfaqN8MwjyAb4RzkX6afr_OYop5_WLYmPF7fEnWCe3inlWQ3w/formResponse";
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
-const toEmbeddableGoogleFormUrl = (url: string) => {
-  try {
-    const u = new URL(url);
-    if (u.pathname.endsWith("/formResponse")) {
-      u.pathname = u.pathname.replace(/\/formResponse$/, "/viewform");
-    }
-    if (!u.pathname.endsWith("/viewform")) return url;
-    u.searchParams.set("embedded", "true");
-    return u.toString();
-  } catch {
-    return url;
+import OperationDashboard from '@/components/OperationDashboard';
+import OperationManager from '@/components/OperationManager';
+import OperationForm from '@/components/OperationForm';
+import Spinner from '@/components/Spinner';
+
+// ======================
+// ✅ TYPE
+// ======================
+export interface Operation {
+  id: string;
+  date: string;
+  dokter: string;
+  tindakanOperasi: string;
+  rumahSakit: string;
+  jumlah: number;
+  klaim: string;
+  namaPerawat: string;
+}
+
+// ======================
+// ✅ CSV ESCAPER
+// ======================
+const escapeCSV = (str: string | number): string => {
+  let value = String(str);
+  if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+    value = '"' + value.replace(/"/g, '""') + '"';
   }
+  return value;
 };
 
-export default function OperasiPage() {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const dragRef = useRef(false);
-  const dragStartX = useRef(0);
-  const dragStartW = useRef(0);
+export default function OperationsPage() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
 
-  const [viewMode, setViewMode] = useState<"split" | "form" | "materials">(() => {
-    if (typeof window === "undefined") return "split";
-    const raw = window.localStorage.getItem("operasi:viewMode");
-    if (raw === "form" || raw === "materials" || raw === "split") return raw;
-    return "split";
-  });
-  const viewModeRef = useRef(viewMode);
+  const [operations, setOperations] = useState<Operation[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
+  const [googleFormState, setGoogleFormState] = useState<'open' | 'minimized'>('minimized');
+  const isGoogleFormOpen = googleFormState === 'open';
+  const setGoogleFormOpen = (open: boolean) => setGoogleFormState(open ? 'open' : 'minimized');
 
-  const [leftWidth, setLeftWidth] = useState<number>(() => {
-    if (typeof window === "undefined") return 460;
-    const raw = window.localStorage.getItem("operasi:leftWidth");
-    const parsed = raw ? Number(raw) : NaN;
-    return Number.isFinite(parsed) ? parsed : 460;
-  });
-
-  const [iframeKey, setIframeKey] = useState(0);
-  const embedUrl = useMemo(() => toEmbeddableGoogleFormUrl(RAW_FORM_URL), []);
-  const openUrl = useMemo(() => {
+  // ======================
+  // ✅ FETCH DATA
+  // ======================
+  const fetchOperations = useCallback(async () => {
+    if (!user) return;
+    setIsLoading(true);
     try {
-      const u = new URL(embedUrl);
-      u.searchParams.delete("embedded");
-      return u.toString();
-    } catch {
-      return embedUrl;
+      const token = await user.getIdToken();
+      const response = await fetch('/api/operasi', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) throw new Error('Gagal mengambil data operasi.');
+      const data = await response.json();
+      setOperations(data);
+    } catch (error) {
+      setOperations([]);
+      toast.error((error as Error).message || 'Gagal memuat data.');
+    } finally {
+      setIsLoading(false);
     }
-  }, [embedUrl]);
+  }, [user]);
 
-  const resetView = () => {
-    setViewMode("split");
-    setLeftWidth(460);
-    if (typeof window !== "undefined") {
-      try {
-        window.localStorage.removeItem("operasi:viewMode");
-        window.localStorage.removeItem("operasi:leftWidth");
-      } catch {
-        // ignore
-      }
+  // ======================
+  // ✅ EXPORT CSV
+  // ======================
+  const handleExportExcel = useCallback(async () => {
+    if (!user || operations.length === 0) return;
+    setIsExporting(true);
+
+    try {
+      const headers = ["ID", "Tanggal", "Dokter", "Tindakan Operasi", "Rumah Sakit", "Jumlah", "Klaim"];
+
+      const rows = operations
+        .slice()
+        .sort((a, b) => a.date.localeCompare(b.date))
+        .map(op =>
+        [
+          escapeCSV(op.id),
+          escapeCSV(op.date),
+          escapeCSV(op.dokter),
+          escapeCSV(op.tindakanOperasi),
+          escapeCSV(op.rumahSakit),
+          escapeCSV(op.jumlah),
+          escapeCSV(op.klaim),
+        ].join(',')
+        );
+
+      const csvContent = [headers.join(','), ...rows].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `data_operasi_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+
+      toast.success('✅ Export CSV berhasil!');
+    } catch  {
+      toast.error('❌ Gagal export CSV');
+    } finally {
+      setIsExporting(false);
     }
-  };
+  }, [user, operations]);
+
+  // ======================
+  // ✅ EXPORT PDF
+  // ======================
+  const handleExportPDF = useCallback(async () => {
+    if (!user || operations.length === 0) return;
+    setIsExporting(true);
+
+    try {
+      const doc = new jsPDF();
+
+      const tableCols = ["Tanggal", "Dokter", "Tindakan", "Rumah Sakit", "Jumlah", "Klaim", "Perawat"];
+      const tableRows = operations.map(op => [
+        op.date,
+        op.dokter,
+        op.tindakanOperasi,
+        op.rumahSakit,
+        op.jumlah,
+        op.klaim,
+        op.namaPerawat,
+      ]);
+
+      doc.text("LAPORAN DATA OPERASI", 14, 15);
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (doc as any).autoTable({
+        head: [tableCols],
+        body: tableRows,
+        startY: 20,
+        theme: 'striped',
+        headStyles: { fillColor: [30, 64, 175] },
+      });
+
+      doc.save(`laporan_operasi_${new Date().toISOString().split('T')[0]}.pdf`);
+      toast.success('✅ Export PDF berhasil!');
+    } catch  {
+      toast.error('❌ Gagal export PDF');
+    } finally {
+      setIsExporting(false);
+    }
+  }, [user, operations]);
+
+  // ======================
+  // ✅ AUTH CHECK
+  // ======================
+  useEffect(() => {
+    if (!loading && !user) {
+      toast.error('Sesi habis, silakan login kembali');
+      router.push('/login');
+    }
+  }, [user, loading, router]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem("operasi:leftWidth", String(leftWidth));
-  }, [leftWidth]);
+    if (!loading && user) {
+      fetchOperations();
+    }
+  }, [user, loading, fetchOperations]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem("operasi:viewMode", viewMode);
-  }, [viewMode]);
-
-  useEffect(() => {
-    viewModeRef.current = viewMode;
-  }, [viewMode]);
-
-  useEffect(() => {
-    const onMove = (e: PointerEvent) => {
-      if (!dragRef.current || viewModeRef.current !== "split") return;
-      const node = containerRef.current;
-      if (!node) return;
-      const rect = node.getBoundingClientRect();
-      const delta = e.clientX - dragStartX.current;
-      const next = dragStartW.current + delta;
-      const min = 340;
-      const max = Math.max(min, rect.width - 420);
-      setLeftWidth(Math.max(min, Math.min(max, next)));
-    };
-    const onUp = () => {
-      dragRef.current = false;
-    };
-    window.addEventListener("pointermove", onMove);
-    window.addEventListener("pointerup", onUp);
-    window.addEventListener("pointercancel", onUp);
+    if (typeof window === 'undefined') return;
+    const isMobile = window.matchMedia('(max-width: 767px)').matches;
+    if (!isMobile || !isGoogleFormOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
     return () => {
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onUp);
-      window.removeEventListener("pointercancel", onUp);
+      document.body.style.overflow = prev;
     };
-  }, []);
+  }, [isGoogleFormOpen]);
 
-  return (
-    <div className="min-h-svh p-4 bg-background ">
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <div className="space-y-0.5">
-          <div className="text-sm font-bold">Operasi</div>
-          <div className="text-xs text-muted-foreground">
-            Split view: kiri untuk pilih implant/material, kanan untuk isi Google Form.
-          </div>
+  if (loading || !user) {
+    return (
+      <div className="flex justify-center items-center min-h-[70vh]">
+        <Spinner />
+      </div>
+    );
+  }
+
+  // ======================
+  // ✅ UI FINAL
+  // ======================
+  const manageContent = (
+    <>
+      {/* ================= HEADER ================= */}
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-(--dash-ink)] tracking-tight flex items-center gap-2">
+            <Sparkles className="h-6 w-6 text-cyan-300" />
+            Manajemen Operasi
+          </h1>
+          <p className="text-(--dash-muted)]">
+            Pantau, edit, filter, dan export seluruh data operasi.
+          </p>
         </div>
-        <div className="flex items-center gap-2 ">
-          <div className="flex items-center gap-1 flex-wrap">
-            <Button
-              type="button"
-              size="sm"
-              variant={viewMode === "split" ? "default" : "outline"}
-              onClick={() => setViewMode("split")}
-              title="Tampilkan 2 panel"
-            >
-              Split
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant={viewMode === "materials" ? "default" : "outline"}
-              onClick={() => setViewMode("materials")}
-              title="Hanya daftar implant/material"
-            >
-              Materials
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant={viewMode === "form" ? "default" : "outline"}
-              onClick={() => setViewMode("form")}
-              title="Hanya Google Form"
-            >
-              Form
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={resetView}
-              title="Reset tampilan (kalau panel hilang)"
-            >
-              Reset
-            </Button>
-          </div>
-          <Button type="button" variant="outline" asChild>
-            <Link href="/">Back</Link>
-          </Button>
+
+        <div className="flex flex-wrap gap-2">
           <Button
             type="button"
-            variant="outline"
-            onClick={() => setIframeKey((k) => k + 1)}
+            variant="secondary"
+            onClick={() => setGoogleFormOpen(!isGoogleFormOpen)}
+            className="border border-white/10 bg-white/10 text-(--dash-ink)] hover:bg-white/15"
           >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Reload Form
+            {isGoogleFormOpen ? (
+              <>
+                <ChevronRight className="mr-2 h-4 w-4" />
+                Minimize Form
+              </>
+            ) : (
+              <>
+                <ChevronLeft className="mr-2 h-4 w-4" />
+                 Google Form
+              </>
+            )}
           </Button>
-          <Button type="button" asChild>
-            <a href={openUrl} target="operasi-google-form" rel="noopener noreferrer">
-              <ExternalLink className="h-4 w-4 mr-2" />
-              Open Form
-            </a>
+
+          <Button
+            onClick={handleExportExcel}
+            disabled={isExporting || operations.length === 0}
+            className="border border-white/10 bg-white/10 text-(--dash-ink)] hover:bg-white/15 disabled:opacity-50"
+          >
+            <FileDown className="mr-2 h-4 w-4" />
+            {isExporting ? 'Exporting...' : 'Export CSV'}
           </Button>
+
+          <Button
+            onClick={handleExportPDF}
+            disabled={isExporting || operations.length === 0}
+            className="border border-white/10 bg-white/10 text-(--dash-ink)] hover:bg-white/15 disabled:opacity-50"
+          >
+            <FileText className="mr-2 h-4 w-4" />
+            {isExporting ? 'Exporting...' : 'Export PDF'}
+          </Button>
+
+          <OperationForm onFormSubmit={fetchOperations} />
         </div>
       </div>
 
+      {/* ================= DASHBOARD ================= */}
+      <OperationDashboard operations={operations} isLoading={isLoading} />
+    </>
+  );
+
+  return (
+    <div className="space-y-6">
+      {manageContent}
+
       <div
-        ref={containerRef}
-        className="h-[calc(100svh-88px)] rounded-xl border bg-card overflow-hidden flex "
+        className={[
+          'flex flex-col gap-4',
+          'md:flex-row md:items-start md:gap-0',
+          isGoogleFormOpen ? 'md:gap-4' : '',
+        ].join(' ')}
       >
-        {viewMode !== "form" && (
-          <div
-            className="h-full overflow-hidden "
-            style={{ width: viewMode === "split" ? leftWidth : "100%" }}
-          >
-            <div className="h-full min-h-0 p-3 overflow-hidden  ">
-              <OperasiMaterialsList density="compact" forceList />
-            </div>
-          </div>
-        )}
-
-        {viewMode === "split" && (
-          <div
-            className="w-2 cursor-col-resize bg-border/60 hover:bg-border relative "
-            onPointerDown={(e) => {
-              dragRef.current = true;
-              dragStartX.current = e.clientX;
-              dragStartW.current = leftWidth;
-              (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
-            }}
-            aria-label="Resize panels"
-            title="Drag to resize"
+        <div className="min-w-0 flex-1">
+          <OperationManager
+            operationsData={operations}
+            isLoading={isLoading}
+            onDataChange={fetchOperations}
+            user={user}
+            compact={isGoogleFormOpen}
           />
-        )}
+        </div>
 
-        {viewMode !== "materials" && (
-          <div className="flex-1 h-svh overflow-hidden ">
-            <Card className="h-full rounded-none border-0">
-              <iframe
-                key={iframeKey}
-                title="Google Form"
-                src={embedUrl}
-                className="h-full w-full"
-              />
-            </Card>
+        <motion.aside
+          className={[
+            'hidden md:block',
+            'min-w-0 overflow-hidden',
+            'md:sticky md:top-24 md:h-[calc(100vh-6rem)]',
+            isGoogleFormOpen ? 'pointer-events-auto' : 'pointer-events-none',
+          ].join(' ')}
+          initial={false}
+          animate={isGoogleFormOpen ? 'open' : 'closed'}
+          variants={{
+            open: { maxWidth: 680, opacity: 1, x: 0 },
+            closed: { maxWidth: 0, opacity: 0, x: 24 },
+          }}
+          transition={{ type: 'spring', stiffness: 320, damping: 34 }}
+          style={{ width: 'clamp(220px, 42vw, 980px)' }}
+        >
+          <div className="h-full overflow-hidden rounded-3xl border border-white/10 bg-(--dash-surface) text-(--dash-ink) shadow-[0_20px_60px_rgba(2,6,23,0.45)]">
+            <OperasiGoogleForm embedded onClose={() => setGoogleFormOpen(false)} />
           </div>
-        )}
+        </motion.aside>
       </div>
+
+      <AnimatePresence>
+        {!isGoogleFormOpen ? (
+          <motion.button
+            type="button"
+            onClick={() => setGoogleFormOpen(true)}
+            className="hidden md:flex fixed right-0 top-1/2 z-40 -translate-y-1/2 items-center gap-2 rounded-l-xl border border-white/10 bg-(--dash-surface) px-3 py-3 text-(--dash-ink) shadow-[0_20px_60px_rgba(2,6,23,0.35)] hover:bg-white/10"
+            title="Google Form"
+            initial={{ x: 36, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: 36, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 360, damping: 28 }}
+          >
+            <ChevronLeft className="h-4 w-4" />
+            <span className="text-xs font-semibold tracking-wide">Google Form</span>
+          </motion.button>
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {!isGoogleFormOpen ? (
+          <motion.button
+            type="button"
+            onClick={() => setGoogleFormOpen(true)}
+            className="md:hidden fixed bottom-4 right-4 z-40 inline-flex items-center gap-2 rounded-full border border-white/10 bg-(--dash-surface) px-4 py-3 text-(--dash-ink) shadow-[0_20px_60px_rgba(2,6,23,0.45)]"
+            title="Buka Google Form"
+            initial={{ y: 18, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 18, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+          >
+            <ChevronLeft className="h-4 w-4" />
+            <span className="text-sm font-semibold">Google Form</span>
+          </motion.button>
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isGoogleFormOpen ? (
+          <motion.div
+            className="md:hidden fixed inset-0 z-50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+          >
+            <button
+              type="button"
+              className="absolute inset-0 bg-black/55 backdrop-blur-[2px]"
+              onClick={() => setGoogleFormOpen(false)}
+              aria-label="Tutup Google Form"
+            />
+
+            <motion.div
+              className="absolute inset-x-3 top-3 bottom-3 overflow-hidden rounded-3xl border border-white/10 bg-(--dash-surface) text-(--dash-ink) shadow-[0_20px_80px_rgba(2,6,23,0.55)]"
+              initial={{ y: 24, scale: 0.985, opacity: 0 }}
+              animate={{ y: 0, scale: 1, opacity: 1 }}
+              exit={{ y: 24, scale: 0.985, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+            >
+              <OperasiGoogleForm embedded onClose={() => setGoogleFormOpen(false)} />
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 }

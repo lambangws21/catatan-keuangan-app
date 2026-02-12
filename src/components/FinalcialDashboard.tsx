@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import SummaryCards from "@/components/SummaryCards";
 import ExpenseChart from "@/components/ExpenseChart";
-import { isCountedAsExpense } from "@/lib/transactions";
+import { isCountedAsExpense, reimbursementTotal } from "@/lib/transactions";
 
 // Definisikan tipe data yang konsisten
 interface Transaction {
@@ -70,8 +70,8 @@ export default function FinancialDashboard({ transactions, saldoData, isLoading,
       }, [] as { name: string; value: number }[]);
 
     // Reimburse = defisit saat pengeluaran melebihi pemasukan (saldo minus).
-    const reimbursementAmount =
-      saldoSaatIni < 0 && totalPengeluaran > 0 ? Math.abs(saldoSaatIni) : 0;
+    // Reimburse: total transaksi Meals Metting yang dibayar pribadi/mandiri.
+    const reimbursementAmount = reimbursementTotal(validTransactions);
 
     return { 
       totalPemasukan, 

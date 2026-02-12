@@ -157,7 +157,7 @@ export default function SummaryCards({
     <motion.div
       className={`grid grid-cols-1 ${
         summaryData.length >= 4 ? "md:grid-cols-2 xl:grid-cols-4" : "md:grid-cols-3"
-      } ${compact ? "gap-3" : "gap-5"}`}
+      } ${compact ? "gap-3" : "gap-5"} items-stretch`}
       variants={containerVariants}
       initial="hidden"
       animate="visible"
@@ -167,7 +167,7 @@ export default function SummaryCards({
         return (
           <motion.div
             key={index}
-            className={`relative overflow-hidden rounded-2xl border border-white/10 bg-(--dash-surface)] ${compact ? "p-4 shadow-[0_12px_24px_rgba(2,6,23,0.35)]" : "p-5 shadow-[0_16px_30px_rgba(2,6,23,0.45)]"}`}
+            className={`relative overflow-hidden rounded-2xl border border-white/10 bg-(--dash-surface) ${compact ? "p-4 shadow-[0_12px_24px_rgba(2,6,23,0.35)]" : "p-5 shadow-[0_16px_30px_rgba(2,6,23,0.45)]"}`}
             variants={itemVariants}
           >
             <div className={`absolute inset-0 bg-linear-to-br ${tone.glow}`} />
@@ -178,19 +178,23 @@ export default function SummaryCards({
                   <item.icon className={`h-5 w-5 ${tone.accent}`} />
                 </div>
                 {item.count !== null && (
-                  <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] text-(--dash-muted)]">
+                  <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] text-(--dash-muted)">
                     {item.count} transaksi
                   </span>
                 )}
               </div>
 
               <div>
-                <p className="text-[11px] uppercase tracking-[0.25em] text-(--dash-muted)]">
+                <p className="text-[10px] uppercase tracking-[0.25em] text-(--dash-muted)">
                   {item.title}
                 </p>
                 <AnimatedNumber
                   value={item.value}
-                  className={`mt-3 ${compact ? "text-2xl sm:text-3xl" : "text-3xl sm:text-4xl"} font-semibold font-(--font-display)] ${tone.accent}`}
+                  className={`mt-2 max-w-full wrap-break-word font-semibold leading-tight tracking-tight ${tone.accent} ${
+                    compact
+                      ? "text-[clamp(1.35rem,3vw,2.1rem)]"
+                      : "text-[clamp(1.6rem,3.6vw,2.6rem)]"
+                  }`}
                   formatter={item.formatter}
                 />
                 {item.title === "Reimburse" ? (

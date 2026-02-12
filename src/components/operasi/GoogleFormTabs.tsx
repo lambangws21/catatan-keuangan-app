@@ -41,7 +41,7 @@ export default function OperasiGoogleForm({ embedded, onClose }: OperasiGoogleFo
   const LEFT_WIDTH_KEY = embedded ? "operasi:leftWidth:embedded:v1" : "operasi:leftWidth:v1";
   const isMobile = useMemo(() => {
     if (typeof window === "undefined") return false;
-    return window.matchMedia("(max-width: 767px)").matches;
+    return window.matchMedia("(max-width: 867px)").matches;
   }, []);
 
   const [viewMode, setViewMode] = useState<"split" | "form" | "materials">(() => {

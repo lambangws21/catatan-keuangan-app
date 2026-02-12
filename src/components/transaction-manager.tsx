@@ -78,6 +78,7 @@ interface Transaction {
 
 interface TransactionManagerProps {
   transactions: Transaction[];
+  reimbursements?: Transaction[];
   isLoading: boolean;
   onDataChange: () => Promise<void>;
 }
@@ -91,6 +92,7 @@ const formatCurrency = (value: number) =>
 
 export default function TransactionManager({
   transactions,
+  reimbursements = [],
   isLoading,
   onDataChange,
 }: TransactionManagerProps) {
@@ -122,6 +124,10 @@ export default function TransactionManager({
   const totalJumlah = useMemo(() => {
     return transactions.reduce((sum, tx) => sum + Number(tx.jumlah), 0);
   }, [transactions]);
+
+  const totalReimburse = useMemo(() => {
+    return reimbursements.reduce((sum, tx) => sum + Number(tx.jumlah), 0);
+  }, [reimbursements]);
 
   const handleExportExcel = () => {
     const dataToExport = transactions
@@ -463,31 +469,59 @@ export default function TransactionManager({
         </div>
       </header>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-inner">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="rounded-xl border border-white/10 bg-white/5 p-3 sm:p-4 shadow-inner">
           <div className="flex items-center gap-3">
             <Wallet className="h-5 w-5 text-cyan-300" />
-            <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)">Total Pengeluaran</p>
+            <p className="text-[9px] sm:text-[10px] uppercase tracking-[0.28em] text-(--dash-muted)">Total Pengeluaran</p>
           </div>
-          <p className="mt-3 text-3xl font-semibold text-white">{formatCurrency(totalJumlah)}</p>
-          <p className="mt-2 text-[11px] text-(--dash-muted)">
+          <p className="mt-2 text-2xl sm:text-[26px] font-semibold leading-tight text-white">{formatCurrency(totalJumlah)}</p>
+          <p className="mt-1 text-[10px] sm:text-[11px] text-(--dash-muted)">
             {hasEntries ? `${transactions.length} transaksi` : "Tidak ada data"}
           </p>
         </div>
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)">Entri terbaru</p>
-          {latestTransactions.length === 0 ? (
-            <p className="text-sm text-(--dash-muted) mt-2">Tambahkan biaya untuk melihat ringkasan.</p>
-          ) : (
-            <ul className="mt-3 space-y-2 text-sm text-white/90">
-              {latestTransactions.map((tx) => (
-                <li key={tx.id} className="flex items-center justify-between">
-                  <span className="font-medium">{tx.tanggal}</span>
-                  <span className="text-(--dash-muted)">{formatCurrency(Number(tx.jumlah))}</span>
-                </li>
-              ))}
-            </ul>
-          )}
+        <div className="rounded-xl border border-white/10 bg-white/5 p-3 sm:p-4 shadow-inner">
+          <div className="flex items-center gap-3">
+            <Wallet className="h-5 w-5 text-amber-300" />
+            <p className="text-[9px] sm:text-[10px] uppercase tracking-[0.28em] text-(--dash-muted)">Reimburse (Meals Pribadi)</p>
+          </div>
+          <p className="mt-2 text-2xl sm:text-[26px] font-semibold leading-tight text-white">{formatCurrency(totalReimburse)}</p>
+          <p className="mt-1 text-[10px] sm:text-[11px] text-(--dash-muted)">
+            {reimbursements.length ? `${reimbursements.length} entri` : "Tidak ada yang perlu direimburse"}
+          </p>
+        </div>
+        <div className="rounded-xl border border-white/10 bg-white/5 p-3 sm:p-4 relative overflow-hidden">
+          <div className="absolute inset-0 bg-linear-to-br from-cyan-500/10 via-transparent to-emerald-400/10" />
+          <div className="relative z-10 space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-[9px] sm:text-[10px] uppercase tracking-[0.28em] text-(--dash-muted)">Entri terbaru</p>
+              <span className="rounded-full bg-white/10 px-2 py-1 text-[10px] text-white/80">
+                {latestTransactions.length} entri
+              </span>
+            </div>
+            {latestTransactions.length === 0 ? (
+              <p className="text-xs sm:text-sm text-(--dash-muted) mt-1">Tambahkan biaya untuk melihat ringkasan.</p>
+            ) : (
+              <ul className="mt-1 space-y-2 text-xs sm:text-sm text-white/90">
+                {latestTransactions.map((tx) => (
+                  <li
+                    key={tx.id}
+                    className="rounded-lg border border-white/5 bg-white/5 px-3 py-2 flex items-center justify-between gap-2 backdrop-blur-sm"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] sm:text-[11px] text-(--dash-muted) tabular-nums">{tx.tanggal}</span>
+                      <span className="text-[10px] sm:text-[11px] text-white/85 font-semibold truncate max-w-[120px] sm:max-w-40">
+                        {tx.jenisBiaya}
+                      </span>
+                    </div>
+                    <div className="text-[10px] sm:text-[11px] font-semibold text-emerald-200 tabular-nums">
+                      {formatCurrency(Number(tx.jumlah))}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
       </div>
 
@@ -497,15 +531,15 @@ export default function TransactionManager({
           className="overflow-auto"
           style={{ maxHeight: `${tableUi.transactionDesktopMaxHeightPx}px` }}
         >
-          <Table className="min-w-full text-sm">
+          <Table className="min-w-full text-xs sm:text-sm">
             <TableHeader>
               <TableRow className="bg-slate-900 text-left text-white">
-                <TableHead className="py-3">Tanggal</TableHead>
-                <TableHead className="py-3">Keterangan</TableHead>
-                <TableHead className="py-3">Jenis Biaya</TableHead>
-                <TableHead className="py-3 text-center">Jumlah</TableHead>
-                <TableHead className="py-3">Klaim</TableHead>
-                <TableHead className="py-3 text-center">Aksi</TableHead>
+                <TableHead className="py-2 sm:py-3">Tanggal</TableHead>
+                <TableHead className="py-2 sm:py-3">Keterangan</TableHead>
+                <TableHead className="py-2 sm:py-3">Jenis Biaya</TableHead>
+                <TableHead className="py-2 sm:py-3 text-center">Jumlah</TableHead>
+                <TableHead className="py-2 sm:py-3">Klaim</TableHead>
+                <TableHead className="py-2 sm:py-3 text-center">Aksi</TableHead>
               </TableRow>
             </TableHeader>
             <tbody>
@@ -514,19 +548,19 @@ export default function TransactionManager({
                   key={tx.id}
                   className="border-b border-white/10 transition-colors hover:border-cyan-500/40 hover:bg-white/5"
                 >
-                  <TableCell className="py-3 px-3">
-                    <span className="inline-flex items-center gap-2">
+                  <TableCell className="py-2 px-2 sm:py-3 sm:px-3">
+                    <span className="inline-flex items-center gap-1.5 sm:gap-2">
                       <CalendarDays className="h-4 w-4 text-cyan-200/70" />
                       <span>{tx.tanggal}</span>
                     </span>
                   </TableCell>
-                  <TableCell className="py-3 px-3">
+                  <TableCell className="py-2 px-2 sm:py-3 sm:px-3">
                     <span className="inline-flex items-center gap-2">
                       <StickyNote className="h-4 w-4 text-cyan-200/70" />
                       <span className="line-clamp-2 whitespace-pre-line">{tx.keterangan}</span>
                     </span>
                   </TableCell>
-                  <TableCell className="py-3 px-3">
+                  <TableCell className="py-2 px-2 sm:py-3 sm:px-3">
                     <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold text-(--dash-muted)">
                       <Tags className="mr-2 h-3.5 w-3.5 text-cyan-200/70" />
                       {tx.jenisBiaya}
@@ -538,7 +572,7 @@ export default function TransactionManager({
                       <span>{formatCurrency(Number(tx.jumlah))}</span>
                     </span>
                   </TableCell>
-                  <TableCell className="py-3 px-3">
+                  <TableCell className="py-2 px-2 sm:py-3 sm:px-3">
                     <span className="inline-flex items-center gap-2">
                       {String(tx.klaim).toLowerCase() === "ya" ? (
                         <CheckCircle2 className="h-4 w-4 text-emerald-300" />

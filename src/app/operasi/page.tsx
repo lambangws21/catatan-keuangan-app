@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/AuthProvider';
 import { toast } from 'sonner';
@@ -52,6 +52,17 @@ export default function OperationsPage() {
   const [googleFormState, setGoogleFormState] = useState<'open' | 'minimized'>('minimized');
   const isGoogleFormOpen = googleFormState === 'open';
   const setGoogleFormOpen = (open: boolean) => setGoogleFormState(open ? 'open' : 'minimized');
+  const googleFormRef = useRef<HTMLDivElement | null>(null);
+  const splitRef = useRef<HTMLDivElement | null>(null);
+  const dragActive = useRef(false);
+  const dragStartX = useRef(0);
+  const dragStartLeft = useRef(640);
+  const LEFT_WIDTH_KEY = 'operasi:leftWidth:v1';
+  const [leftWidth, setLeftWidth] = useState<number>(() => {
+    if (typeof window === 'undefined') return 640;
+    const raw = Number(localStorage.getItem(LEFT_WIDTH_KEY));
+    return Number.isFinite(raw) ? raw : 640;
+  });
 
   // ======================
   // ✅ FETCH DATA
@@ -178,6 +189,17 @@ export default function OperationsPage() {
     }
   }, [user, loading, fetchOperations]);
 
+  // Auto-scroll ke panel form saat dibuka di desktop supaya langsung terlihat.
+  useEffect(() => {
+    if (!isGoogleFormOpen) return;
+    const timer = setTimeout(() => {
+      if (googleFormRef.current) {
+        googleFormRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 120);
+    return () => clearTimeout(timer);
+  }, [isGoogleFormOpen]);
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const isMobile = window.matchMedia('(max-width: 767px)').matches;
@@ -188,6 +210,15 @@ export default function OperationsPage() {
       document.body.style.overflow = prev;
     };
   }, [isGoogleFormOpen]);
+
+  // Simpan ukuran panel kiri (riwayat) ke localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(LEFT_WIDTH_KEY, String(leftWidth));
+    } catch {
+      /* ignore */
+    }
+  }, [leftWidth]);
 
   if (loading || !user) {
     return (
@@ -205,11 +236,11 @@ export default function OperationsPage() {
       {/* ================= HEADER ================= */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-(--dash-ink)] tracking-tight flex items-center gap-2">
+          <h1 className="text-3xl font-bold text-[color:var(--dash-ink)] tracking-tight flex items-center gap-2">
             <Sparkles className="h-6 w-6 text-cyan-300" />
             Manajemen Operasi
           </h1>
-          <p className="text-(--dash-muted)]">
+          <p className="text-[color:var(--dash-muted)]">
             Pantau, edit, filter, dan export seluruh data operasi.
           </p>
         </div>
@@ -219,7 +250,7 @@ export default function OperationsPage() {
             type="button"
             variant="secondary"
             onClick={() => setGoogleFormOpen(!isGoogleFormOpen)}
-            className="border border-white/10 bg-white/10 text-(--dash-ink)] hover:bg-white/15"
+            className="border border-white/10 bg-white/10 text-[color:var(--dash-ink)] hover:bg-white/15"
           >
             {isGoogleFormOpen ? (
               <>
@@ -237,7 +268,7 @@ export default function OperationsPage() {
           <Button
             onClick={handleExportExcel}
             disabled={isExporting || operations.length === 0}
-            className="border border-white/10 bg-white/10 text-(--dash-ink)] hover:bg-white/15 disabled:opacity-50"
+            className="border border-white/10 bg-white/10 text-[color:var(--dash-ink)] hover:bg-white/15 disabled:opacity-50"
           >
             <FileDown className="mr-2 h-4 w-4" />
             {isExporting ? 'Exporting...' : 'Export CSV'}
@@ -246,7 +277,7 @@ export default function OperationsPage() {
           <Button
             onClick={handleExportPDF}
             disabled={isExporting || operations.length === 0}
-            className="border border-white/10 bg-white/10 text-(--dash-ink)] hover:bg-white/15 disabled:opacity-50"
+            className="border border-white/10 bg-white/10 text-[color:var(--dash-ink)] hover:bg-white/15 disabled:opacity-50"
           >
             <FileText className="mr-2 h-4 w-4" />
             {isExporting ? 'Exporting...' : 'Export PDF'}
@@ -266,13 +297,17 @@ export default function OperationsPage() {
       {manageContent}
 
       <div
+        ref={splitRef}
         className={[
           'flex flex-col gap-6',
           'md:flex-row md:items-start md:gap-0',
           isGoogleFormOpen ? 'md:gap-6' : '',
         ].join(' ')}
       >
-        <div className="min-w-0 flex-1">
+        <div
+          className="min-w-[320px] flex-1"
+          style={{ flexBasis: isGoogleFormOpen ? `${leftWidth}px` : 'auto', maxWidth: '100%' }}
+        >
           <OperationManager
             operationsData={operations}
             isLoading={isLoading}
@@ -296,12 +331,48 @@ export default function OperationsPage() {
             closed: { maxWidth: 0, opacity: 0, x: 24 },
           }}
           transition={{ type: 'spring', stiffness: 320, damping: 34 }}
-          style={{ width: 'clamp(420px, 42vw, 680px)' }}
+          style={{ width: isGoogleFormOpen ? 'clamp(420px, 42vw, 760px)' : undefined }}
+          ref={googleFormRef}
         >
-          <div className="h-full overflow-hidden rounded-3xl border border-white/10 bg-(--dash-surface) text-(--dash-ink) shadow-[0_20px_60px_rgba(2,6,23,0.45)]">
+          <div className="h-full overflow-hidden rounded-3xl border border-white/10 bg-[color:var(--dash-surface)] text-[color:var(--dash-ink)] shadow-[0_20px_60px_rgba(2,6,23,0.45)]">
             <OperasiGoogleForm embedded onClose={() => setGoogleFormOpen(false)} />
           </div>
         </motion.aside>
+
+        {/* Drag handle to resize */}
+        {isGoogleFormOpen ? (
+          <div
+            className="hidden md:flex w-3 cursor-col-resize items-center justify-center px-0.5 select-none"
+            onPointerDown={(e) => {
+              dragActive.current = true;
+              dragStartX.current = e.clientX;
+              dragStartLeft.current = leftWidth;
+              (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+            }}
+            onPointerUp={(e) => {
+              dragActive.current = false;
+              (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
+            }}
+            onPointerCancel={() => {
+              dragActive.current = false;
+            }}
+            onPointerMove={(e) => {
+              if (!dragActive.current) return;
+              const container = splitRef.current;
+              if (!container) return;
+              const bounds = container.getBoundingClientRect();
+              const delta = e.clientX - dragStartX.current;
+              const next = dragStartLeft.current + delta;
+              const min = 360;
+              const max = Math.max(min, bounds.width - 420);
+              setLeftWidth(Math.max(min, Math.min(max, next)));
+            }}
+            title="Geser untuk ubah lebar Riwayat"
+            aria-label="Resize riwayat"
+          >
+            <div className="h-24 w-1 rounded-full bg-white/15" />
+          </div>
+        ) : null}
       </div>
 
       <AnimatePresence>
@@ -309,7 +380,7 @@ export default function OperationsPage() {
           <motion.button
             type="button"
             onClick={() => setGoogleFormOpen(true)}
-            className="hidden md:flex fixed right-0 top-1/2 z-40 -translate-y-1/2 items-center gap-2 rounded-l-xl border border-white/10 bg-(--dash-surface) px-3 py-3 text-(--dash-ink) shadow-[0_20px_60px_rgba(2,6,23,0.35)] hover:bg-white/10"
+            className="hidden md:flex fixed right-0 top-1/2 z-40 -translate-y-1/2 items-center gap-2 rounded-l-xl border border-white/10 bg-[color:var(--dash-surface)] px-3 py-3 text-[color:var(--dash-ink)] shadow-[0_20px_60px_rgba(2,6,23,0.35)] hover:bg-white/10"
             title="Google Form"
             initial={{ x: 36, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
@@ -327,7 +398,7 @@ export default function OperationsPage() {
           <motion.button
             type="button"
             onClick={() => setGoogleFormOpen(true)}
-            className="md:hidden fixed bottom-4 right-4 z-40 inline-flex items-center gap-2 rounded-full border border-white/10 bg-(--dash-surface) px-4 py-3 text-(--dash-ink) shadow-[0_20px_60px_rgba(2,6,23,0.45)]"
+            className="md:hidden fixed bottom-4 right-4 z-40 inline-flex items-center gap-2 rounded-full border border-white/10 bg-[color:var(--dash-surface)] px-4 py-3 text-[color:var(--dash-ink)] shadow-[0_20px_60px_rgba(2,6,23,0.45)]"
             title="Buka Google Form"
             initial={{ y: 18, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -357,7 +428,7 @@ export default function OperationsPage() {
             />
 
             <motion.div
-              className="absolute inset-x-3 top-3 bottom-3 overflow-hidden rounded-3xl border border-white/10 bg-(--dash-surface) text-(--dash-ink) shadow-[0_20px_80px_rgba(2,6,23,0.55)]"
+              className="absolute inset-x-3 top-3 bottom-3 overflow-hidden rounded-3xl border border-white/10 bg-[color:var(--dash-surface)] text-[color:var(--dash-ink)] shadow-[0_20px_80px_rgba(2,6,23,0.55)]"
               initial={{ y: 24, scale: 0.985, opacity: 0 }}
               animate={{ y: 0, scale: 1, opacity: 1 }}
               exit={{ y: 24, scale: 0.985, opacity: 0 }}

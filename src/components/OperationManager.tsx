@@ -429,15 +429,15 @@ export default function OperationManager({
     <motion.div
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-3xl border border-white/10 bg-(--dash-surface)] p-6 text-(--dash-ink)] shadow-[0_20px_60px_rgba(2,6,23,0.45)]"
+      className="rounded-3xl border border-white/10 bg-(--dash-surface) p-6 text-(--dash-ink) shadow-[0_20px_60px_rgba(2,6,23,0.45)]"
     >
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.4em] text-(--dash-muted)]">
+          <p className="text-[10px] uppercase tracking-[0.4em] text-(--dash-muted)">
             Riwayat
           </p>
           <h2 className="mt-1 text-xl font-semibold">Data Operasi</h2>
-          <p className="mt-1 text-sm text-(--dash-muted)]">
+          <p className="mt-1 text-sm text-(--dash-muted)">
             Filter cepat, export berdasarkan hasil filter, dan edit data langsung dari tabel.
           </p>
         </div>
@@ -446,7 +446,7 @@ export default function OperationManager({
           <Button
             onClick={handleExportCSV}
             variant="secondary"
-            className="border border-white/10 bg-white/10 text-(--dash-ink)] hover:bg-white/15"
+            className="border border-white/10 bg-white/10 text-(--dash-ink) hover:bg-white/15"
           >
             <FileDown className="mr-2 h-4 w-4" />
             CSV
@@ -454,7 +454,7 @@ export default function OperationManager({
           <Button
             onClick={handleExportPDF}
             variant="secondary"
-            className="border border-white/10 bg-white/10 text-(--dash-ink)] hover:bg-white/15"
+            className="border border-white/10 bg-white/10 text-(--dash-ink) hover:bg-white/15"
           >
             <FileText className="mr-2 h-4 w-4" />
             PDF
@@ -465,60 +465,60 @@ export default function OperationManager({
       {/* FILTER BAR */}
       <div className="mt-5 grid grid-cols-1 gap-3 lg:grid-cols-12">
         <div className="lg:col-span-3">
-          <label className="mb-1 block text-[11px] font-medium text-(--dash-muted)]">
+          <label className="mb-1 block text-[11px] font-medium text-(--dash-muted)">
             Dari tanggal
           </label>
           <Input
             type="date"
             value={filterFrom}
             onChange={(e) => setFilterFrom(e.target.value)}
-            className="border-white/10 bg-white/5 text-(--dash-ink)]"
+            className="border-white/10 bg-white/5 text-(--dash-ink)"
           />
         </div>
         <div className="lg:col-span-3">
-          <label className="mb-1 block text-[11px] font-medium text-(--dash-muted)]">
+          <label className="mb-1 block text-[11px] font-medium text-(--dash-muted)">
             Sampai tanggal
           </label>
           <Input
             type="date"
             value={filterTo}
             onChange={(e) => setFilterTo(e.target.value)}
-            className="border-white/10 bg-white/5 text-(--dash-ink)]"
+            className="border-white/10 bg-white/5 text-(--dash-ink)"
           />
         </div>
-        <div className="lg:col-span-4">
-          <label className="mb-1 block text-[11px] font-xs text-(--dash-muted)]">
+        <div className="lg:col-span-6">
+          <label className="mb-1 block text-[11px] font-xs text-(--dash-muted)">
             Pencarian
           </label>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-(--dash-muted)]" />
+            <Search className="absolute left-3 top-1/2 h-3 w-3 -translate-y-1/2 text-(--dash-muted)" />
             <Input
               placeholder="cari..."
               value={filterQuery}
               onChange={(e) => setFilterQuery(e.target.value)}
-              className="border-white/10 bg-white/5 pl-10 text-(--dash-ink)]"
+              className="border-white/10 bg-white/5 pl-10 text-(--dash-ink)"
             />
           </div>
         </div>
-        <div className="flex flex-wrap items-end gap-2 lg:col-span-2">
+        <div className="flex flex-wrap items-end gap-1 lg:col-span-4">
           <Button
             onClick={setToday}
             variant="secondary"
-            className="border border-white/10 bg-white/10 text-(--dash-ink)] hover:bg-white/15"
+            className="border border-white/10 bg-white/10 text-[8px] text-(--dash-ink) hover:bg-white/15"
           >
             Hari Ini
           </Button>
           <Button
             onClick={setThisMonth}
             variant="secondary"
-            className="border border-white/10 bg-white/10 text-(--dash-ink)] hover:bg-white/15"
+            className="border border-white/10 bg-white/10 text-[8px] text-(--dash-ink) hover:bg-white/15"
           >
             Bulan Ini
           </Button>
           <Button
             onClick={resetFilter}
             variant="secondary"
-            className="border border-white/10 bg-white/5 text-(--dash-muted)] hover:bg-white/10"
+            className="border border-white/10 bg-white/5 text-(--dash-muted) hover:bg-white/10"
           >
             <RotateCcw className=" h-4 w-4" />
           </Button>
@@ -528,11 +528,11 @@ export default function OperationManager({
       {/* SUMMARY */}
       <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
+          <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)">
             Total (Filter)
           </p>
           <div className="mt-2 flex items-center justify-between gap-3">
-            <div className="inline-flex items-center gap-2 text-[11px] text-(--dash-muted)]">
+            <div className="inline-flex items-center gap-2 text-[11px] text-(--dash-muted)">
               <Wallet className="h-4 w-4" />
               <span>Jumlah biaya</span>
             </div>
@@ -542,11 +542,11 @@ export default function OperationManager({
           </div>
         </div>
         <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
+          <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)">
             Data
           </p>
           <div className="mt-2 flex items-center justify-between gap-3">
-            <div className="inline-flex items-center gap-2 text-[11px] text-(--dash-muted)]">
+            <div className="inline-flex items-center gap-2 text-[11px] text-(--dash-muted)">
               <ArchiveX className="h-4 w-4" />
               <span>Hasil filter</span>
             </div>
@@ -556,11 +556,11 @@ export default function OperationManager({
           </div>
         </div>
         <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
+          <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)">
             Rentang
           </p>
           <div className="mt-2 flex items-center justify-between gap-3">
-            <div className="inline-flex items-center gap-2 text-[11px] text-(--dash-muted)]">
+            <div className="inline-flex items-center gap-2 text-[11px] text-(--dash-muted)">
               <CalendarDays className="h-4 w-4" />
               <span>Tanggal</span>
             </div>
@@ -573,14 +573,14 @@ export default function OperationManager({
 
       {/* TABLE */}
       {filteredData.length === 0 ? (
-        <div className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-10 text-center text-sm text-(--dash-muted)]">
+        <div className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-10 text-center text-sm text-(--dash-muted)">
           <ArchiveX className="mx-auto mb-4 h-12 w-12 opacity-80" />
           Tidak ada data sesuai filter.
         </div>
       ) : (
         <>
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-2 text-sm text-(--dash-muted)]">
+            <div className="flex items-center gap-2 text-sm text-(--dash-muted)">
               <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold">
                 <Users className="h-4 w-4" />
                 {filteredData.length} data
@@ -597,7 +597,7 @@ export default function OperationManager({
                   <Button
                     type="button"
                     variant="secondary"
-                    className="border border-white/10 bg-white/10 text-(--dash-ink)] hover:bg-white/15"
+                    className="border border-white/10 bg-white/10 text-(--dash-ink) hover:bg-white/15"
                   >
                     <SlidersHorizontal className="mr-2 h-4 w-4" />
                     Kolom
@@ -625,13 +625,13 @@ export default function OperationManager({
               </DropdownMenu>
 
               <div className="flex items-center gap-2">
-                <label className="text-[11px] font-medium text-(--dash-muted)]">
+                <label className="text-[11px] font-medium text-(--dash-muted)">
                   Rows
                 </label>
                 <select
                   value={pageSize}
                   onChange={(e) => setPageSize(Number(e.target.value))}
-                  className="h-9 rounded-md border border-white/10 bg-white/5 px-3 text-sm text-(--dash-ink)]"
+                  className="h-9 rounded-md border border-white/10 bg-white/5 px-3 text-sm text-(--dash-ink)"
                 >
                   {[10, 25, 50, 100].map((n) => (
                     <option key={n} value={n}>
@@ -654,43 +654,43 @@ export default function OperationManager({
                 ].join(" ")}
               >
                 <TableHeader>
-                  <TableRow className="bg-(--dash-surface-strong)]">
+                  <TableRow className="bg-(--dash-surface-strong)">
                     {columns.tanggal ? (
-                      <TableHead className="sticky top-0 z-10 bg-(--dash-surface-strong)]">
+                      <TableHead className="sticky top-0 z-10 bg-(--dash-surface-strong)">
                         Tanggal
                       </TableHead>
                     ) : null}
                     {columns.dokter ? (
-                      <TableHead className="sticky top-0 z-10 bg-(--dash-surface-strong)]">
+                      <TableHead className="sticky top-0 z-10 bg-(--dash-surface-strong)">
                         Dokter
                       </TableHead>
                     ) : null}
                     {columns.tindakan ? (
-                      <TableHead className="sticky top-0 z-10 bg-(--dash-surface-strong)]">
+                      <TableHead className="sticky top-0 z-10 bg-(--dash-surface-strong)">
                         Tindakan
                       </TableHead>
                     ) : null}
                     {columns.rumahSakit ? (
-                      <TableHead className="sticky top-0 z-10 bg-(--dash-surface-strong)]">
+                      <TableHead className="sticky top-0 z-10 bg-(--dash-surface-strong)">
                         Rumah Sakit
                       </TableHead>
                     ) : null}
                     {columns.jumlah ? (
-                      <TableHead className="sticky top-0 z-10 bg-(--dash-surface-strong)] text-right">
+                      <TableHead className="sticky top-0 z-10 bg-(--dash-surface-strong) text-right">
                         Jumlah
                       </TableHead>
                     ) : null}
                     {columns.klaim ? (
-                      <TableHead className="sticky top-0 z-10 bg-(--dash-surface-strong)]">
+                      <TableHead className="sticky top-0 z-10 bg-(--dash-surface-strong)">
                         Klaim
                       </TableHead>
                     ) : null}
                     {columns.perawat ? (
-                      <TableHead className="sticky top-0 z-10 bg-(--dash-surface-strong)]">
+                      <TableHead className="sticky top-0 z-10 bg-(--dash-surface-strong)">
                         Perawat
                       </TableHead>
                     ) : null}
-                    <TableHead className="sticky top-0 z-10 bg-(--dash-surface-strong)] text-center">
+                    <TableHead className="sticky top-0 z-10 bg-(--dash-surface-strong) text-center">
                       Aksi
                     </TableHead>
                   </TableRow>
@@ -730,7 +730,7 @@ export default function OperationManager({
                         {columns.tanggal ? (
                           <TableCell className="tabular-nums">
                             <span className={isCompact ? "inline-flex items-center gap-1.5" : "inline-flex items-center gap-2"}>
-                              <CalendarDays className={isCompact ? "h-3.5 w-3.5 text-(--dash-muted)]" : "h-4 w-4 text-(--dash-muted)]"} />
+                              <CalendarDays className={isCompact ? "h-3.5 w-3.5 text-(--dash-muted)" : "h-4 w-4 text-(--dash-muted)"} />
                               {item.date}
                             </span>
                           </TableCell>
@@ -738,7 +738,7 @@ export default function OperationManager({
                         {columns.dokter ? (
                           <TableCell className="max-w-[220px]">
                             <span className={isCompact ? "inline-flex items-center gap-1.5" : "inline-flex items-center gap-2"}>
-                              <UserRound className={isCompact ? "h-3.5 w-3.5 text-(--dash-muted)]" : "h-4 w-4 text-(--dash-muted)]"} />
+                              <UserRound className={isCompact ? "h-3.5 w-3.5 text-(--dash-muted)" : "h-4 w-4 text-(--dash-muted)"} />
                               <span className="truncate">{item.dokter}</span>
                             </span>
                           </TableCell>
@@ -746,7 +746,7 @@ export default function OperationManager({
                         {columns.tindakan ? (
                           <TableCell className="whitespace-normal">
                             <span className={isCompact ? "inline-flex items-start gap-1.5" : "inline-flex items-start gap-2"}>
-                              <Stethoscope className={isCompact ? "mt-0.5 h-3.5 w-3.5 text-(--dash-muted)]" : "mt-0.5 h-4 w-4 text-(--dash-muted)]"} />
+                              <Stethoscope className={isCompact ? "mt-0.5 h-3.5 w-3.5 text-(--dash-muted)" : "mt-0.5 h-4 w-4 text-(--dash-muted)"} />
                               <span className="max-w-[340px] wrap-break-word">
                                 {item.tindakanOperasi}
                               </span>
@@ -756,7 +756,7 @@ export default function OperationManager({
                         {columns.rumahSakit ? (
                           <TableCell className="whitespace-normal">
                             <span className={isCompact ? "inline-flex items-start gap-1.5" : "inline-flex items-start gap-2"}>
-                              <Hospital className={isCompact ? "mt-0.5 h-3.5 w-3.5 text-(--dash-muted)]" : "mt-0.5 h-4 w-4 text-(--dash-muted)]"} />
+                              <Hospital className={isCompact ? "mt-0.5 h-3.5 w-3.5 text-(--dash-muted)" : "mt-0.5 h-4 w-4 text-(--dash-muted)"} />
                               <span className="max-w-[260px] wrap-break-word">
                                 {item.rumahSakit}
                               </span>
@@ -784,11 +784,11 @@ export default function OperationManager({
                         {columns.perawat ? (
                           <TableCell className="whitespace-normal" title={item.namaPerawat}>
                             <span className={isCompact ? "inline-flex items-start gap-1.5" : "inline-flex items-start gap-2"}>
-                              <Users className={isCompact ? "mt-0.5 h-3.5 w-3.5 text-(--dash-muted)]" : "mt-0.5 h-4 w-4 text-(--dash-muted)]"} />
+                              <Users className={isCompact ? "mt-0.5 h-3.5 w-3.5 text-(--dash-muted)" : "mt-0.5 h-4 w-4 text-(--dash-muted)"} />
                               <span className="wrap-break-word">
                                 {nursePrimary}{" "}
                                 {nurseExtra && (
-                                  <span className={isCompact ? "ml-1 text-[10px] font-semibold text-(--dash-muted)]" : "ml-1 text-[11px] font-semibold text-(--dash-muted)]"}>
+                                  <span className={isCompact ? "ml-1 text-[10px] font-semibold text-(--dash-muted)" : "ml-1 text-[11px] font-semibold text-(--dash-muted)"}>
                                     {nurseExtra}
                                   </span>
                                 )}
@@ -832,14 +832,14 @@ export default function OperationManager({
 
           {/* PAGINATION */}
           <div className="mt-4 flex items-center justify-between gap-3">
-            <p className="text-sm text-(--dash-muted)]">
+            <p className="text-sm text-(--dash-muted)">
               Halaman <span className="tabular-nums">{pageSafe + 1}</span> dari{" "}
               <span className="tabular-nums">{pageCount}</span>
             </p>
             <div className="flex items-center gap-2">
               <Button
                 variant="secondary"
-                className="border border-white/10 bg-white/10 text-(--dash-ink)] hover:bg-white/15"
+                className="border border-white/10 bg-white/10 text-(--dash-ink) hover:bg-white/15"
                 disabled={pageSafe === 0}
                 onClick={() => setPage((p) => Math.max(0, p - 1))}
               >
@@ -848,7 +848,7 @@ export default function OperationManager({
               </Button>
               <Button
                 variant="secondary"
-                className="border border-white/10 bg-white/10 text-(--dash-ink)] hover:bg-white/15"
+                className="border border-white/10 bg-white/10 text-(--dash-ink) hover:bg-white/15"
                 disabled={pageSafe >= pageCount - 1}
                 onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
               >

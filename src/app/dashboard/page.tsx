@@ -369,21 +369,21 @@ export default function DashboardPage() {
 
   return (
     <div className="relative isolate">
-      <div className="pointer-events-none absolute -top-32 right-[-10%] h-72 w-72 rounded-full bg-[radial-gradient(circle_at_center,_rgba(20,184,166,0.25),transparent_65%)] blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-40 left-[-15%] h-80 w-80 rounded-full bg-[radial-gradient(circle_at_center,_rgba(245,158,11,0.22),transparent_70%)] blur-3xl" />
+      <div className="pointer-events-none absolute -top-32 right-[-10%] h-72 w-72 rounded-full bg-[radial-gradient(circle_at_center,rgba(20,184,166,0.25),transparent_65%)] blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-40 left-[-15%] h-80 w-80 rounded-full bg-[radial-gradient(circle_at_center,rgba(245,158,11,0.22),transparent_70%)] blur-3xl" />
 
-      <div className="relative z-10 space-y-6 sm:space-y-8 font-[var(--font-body)] text-[color:var(--dash-ink)]">
-        <header className="dashboard-surface rounded-3xl border border-white/10 bg-[var(--dash-surface)] p-4 sm:p-6 lg:p-8 backdrop-blur">
+      <div className="relative z-10 space-y-6 sm:space-y-8 font-(--font-body) text-(--dash-ink)">
+        <header className="dashboard-surface rounded-3xl border border-white/10 bg-(--dash-surface)] p-4 sm:p-6 lg:p-8 backdrop-blur">
           <div className="flex flex-col gap-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div className="space-y-2">
-                <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-[color:var(--dash-muted)]">
+                <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
                   Dashboard
                 </span>
-                <h1 className="text-2xl sm:text-4xl font-[var(--font-display)] font-semibold tracking-tight">
+                <h1 className="text-2xl sm:text-4xl font-(--font-display)] font-semibold tracking-tight">
                   Dashboard Keuangan
                 </h1>
-                <p className="text-sm text-[color:var(--dash-muted)]">
+                <p className="text-sm text-(--dash-muted)]">
                   Ringkasan aktivitas keuangan yang rapi, responsif, dan mudah dipantau.
                 </p>
               </div>
@@ -393,7 +393,7 @@ export default function DashboardPage() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setViewMode((v) => (v === "compact" ? "expanded" : "compact"))}
-                  className="hidden sm:inline-flex rounded-full border border-white/10 bg-white/5 text-[color:var(--dash-ink)] hover:bg-white/10"
+                  className="hidden sm:inline-flex rounded-full border border-white/10 bg-white/5 text-(--dash-ink)] hover:bg-white/10"
                 >
                   {viewMode === "compact" ? "Mode Detail" : "Mode Ringkas"}
                 </Button>
@@ -401,7 +401,7 @@ export default function DashboardPage() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                  className="rounded-full border border-white/10 bg-white/5 text-[color:var(--dash-ink)] hover:bg-white/10"
+                  className="rounded-full border border-white/10 bg-white/5 text-(--dash-ink)] hover:bg-white/10"
                 >
                   {theme === "dark" ? <Sun /> : <Moon />}
                   <span className="hidden sm:inline text-xs font-medium">Tema</span>
@@ -412,7 +412,7 @@ export default function DashboardPage() {
             <div className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-center">
               <div className="flex flex-col sm:flex-row gap-3">
                 <Select value={String(selectedMonth)} onValueChange={(v) => setSelectedMonth(Number(v))}>
-                  <SelectTrigger className="w-full sm:w-[180px] rounded-full border-white/10 bg-white/5 text-[color:var(--dash-ink)] shadow-inner">
+                  <SelectTrigger className="w-full sm:w-[180px] rounded-full border-white/10 bg-white/5 text-(--dash-ink)] shadow-inner">
                     <SelectValue placeholder="Bulan" />
                   </SelectTrigger>
                   <SelectContent className="rounded-2xl border-white/10 bg-slate-950 text-slate-100">
@@ -425,7 +425,7 @@ export default function DashboardPage() {
                 </Select>
 
                 <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
-                  <SelectTrigger className="w-full sm:w-[150px] rounded-full border-white/10 bg-white/5 text-[color:var(--dash-ink)] shadow-inner">
+                  <SelectTrigger className="w-full sm:w-[150px] rounded-full border-white/10 bg-white/5 text-(--dash-ink)] shadow-inner">
                     <SelectValue placeholder="Tahun" />
                   </SelectTrigger>
                   <SelectContent className="rounded-2xl border-white/10 bg-slate-950 text-slate-100">
@@ -447,10 +447,10 @@ export default function DashboardPage() {
           <div className="flex gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <Link
               href="/visit-dokter"
-              className="min-w-[220px] rounded-3xl border border-white/10 bg-[var(--dash-surface-strong)] p-4 text-[color:var(--dash-ink)] shadow-[0_16px_40px_rgba(2,6,23,0.35)]"
+              className="min-w-[220px] rounded-3xl border border-white/10 bg-(--dash-surface-strong)] p-4 text-(--dash-ink)] shadow-[0_16px_40px_rgba(2,6,23,0.35)]"
             >
               <div className="flex items-center justify-between gap-3">
-                <p className="text-[10px] uppercase tracking-[0.35em] text-[color:var(--dash-muted)]">
+                <p className="text-[10px] uppercase tracking-[0.35em] text-(--dash-muted)]">
                   Visit
                 </p>
                 <span className="inline-flex items-center gap-2 text-xs text-cyan-300">
@@ -461,7 +461,7 @@ export default function DashboardPage() {
               <p className="mt-2 text-sm font-semibold">
                 {nextVisitAlert ? nextVisitAlert.namaDokter : "Tidak ada jadwal"}
               </p>
-              <p className="mt-1 text-xs text-[color:var(--dash-muted)]">
+              <p className="mt-1 text-xs text-(--dash-muted)]">
                 {nextVisitAlert
                   ? `${new Date(nextVisitAlert.waktuVisit).toLocaleString("id-ID")}`
                   : "Hari ini & besok kosong"}
@@ -470,40 +470,40 @@ export default function DashboardPage() {
 
             <Link
               href="/transaction-manager"
-              className="min-w-[220px] rounded-3xl border border-white/10 bg-[var(--dash-surface-strong)] p-4 text-[color:var(--dash-ink)] shadow-[0_16px_40px_rgba(2,6,23,0.35)]"
+              className="min-w-[220px] rounded-3xl border border-white/10 bg-(--dash-surface-strong)] p-4 text-(--dash-ink)] shadow-[0_16px_40px_rgba(2,6,23,0.35)]"
             >
               <div className="flex items-center justify-between gap-3">
-                <p className="text-[10px] uppercase tracking-[0.35em] text-[color:var(--dash-muted)]">
+                <p className="text-[10px] uppercase tracking-[0.35em] text-(--dash-muted)]">
                   Pengeluaran
                 </p>
-                <span className="inline-flex items-center gap-2 text-xs text-[color:var(--dash-muted)]">
+                <span className="inline-flex items-center gap-2 text-xs text-(--dash-muted)]">
                   Bulan ini
                 </span>
               </div>
               <p className="mt-2 text-lg font-semibold tabular-nums">
                 {formatCurrency(totalPengeluaranBulanIni)}
               </p>
-              <p className="mt-1 text-xs text-[color:var(--dash-muted)]">
+              <p className="mt-1 text-xs text-(--dash-muted)]">
                 Tap untuk input/scan struk
               </p>
             </Link>
 
             <Link
               href="/saldo"
-              className="min-w-[220px] rounded-3xl border border-white/10 bg-[var(--dash-surface-strong)] p-4 text-[color:var(--dash-ink)] shadow-[0_16px_40px_rgba(2,6,23,0.35)]"
+              className="min-w-[220px] rounded-3xl border border-white/10 bg-(--dash-surface-strong)] p-4 text-(--dash-ink)] shadow-[0_16px_40px_rgba(2,6,23,0.35)]"
             >
               <div className="flex items-center justify-between gap-3">
-                <p className="text-[10px] uppercase tracking-[0.35em] text-[color:var(--dash-muted)]">
+                <p className="text-[10px] uppercase tracking-[0.35em] text-(--dash-muted)]">
                   Saldo
                 </p>
-                <span className="text-xs text-[color:var(--dash-muted)]">
+                <span className="text-xs text-(--dash-muted)]">
                   {filteredSaldoData.length} item
                 </span>
               </div>
               <p className="mt-2 text-sm font-semibold">
                 {saldoTerbaru ? "Update terakhir" : "Belum ada data"}
               </p>
-              <p className="mt-1 text-xs text-[color:var(--dash-muted)]">
+              <p className="mt-1 text-xs text-(--dash-muted)]">
                 {saldoTerbaru
                   ? `${saldoTerbaru.tanggal} • ${formatCurrency(saldoTerbaru.jumlah)}`
                   : "Input saldo untuk mulai"}
@@ -513,16 +513,16 @@ export default function DashboardPage() {
         </section>
 
         {/* DETAIL VISIT (TABLET/DESKTOP) */}
-        <section className="hidden sm:block dashboard-surface rounded-3xl border border-white/10 bg-[var(--dash-surface-strong)] p-4 sm:p-6">
+        <section className="hidden sm:block dashboard-surface rounded-3xl border border-white/10 bg-(--dash-surface-strong)] p-4 sm:p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
-              <p className="text-[10px] uppercase tracking-[0.4em] text-[color:var(--dash-muted)]">
+              <p className="text-[10px] uppercase tracking-[0.4em] text-(--dash-muted)]">
                 Visit Dokter
               </p>
-              <h2 className="mt-2 text-lg font-semibold font-[var(--font-display)] text-[color:var(--dash-ink)]">
+              <h2 className="mt-2 text-lg font-semibold font-(--font-display)] text-(--dash-ink)]">
                 Alert jadwal hari ini & besok
               </h2>
-              <p className="mt-1 text-sm text-[color:var(--dash-muted)]">
+              <p className="mt-1 text-sm text-(--dash-muted)]">
                 Pantau jadwal terdekat tanpa buka halaman visit.
               </p>
             </div>
@@ -530,7 +530,7 @@ export default function DashboardPage() {
             <Button
               asChild
               variant="secondary"
-              className="border border-white/10 bg-white/10 text-[color:var(--dash-ink)] hover:bg-white/15"
+              className="border border-white/10 bg-white/10 text-(--dash-ink)] hover:bg-white/15"
             >
               <Link href="/visit-dokter">
                 <CalendarDays className="mr-2 h-4 w-4" />
@@ -554,24 +554,24 @@ export default function DashboardPage() {
                       <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] font-semibold text-cyan-200/90">
                         {dayLabel}
                       </span>
-                      <span className="inline-flex items-center gap-2 text-xs text-[color:var(--dash-muted)]">
+                      <span className="inline-flex items-center gap-2 text-xs text-(--dash-muted)]">
                         <Clock className="h-4 w-4 text-cyan-300" />
                         {when.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
                       </span>
                     </div>
 
                     <div className="mt-3 space-y-2">
-                      <p className="inline-flex items-center gap-2 text-sm font-semibold text-[color:var(--dash-ink)]">
-                        <Stethoscope className="h-4 w-4 text-[color:var(--dash-muted)]" />
+                      <p className="inline-flex items-center gap-2 text-sm font-semibold text-(--dash-ink)]">
+                        <Stethoscope className="h-4 w-4 text-(--dash-muted)]" />
                         <span className="truncate">{v.namaDokter}</span>
                       </p>
-                      <p className="inline-flex items-center gap-2 text-xs text-[color:var(--dash-muted)]">
-                        <Hospital className="h-4 w-4 text-[color:var(--dash-muted)]" />
+                      <p className="inline-flex items-center gap-2 text-xs text-(--dash-muted)]">
+                        <Hospital className="h-4 w-4 text-(--dash-muted)]" />
                         <span className="truncate">{v.rumahSakit}</span>
                       </p>
                       {v.perawat ? (
-                        <p className="text-xs text-[color:var(--dash-muted)]">
-                          Perawat: <span className="font-semibold text-[color:var(--dash-ink)]">{v.perawat}</span>
+                        <p className="text-xs text-(--dash-muted)]">
+                          Perawat: <span className="font-semibold text-(--dash-ink)]">{v.perawat}</span>
                         </p>
                       ) : null}
                     </div>
@@ -580,7 +580,7 @@ export default function DashboardPage() {
               })}
             </div>
           ) : (
-            <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-[color:var(--dash-muted)]">
+            <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-(--dash-muted)]">
               Tidak ada jadwal visit terdekat (hari ini & besok).
             </div>
           )}
@@ -612,13 +612,13 @@ export default function DashboardPage() {
                 <FinancialChart transactions={filteredTransactions} />
               </div>
 
-              <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-[var(--dash-surface-strong)] p-4">
+              <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-(--dash-surface-strong)] p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h3 className="text-base font-semibold font-[var(--font-display)] text-[color:var(--dash-ink)]">
+                    <h3 className="text-base font-semibold font-(--font-display)] text-(--dash-ink)]">
                       Ringkasan
                     </h3>
-                    <p className="text-xs text-[color:var(--dash-muted)]">
+                    <p className="text-xs text-(--dash-muted)]">
                       {months[selectedMonth].name} — {selectedYear}
                     </p>
                   </div>
@@ -682,12 +682,12 @@ export default function DashboardPage() {
             </div>
 
             <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-white/10 bg-[var(--dash-surface-strong)] p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-white/10 bg-(--dash-surface-strong)] p-4">
                 <div>
-                  <h3 className="text-lg font-semibold font-[var(--font-display)] text-[color:var(--dash-ink)]">
+                  <h3 className="text-lg font-semibold font-(--font-display)] text-(--dash-ink)]">
                     Ringkasan Bulanan
                   </h3>
-                  <p className="text-sm text-[color:var(--dash-muted)]">
+                  <p className="text-sm text-(--dash-muted)]">
                     {months[selectedMonth].name} — {selectedYear}
                   </p>
                 </div>

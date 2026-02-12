@@ -135,8 +135,8 @@ function BarTooltip({
   if (!active || !payload?.length) return null;
   const item = payload[0]?.payload;
   return (
-    <div className="rounded-2xl border border-white/10 bg-(--dash-surface-strong)] px-4 py-3 text-sm text-(--dash-ink)] shadow-[0_20px_50px_rgba(2,6,23,0.55)]">
-      <p className="text-[11px] uppercase tracking-[0.3em] text-(--dash-muted)]">
+    <div className="rounded-2xl border border-white/10 bg-[color:var(--dash-surface-strong)] px-4 py-3 text-sm text-[color:var(--dash-ink)] shadow-[0_20px_50px_rgba(2,6,23,0.55)]">
+      <p className="text-[11px] uppercase tracking-[0.3em] text-[color:var(--dash-muted)]">
         Rumah Sakit
       </p>
       <p className="mt-1 font-semibold">{item?.name ?? "-"}</p>
@@ -464,16 +464,16 @@ export default function OperationDashboard({
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
         {visibility.cardTotalAsistensi ? (
-          <div className="rounded-3xl border border-white/10 bg-(--dash-surface)] p-5 text-(--dash-ink)] shadow-[0_20px_60px_rgba(2,6,23,0.45)]">
+          <div className="rounded-3xl border border-white/10 bg-[color:var(--dash-surface)] p-5 text-[color:var(--dash-ink)] shadow-[0_20px_60px_rgba(2,6,23,0.45)]">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-[10px] uppercase tracking-[0.4em] text-(--dash-muted)]">
+                <p className="text-[10px] uppercase tracking-[0.4em] text-[color:var(--dash-muted)]">
                   Total Asistensi
                 </p>
                 <p className="mt-2 text-2xl font-semibold tabular-nums">
                   {isLoading ? "…" : formatCurrency(totalJumlah)}
                 </p>
-                <p className="mt-1 text-[11px] text-(--dash-muted)]">
+                <p className="mt-1 text-[11px] text-[color:var(--dash-muted)]">
                   Akumulasi seluruh tindakan.
                 </p>
               </div>
@@ -485,16 +485,16 @@ export default function OperationDashboard({
         ) : null}
 
         {visibility.cardJumlahTindakan ? (
-          <div className="rounded-3xl border border-white/10 bg-(--dash-surface)] p-5 text-(--dash-ink)] shadow-[0_20px_60px_rgba(2,6,23,0.45)]">
+          <div className="rounded-3xl border border-white/10 bg-[color:var(--dash-surface)] p-5 text-[color:var(--dash-ink)] shadow-[0_20px_60px_rgba(2,6,23,0.45)]">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-[10px] uppercase tracking-[0.4em] text-(--dash-muted)]">
+                <p className="text-[10px] uppercase tracking-[0.4em] text-[color:var(--dash-muted)]">
                   Jumlah Tindakan
                 </p>
                 <p className="mt-2 text-2xl font-semibold tabular-nums">
                   {isLoading ? "…" : totalOperasi}
                 </p>
-                <p className="mt-1 text-[11px] text-(--dash-muted)]">
+                <p className="mt-1 text-[11px] text-[color:var(--dash-muted)]">
                   Total input operasi.
                 </p>
               </div>
@@ -516,11 +516,11 @@ export default function OperationDashboard({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 6 }}
                   transition={{ duration: 0.18 }}
-                  className="rounded-3xl border border-white/10 bg-(--dash-surface)] p-5 text-(--dash-ink)] shadow-[0_20px_60px_rgba(2,6,23,0.45)]"
+                  className="rounded-3xl border border-white/10 bg-[color:var(--dash-surface)] p-5 text-[color:var(--dash-ink)] shadow-[0_20px_60px_rgba(2,6,23,0.45)]"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-[10px] uppercase tracking-[0.4em] text-(--dash-muted)]">
+                      <p className="text-[10px] uppercase tracking-[0.4em] text-[color:var(--dash-muted)]">
                         Rata-rata Asistensi
                       </p>
                       <p className="mt-2 text-2xl font-semibold tabular-nums">
@@ -528,7 +528,7 @@ export default function OperationDashboard({
                           ? "…"
                           : formatCurrency(Math.round(averageOperasi))}
                       </p>
-                      <p className="mt-1 text-[11px] text-(--dash-muted)]">
+                      <p className="mt-1 text-[11px] text-[color:var(--dash-muted)]">
                         Dibagi dari total tindakan.
                       </p>
                     </div>
@@ -546,11 +546,11 @@ export default function OperationDashboard({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 6 }}
                   transition={{ duration: 0.18 }}
-                  className="rounded-3xl border border-white/10 bg-(--dash-surface)] p-5 text-(--dash-ink)] shadow-[0_20px_60px_rgba(2,6,23,0.45)]"
+                  className="rounded-3xl border border-white/10 bg-[color:var(--dash-surface)] p-5 text-[color:var(--dash-ink)] shadow-[0_20px_60px_rgba(2,6,23,0.45)]"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-[10px] uppercase tracking-[0.4em] text-(--dash-muted)]">
+                      <p className="text-[10px] uppercase tracking-[0.4em] text-[color:var(--dash-muted)]">
                         Terimakasih Rumah Sakit
                       </p>
                       <p className="mt-2 truncate text-base font-semibold">
@@ -578,11 +578,11 @@ export default function OperationDashboard({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 6 }}
                   transition={{ duration: 0.18 }}
-                  className="rounded-3xl border border-white/10 bg-(--dash-surface)] p-5 text-(--dash-ink)] shadow-[0_20px_60px_rgba(2,6,23,0.45)]"
+                  className="rounded-3xl border border-white/10 bg-[color:var(--dash-surface)] p-5 text-[color:var(--dash-ink)] shadow-[0_20px_60px_rgba(2,6,23,0.45)]"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="text-[10px] uppercase tracking-[0.4em] text-(--dash-muted)]">
+                      <p className="text-[10px] uppercase tracking-[0.4em] text-[color:var(--dash-muted)]">
                         Terimakasih dokter
                       </p>
                       <p className="mt-2 truncate text-base font-semibold">
@@ -608,10 +608,10 @@ export default function OperationDashboard({
       </div>
 
       {visibility.analysisSection ? (
-        <div className="mt-6 rounded-3xl border border-white/10 bg-(--dash-surface)] p-6 text-(--dash-ink)] shadow-[0_20px_60px_rgba(2,6,23,0.45)]">
+        <div className="mt-6 rounded-3xl border border-white/10 bg-[color:var(--dash-surface)] p-6 text-[color:var(--dash-ink)] shadow-[0_20px_60px_rgba(2,6,23,0.45)]">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.4em] text-(--dash-muted)]">
+            <p className="text-[10px] uppercase tracking-[0.4em] text-[color:var(--dash-muted)]">
               Analisis
             </p>
             <h3 className="mt-1 text-lg font-semibold">
@@ -620,7 +620,7 @@ export default function OperationDashboard({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <p className="text-sm text-(--dash-muted)]">
+            <p className="text-sm text-[color:var(--dash-muted)]">
               Menampilkan 10 rumah sakit dengan jumlah operasi terbanyak.
             </p>
             <Button
@@ -655,18 +655,18 @@ export default function OperationDashboard({
 	                  {visibility.analysisCaseSummary ? (
 	                    <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
 	                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-	                        <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
+	                        <p className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--dash-muted)]">
 	                          Kasus Dominan
 	                        </p>
                         <p className="mt-2 text-lg font-semibold text-amber-300">
                           {isLoading ? "…" : dominantCase}
                         </p>
-	                        <p className="mt-1 text-[11px] text-(--dash-muted)]">
+	                        <p className="mt-1 text-[11px] text-[color:var(--dash-muted)]">
 	                          Filter: Hip Knee.
 	                        </p>
 	                      </div>
 	                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-	                        <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
+	                        <p className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--dash-muted)]">
 	                          Knee
 	                        </p>
                         <p className="mt-2 text-lg font-semibold tabular-nums">
@@ -674,7 +674,7 @@ export default function OperationDashboard({
                         </p>
 	                      </div>
 	                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-	                        <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
+	                        <p className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--dash-muted)]">
 	                          Hip
 	                        </p>
                         <p className="mt-2 text-lg font-semibold tabular-nums">
@@ -687,7 +687,7 @@ export default function OperationDashboard({
 	                  {visibility.analysisCodeCounts ? (
 	                    <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
 	                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-	                        <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
+	                        <p className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--dash-muted)]">
 	                          Bipolar (Hip)
 	                        </p>
                         <p className="mt-2 text-lg font-semibold tabular-nums">
@@ -695,7 +695,7 @@ export default function OperationDashboard({
                         </p>
 	                      </div>
 	                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-	                        <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
+	                        <p className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--dash-muted)]">
 	                          THR (Hip)
 	                        </p>
                         <p className="mt-2 text-lg font-semibold tabular-nums">
@@ -703,7 +703,7 @@ export default function OperationDashboard({
                         </p>
 	                      </div>
 	                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-	                        <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
+	                        <p className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--dash-muted)]">
 	                          TKR (Knee)
 	                        </p>
                         <p className="mt-2 text-lg font-semibold tabular-nums">
@@ -711,7 +711,7 @@ export default function OperationDashboard({
                         </p>
 	                      </div>
 	                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-	                        <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
+	                        <p className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--dash-muted)]">
 	                          UKA (Knee)
 	                        </p>
                         <p className="mt-2 text-lg font-semibold tabular-nums">
@@ -723,20 +723,20 @@ export default function OperationDashboard({
 
 	                  {visibility.analysisTopOperators && topOperators.length ? (
 	                    <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4">
-	                      <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
+	                      <p className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--dash-muted)]">
 	                        Top Operator
 	                      </p>
                       <div className="mt-3 flex flex-wrap gap-2">
                         {topOperators.map((op) => (
 	                          <span
 	                            key={op.name}
-	                            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold text-(--dash-ink)]"
+	                            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold text-[color:var(--dash-ink)]"
 	                          >
-	                            <UserRound className="h-3.5 w-3.5 text-(--dash-muted)]" />
+	                            <UserRound className="h-3.5 w-3.5 text-[color:var(--dash-muted)]" />
 	                            <span className="max-w-[200px] truncate">
 	                              {op.name}
 	                            </span>
-	                            <span className="text-(--dash-muted)] tabular-nums">
+	                            <span className="text-[color:var(--dash-muted)] tabular-nums">
 	                              {op.value}
 	                            </span>
 	                          </span>
@@ -805,7 +805,7 @@ export default function OperationDashboard({
                   ) : null}
                 </>
               ) : (
-                <p className="mt-4 text-sm text-(--dash-muted)]">
+                <p className="mt-4 text-sm text-[color:var(--dash-muted)]">
                   Semua bagian analisis sedang disembunyikan lewat menu Tampilan.
                 </p>
               )}
