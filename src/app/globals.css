@@ -170,7 +170,7 @@ body.premium .premium-card {
 
   /* High-contrast dashboard palette for dark mode */
   --dash-ink: #eef2f8;
-  --dash-muted: #9fb4c9;
+  --dash-muted: #b8c9db;
   --dash-surface: rgba(9, 14, 26, 0.9);
   --dash-surface-strong: rgba(8, 12, 22, 0.95);
   --dash-border: rgba(148, 185, 255, 0.28);

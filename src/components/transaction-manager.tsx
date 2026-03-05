@@ -90,6 +90,19 @@ const formatCurrency = (value: number) =>
     minimumFractionDigits: 0,
   }).format(value);
 
+const formatCurrencyCompact = (value: number) => {
+  const abs = Math.abs(Number(value));
+  if (abs >= 10_000_000) {
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      notation: "compact",
+      maximumFractionDigits: 1,
+    }).format(Number(value));
+  }
+  return formatCurrency(Number(value));
+};
+
 export default function TransactionManager({
   transactions,
   reimbursements = [],
@@ -110,11 +123,23 @@ export default function TransactionManager({
   const [rowsPerPageTouched, setRowsPerPageTouched] = useState(false);
   const rowsPerPageOptions = tableUi.transactionRowsPerPageOptions;
   const [expandedMobileId, setExpandedMobileId] = useState<string | null>(null);
+  const [numberMode, setNumberMode] = useState<"compact" | "full">("compact");
 
   const tablePageCount = Math.max(
     1,
     Math.ceil(transactions.length / rowsPerPage)
   );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const raw = window.localStorage.getItem("transaction-manager:number-mode:v1");
+    if (raw === "compact" || raw === "full") setNumberMode(raw);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("transaction-manager:number-mode:v1", numberMode);
+  }, [numberMode]);
 
   const paginatedTransactions = useMemo(() => {
     const start = (tablePage - 1) * rowsPerPage;
@@ -128,6 +153,11 @@ export default function TransactionManager({
   const totalReimburse = useMemo(() => {
     return reimbursements.reduce((sum, tx) => sum + Number(tx.jumlah), 0);
   }, [reimbursements]);
+
+  const displayCurrency = useMemo(
+    () => (numberMode === "compact" ? formatCurrencyCompact : formatCurrency),
+    [numberMode]
+  );
 
   const handleExportExcel = () => {
     const dataToExport = transactions
@@ -466,26 +496,35 @@ export default function TransactionManager({
           >
             <FileDown className="h-4 w-4 mr-2" /> PDF
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            type="button"
+            onClick={() => setNumberMode((prev) => (prev === "compact" ? "full" : "compact"))}
+            className="border-white/20 bg-white/5 text-(--dash-ink) hover:bg-white/10"
+          >
+            Angka: {numberMode === "compact" ? "Ringkas" : "Penuh"}
+          </Button>
         </div>
       </header>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="rounded-xl border border-white/10 bg-white/5 p-3 sm:p-4 shadow-inner">
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 items-center gap-3">
             <Wallet className="h-5 w-5 text-cyan-300" />
-            <p className="text-[9px] sm:text-[10px] uppercase tracking-[0.28em] text-(--dash-muted)">Total Pengeluaran</p>
+            <p className="line-clamp-1 text-[9px] sm:text-[10px] uppercase tracking-[0.2em] text-(--dash-muted)">Total Pengeluaran</p>
           </div>
-          <p className="mt-2 text-2xl sm:text-[26px] font-semibold leading-tight text-white">{formatCurrency(totalJumlah)}</p>
+          <p className="mt-2 overflow-hidden text-ellipsis whitespace-nowrap text-xl sm:text-2xl font-semibold leading-tight tabular-nums text-white">{displayCurrency(totalJumlah)}</p>
           <p className="mt-1 text-[10px] sm:text-[11px] text-(--dash-muted)">
             {hasEntries ? `${transactions.length} transaksi` : "Tidak ada data"}
           </p>
         </div>
         <div className="rounded-xl border border-white/10 bg-white/5 p-3 sm:p-4 shadow-inner">
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 items-center gap-3">
             <Wallet className="h-5 w-5 text-amber-300" />
-            <p className="text-[9px] sm:text-[10px] uppercase tracking-[0.28em] text-(--dash-muted)">Reimburse (Meals Pribadi)</p>
+            <p className="line-clamp-1 text-[9px] sm:text-[10px] uppercase tracking-[0.2em] text-(--dash-muted)">Reimbursement</p>
           </div>
-          <p className="mt-2 text-2xl sm:text-[26px] font-semibold leading-tight text-white">{formatCurrency(totalReimburse)}</p>
+          <p className="mt-2 overflow-hidden text-ellipsis whitespace-nowrap text-xl sm:text-2xl font-semibold leading-tight tabular-nums text-white">{displayCurrency(totalReimburse)}</p>
           <p className="mt-1 text-[10px] sm:text-[11px] text-(--dash-muted)">
             {reimbursements.length ? `${reimbursements.length} entri` : "Tidak ada yang perlu direimburse"}
           </p>
@@ -506,17 +545,17 @@ export default function TransactionManager({
                 {latestTransactions.map((tx) => (
                   <li
                     key={tx.id}
-                    className="rounded-lg border border-white/5 bg-white/5 px-3 py-2 flex items-center justify-between gap-2 backdrop-blur-sm"
+                    className="rounded-lg border border-white/5 bg-white/5 px-3 py-2 backdrop-blur-sm"
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-between gap-2">
                       <span className="text-[10px] sm:text-[11px] text-(--dash-muted) tabular-nums">{tx.tanggal}</span>
-                      <span className="text-[10px] sm:text-[11px] text-white/85 font-semibold truncate max-w-[120px] sm:max-w-40">
-                        {tx.jenisBiaya}
-                      </span>
+                      <div className="text-[10px] sm:text-[11px] font-semibold text-emerald-200 tabular-nums truncate">
+                        {displayCurrency(Number(tx.jumlah))}
+                      </div>
                     </div>
-                    <div className="text-[10px] sm:text-[11px] font-semibold text-emerald-200 tabular-nums">
-                      {formatCurrency(Number(tx.jumlah))}
-                    </div>
+                    <p className="mt-1 truncate text-[10px] sm:text-[11px] text-white/85 font-medium">
+                      {tx.jenisBiaya}
+                    </p>
                   </li>
                 ))}
               </ul>

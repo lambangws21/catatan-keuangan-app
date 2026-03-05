@@ -16,6 +16,7 @@ import OperationDashboard from '@/components/OperationDashboard';
 import OperationManager from '@/components/OperationManager';
 import OperationForm from '@/components/OperationForm';
 import Spinner from '@/components/Spinner';
+import { MEALS_TYPE } from '@/lib/transactions';
 
 // ======================
 // ✅ TYPE
@@ -29,7 +30,40 @@ export interface Operation {
   jumlah: number;
   klaim: string;
   namaPerawat: string;
+  sourceType?: 'operasi' | 'meals';
 }
+
+interface TransactionItem {
+  id: string;
+  tanggal: string;
+  jenisBiaya: string;
+  keterangan: string;
+  jumlah: number | string;
+  klaim?: string;
+  sumberBiaya?: string | null;
+}
+
+const extractMealsMeta = (text: string) => {
+  const lines = String(text || '').split(/\r?\n/g).map((line) => line.trim());
+  const lokasi = lines.find((line) => /^lokasi\s*:/i.test(line))?.replace(/^lokasi\s*:/i, '').trim() || '';
+  const peserta = lines.find((line) => /^peserta\s*:/i.test(line))?.replace(/^peserta\s*:/i, '').trim() || '';
+  const dokterOperasi =
+    lines.find((line) => /^dokter\s*operasi\s*:/i.test(line))?.replace(/^dokter\s*operasi\s*:/i, '').trim() || '';
+  const tindakanOperasi =
+    lines.find((line) => /^tindakan\s*operasi\s*:/i.test(line))?.replace(/^tindakan\s*operasi\s*:/i, '').trim() || '';
+  const note = lines
+    .filter(
+      (line) =>
+        line.length > 0 &&
+        !/^lokasi\s*:/i.test(line) &&
+        !/^peserta\s*:/i.test(line) &&
+        !/^dokter\s*operasi\s*:/i.test(line) &&
+        !/^tindakan\s*operasi\s*:/i.test(line)
+    )
+    .join(' ')
+    .trim();
+  return { lokasi, peserta, note, dokterOperasi, tindakanOperasi };
+};
 
 // ======================
 // ✅ CSV ESCAPER
@@ -72,13 +106,48 @@ export default function OperationsPage() {
     setIsLoading(true);
     try {
       const token = await user.getIdToken();
-      const response = await fetch('/api/operasi', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const [operationsResponse, transactionsResponse] = await Promise.all([
+        fetch('/api/operasi', {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch('/api/transactions', {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
 
-      if (!response.ok) throw new Error('Gagal mengambil data operasi.');
-      const data = await response.json();
-      setOperations(data);
+      if (!operationsResponse.ok) throw new Error('Gagal mengambil data operasi.');
+
+      const operationsRaw = (await operationsResponse.json()) as Operation[];
+      const operationsMapped: Operation[] = operationsRaw.map((item) => ({
+        ...item,
+        sourceType: 'operasi',
+      }));
+
+      let mealsMapped: Operation[] = [];
+      if (transactionsResponse.ok) {
+        const transactionsRaw = (await transactionsResponse.json()) as TransactionItem[];
+        mealsMapped = transactionsRaw
+          .filter((tx) => tx.jenisBiaya === MEALS_TYPE)
+          .map((tx) => {
+            const meta = extractMealsMeta(tx.keterangan || '');
+            return {
+              id: `meals-${tx.id}`,
+              date: tx.tanggal,
+              dokter: meta.dokterOperasi || tx.klaim?.trim() || 'Meals Metting',
+              tindakanOperasi: meta.tindakanOperasi || meta.note || 'Meals Metting',
+              rumahSakit: meta.lokasi || '-',
+              jumlah: Number(tx.jumlah || 0),
+              klaim: tx.sumberBiaya ? `Meals (${tx.sumberBiaya})` : 'Meals',
+              namaPerawat: meta.peserta || '-',
+              sourceType: 'meals',
+            };
+          });
+      }
+
+      const merged = [...operationsMapped, ...mealsMapped].sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      );
+      setOperations(merged);
     } catch (error) {
       setOperations([]);
       toast.error((error as Error).message || 'Gagal memuat data.');
@@ -236,11 +305,11 @@ export default function OperationsPage() {
       {/* ================= HEADER ================= */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[color:var(--dash-ink)] tracking-tight flex items-center gap-2">
+          <h1 className="text-3xl font-bold text-(--dash-ink) tracking-tight flex items-center gap-2">
             <Sparkles className="h-6 w-6 text-cyan-300" />
             Manajemen Operasi
           </h1>
-          <p className="text-[color:var(--dash-muted)]">
+          <p className="text-(--dash-muted)">
             Pantau, edit, filter, dan export seluruh data operasi.
           </p>
         </div>
@@ -250,7 +319,7 @@ export default function OperationsPage() {
             type="button"
             variant="secondary"
             onClick={() => setGoogleFormOpen(!isGoogleFormOpen)}
-            className="border border-white/10 bg-white/10 text-[color:var(--dash-ink)] hover:bg-white/15"
+            className="border border-white/10 bg-white/10 text-(--dash-ink) hover:bg-white/15"
           >
             {isGoogleFormOpen ? (
               <>
@@ -268,7 +337,7 @@ export default function OperationsPage() {
           <Button
             onClick={handleExportExcel}
             disabled={isExporting || operations.length === 0}
-            className="border border-white/10 bg-white/10 text-[color:var(--dash-ink)] hover:bg-white/15 disabled:opacity-50"
+            className="border border-white/10 bg-white/10 text-(--dash-ink) hover:bg-white/15 disabled:opacity-50"
           >
             <FileDown className="mr-2 h-4 w-4" />
             {isExporting ? 'Exporting...' : 'Export CSV'}
@@ -277,7 +346,7 @@ export default function OperationsPage() {
           <Button
             onClick={handleExportPDF}
             disabled={isExporting || operations.length === 0}
-            className="border border-white/10 bg-white/10 text-[color:var(--dash-ink)] hover:bg-white/15 disabled:opacity-50"
+            className="border border-white/10 bg-white/10 text-(--dash-ink) hover:bg-white/15 disabled:opacity-50"
           >
             <FileText className="mr-2 h-4 w-4" />
             {isExporting ? 'Exporting...' : 'Export PDF'}
@@ -334,7 +403,7 @@ export default function OperationsPage() {
           style={{ width: isGoogleFormOpen ? 'clamp(420px, 42vw, 760px)' : undefined }}
           ref={googleFormRef}
         >
-          <div className="h-full overflow-hidden rounded-3xl border border-white/10 bg-[color:var(--dash-surface)] text-[color:var(--dash-ink)] shadow-[0_20px_60px_rgba(2,6,23,0.45)]">
+          <div className="h-full overflow-hidden rounded-3xl border border-white/10 bg-(--dash-surface) text-(--dash-ink) shadow-[0_20px_60px_rgba(2,6,23,0.45)]">
             <OperasiGoogleForm embedded onClose={() => setGoogleFormOpen(false)} />
           </div>
         </motion.aside>
@@ -380,7 +449,7 @@ export default function OperationsPage() {
           <motion.button
             type="button"
             onClick={() => setGoogleFormOpen(true)}
-            className="hidden md:flex fixed right-0 top-1/2 z-40 -translate-y-1/2 items-center gap-2 rounded-l-xl border border-white/10 bg-[color:var(--dash-surface)] px-3 py-3 text-[color:var(--dash-ink)] shadow-[0_20px_60px_rgba(2,6,23,0.35)] hover:bg-white/10"
+            className="hidden md:flex fixed right-0 top-1/2 z-40 -translate-y-1/2 items-center gap-2 rounded-l-xl border border-white/10 bg-(--dash-surface) px-3 py-3 text-(--dash-ink) shadow-[0_20px_60px_rgba(2,6,23,0.35)] hover:bg-white/10"
             title="Google Form"
             initial={{ x: 36, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
@@ -398,7 +467,7 @@ export default function OperationsPage() {
           <motion.button
             type="button"
             onClick={() => setGoogleFormOpen(true)}
-            className="md:hidden fixed bottom-4 right-4 z-40 inline-flex items-center gap-2 rounded-full border border-white/10 bg-[color:var(--dash-surface)] px-4 py-3 text-[color:var(--dash-ink)] shadow-[0_20px_60px_rgba(2,6,23,0.45)]"
+            className="md:hidden fixed bottom-4 right-4 z-40 inline-flex items-center gap-2 rounded-full border border-white/10 bg-(--dash-surface) px-4 py-3 text-(--dash-ink) shadow-[0_20px_60px_rgba(2,6,23,0.45)]"
             title="Buka Google Form"
             initial={{ y: 18, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -428,7 +497,7 @@ export default function OperationsPage() {
             />
 
             <motion.div
-              className="absolute inset-x-3 top-3 bottom-3 overflow-hidden rounded-3xl border border-white/10 bg-[color:var(--dash-surface)] text-[color:var(--dash-ink)] shadow-[0_20px_80px_rgba(2,6,23,0.55)]"
+              className="absolute inset-x-3 top-3 bottom-3 overflow-hidden rounded-3xl border border-white/10 bg-(--dash-surface) text-(--dash-ink) shadow-[0_20px_80px_rgba(2,6,23,0.55)]"
               initial={{ y: 24, scale: 0.985, opacity: 0 }}
               animate={{ y: 0, scale: 1, opacity: 1 }}
               exit={{ y: 24, scale: 0.985, opacity: 0 }}

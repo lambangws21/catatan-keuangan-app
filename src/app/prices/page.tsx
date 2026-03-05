@@ -140,16 +140,16 @@ export default function StepsPage() {
 
       <div className="relative z-10 mx-auto max-w-6xl space-y-6 p-4 sm:p-6 lg:p-8 text-(--dash-ink)">
         {/* HEADER */}
-        <header className="rounded-3xl border border-white/10 bg-(--dash-surface)] p-5 sm:p-6 shadow-[0_20px_60px_rgba(2,6,23,0.45)] backdrop-blur">
+        <header className="rounded-3xl border border-white/10 bg-(--dash-surface) p-5 sm:p-6 shadow-[0_20px_60px_rgba(2,6,23,0.45)] backdrop-blur">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="text-[10px] uppercase tracking-[0.4em] text-(--dash-muted)]">
+              <p className="text-[10px] uppercase tracking-[0.4em] text-(--dash-muted)">
                 List Harga
               </p>
-              <h1 className="mt-2 text-2xl sm:text-3xl font-semibold font-(--font-display)]">
+              <h1 className="mt-2 text-2xl sm:text-3xl font-semibold font-(--font-display)">
                 Zimmer Biomet • Price List
               </h1>
-              <p className="mt-2 text-sm text-(--dash-muted)]">
+              <p className="mt-2 text-sm text-(--dash-muted)">
                 Cari cepat berdasarkan product, system, dan type.
               </p>
             </div>
@@ -158,7 +158,7 @@ export default function StepsPage() {
               <Button
                 onClick={fetchItems}
                 variant="secondary"
-                className="border border-white/10 bg-white/10 text-(--dash-ink)] hover:bg-white/15"
+                className="border border-white/10 bg-white/10 text-(--dash-ink) hover:bg-white/15"
               >
                 <RefreshCw className="mr-2 h-4 w-4" />
                 Refresh
@@ -168,7 +168,7 @@ export default function StepsPage() {
                 <Button
                   onClick={clearFilters}
                   variant="secondary"
-                  className="border border-white/10 bg-white/5 text-(--dash-muted)] hover:bg-white/10"
+                  className="border border-white/10 bg-white/5 text-(--dash-muted) hover:bg-white/10"
                 >
                   <X className="mr-2 h-4 w-4" />
                   Reset
@@ -180,12 +180,12 @@ export default function StepsPage() {
           {/* FILTER BAR */}
           <div className="mt-5 grid grid-cols-1 gap-3 lg:grid-cols-12">
             <div className="lg:col-span-3">
-              <label className="mb-1 block text-[11px] font-medium text-(--dash-muted)]">
+              <label className="mb-1 block text-[11px] font-medium text-(--dash-muted)">
                 Sheet
               </label>
 
               <Select value={selectedSheet} onValueChange={setSelectedSheet}>
-                <SelectTrigger className="w-full rounded-2xl border-white/10 bg-white/5 text-(--dash-ink)] shadow-inner">
+                <SelectTrigger className="w-full rounded-2xl border-white/10 bg-white/5 text-(--dash-ink) shadow-inner">
                   <SelectValue placeholder="Pilih sheet" />
                 </SelectTrigger>
 
@@ -202,29 +202,29 @@ export default function StepsPage() {
             </div>
 
             <div className="lg:col-span-6">
-              <label className="mb-1 block text-[11px] font-medium text-(--dash-muted)]">
+              <label className="mb-1 block text-[11px] font-medium text-(--dash-muted)">
                 Search
               </label>
 
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-(--dash-muted)]" />
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-(--dash-muted)" />
                 <Input
                   type="search"
                   placeholder="Cari product / system / type…"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="h-10 rounded-2xl border-white/10 bg-white/5 pl-10 text-(--dash-ink)]"
+                  className="h-10 rounded-2xl border-white/10 bg-white/5 pl-10 text-(--dash-ink)"
                 />
               </div>
             </div>
 
             <div className="lg:col-span-3">
-              <label className="mb-1 block text-[11px] font-medium text-(--dash-muted)]">
+              <label className="mb-1 block text-[11px] font-medium text-(--dash-muted)">
                 Type
               </label>
 
               <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="w-full rounded-2xl border-white/10 bg-white/5 text-(--dash-ink)] shadow-inner">
+                <SelectTrigger className="w-full rounded-2xl border-white/10 bg-white/5 text-(--dash-ink) shadow-inner">
                   <SelectValue placeholder="Type" />
                 </SelectTrigger>
 
@@ -241,16 +241,16 @@ export default function StepsPage() {
             </div>
           </div>
 
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-sm text-(--dash-muted)]">
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-sm text-(--dash-muted)">
             <span>
               Hasil:{" "}
-              <span className="font-semibold text-(--dash-ink)] tabular-nums">
+              <span className="font-semibold text-(--dash-ink) tabular-nums">
                 {filteredItems.length}
               </span>
             </span>
             <span className="text-[11px]">
               Sheet aktif:{" "}
-              <span className="font-semibold text-(--dash-ink)]">
+              <span className="font-semibold text-(--dash-ink)">
                 {selectedSheet}
               </span>
             </span>
@@ -259,9 +259,9 @@ export default function StepsPage() {
 
         {/* ERROR */}
         {error ? (
-          <div className="rounded-3xl border border-rose-500/30 bg-rose-500/10 p-5 text-(--dash-ink)]">
+          <div className="rounded-3xl border border-rose-500/30 bg-rose-500/10 p-5 text-(--dash-ink)">
             <p className="text-sm font-semibold">Gagal memuat list harga</p>
-            <p className="mt-1 text-sm text-(--dash-muted)]">{error}</p>
+            <p className="mt-1 text-sm text-(--dash-muted)">{error}</p>
             <div className="mt-4">
               <Button onClick={fetchItems} className="bg-rose-500 text-slate-950 hover:bg-rose-400">
                 <RefreshCw className="mr-2 h-4 w-4" />
@@ -277,7 +277,7 @@ export default function StepsPage() {
             {Array.from({ length: 5 }).map((_, i) => (
               <div
                 key={i}
-                className="mx-auto w-full max-w-3xl rounded-3xl border border-white/10 bg-(--dash-surface)] p-5 shadow-[0_20px_60px_rgba(2,6,23,0.35)]"
+                className="mx-auto w-full max-w-3xl rounded-3xl border border-white/10 bg-(--dash-surface) p-5 shadow-[0_20px_60px_rgba(2,6,23,0.35)]"
               >
                 <div className="h-5 w-40 rounded bg-white/10" />
                 <div className="mt-3 h-4 w-72 rounded bg-white/10" />
@@ -288,7 +288,7 @@ export default function StepsPage() {
         ) : (
           <div className="space-y-6">
             {filteredItems.length === 0 ? (
-              <div className="rounded-3xl border border-white/10 bg-(--dash-surface)] p-10 text-center text-sm text-(--dash-muted)]">
+              <div className="rounded-3xl border border-white/10 bg-(--dash-surface) p-10 text-center text-sm text-(--dash-muted)">
                 Data tidak ditemukan.
               </div>
             ) : (

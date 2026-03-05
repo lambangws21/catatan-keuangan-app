@@ -205,11 +205,11 @@ export default function OperationsPage() {
       {/* ================= HEADER ================= */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-(--dash-ink)] tracking-tight flex items-center gap-2">
+          <h1 className="text-3xl font-bold text-(--dash-ink) tracking-tight flex items-center gap-2">
             <Sparkles className="h-6 w-6 text-cyan-300" />
             Manajemen Operasi
           </h1>
-          <p className="text-(--dash-muted)]">
+          <p className="text-(--dash-muted)">
             Pantau, edit, filter, dan export seluruh data operasi.
           </p>
         </div>
@@ -219,7 +219,7 @@ export default function OperationsPage() {
             type="button"
             variant="secondary"
             onClick={() => setGoogleFormOpen(!isGoogleFormOpen)}
-            className="border border-white/10 bg-white/10 text-(--dash-ink)] hover:bg-white/15"
+            className="border border-white/10 bg-white/10 text-(--dash-ink) hover:bg-white/15"
           >
             {isGoogleFormOpen ? (
               <>
@@ -237,7 +237,7 @@ export default function OperationsPage() {
           <Button
             onClick={handleExportExcel}
             disabled={isExporting || operations.length === 0}
-            className="border border-white/10 bg-white/10 text-(--dash-ink)] hover:bg-white/15 disabled:opacity-50"
+            className="border border-white/10 bg-white/10 text-(--dash-ink) hover:bg-white/15 disabled:opacity-50"
           >
             <FileDown className="mr-2 h-4 w-4" />
             {isExporting ? 'Exporting...' : 'Export CSV'}
@@ -246,7 +246,7 @@ export default function OperationsPage() {
           <Button
             onClick={handleExportPDF}
             disabled={isExporting || operations.length === 0}
-            className="border border-white/10 bg-white/10 text-(--dash-ink)] hover:bg-white/15 disabled:opacity-50"
+            className="border border-white/10 bg-white/10 text-(--dash-ink) hover:bg-white/15 disabled:opacity-50"
           >
             <FileText className="mr-2 h-4 w-4" />
             {isExporting ? 'Exporting...' : 'Export PDF'}

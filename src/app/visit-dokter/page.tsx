@@ -301,18 +301,18 @@ export default function SchedulesPage() {
       <div className="pointer-events-none absolute -top-24 right-[-10%] h-64 w-64 rounded-full bg-[radial-gradient(circle_at_center,rgba(20,184,166,0.20),transparent_65%)] blur-3xl" />
       <div className="pointer-events-none absolute -bottom-32 left-[-15%] h-72 w-72 rounded-full bg-[radial-gradient(circle_at_center,rgba(245,158,11,0.18),transparent_70%)] blur-3xl" />
 
-	      <div className="relative z-10 space-y-6 p-4 sm:p-6 lg:p-8 text-(--dash-ink)]">
-	        <header className="rounded-3xl border border-white/10 bg-(--dash-surface)] p-5 sm:p-6 shadow-[0_20px_60px_rgba(2,6,23,0.45)] backdrop-blur">
+	      <div className="relative z-10 space-y-6 p-4 sm:p-6 lg:p-8 text-(--dash-ink)">
+	        <header className="rounded-3xl border border-white/10 bg-(--dash-surface) p-5 sm:p-6 shadow-[0_20px_60px_rgba(2,6,23,0.45)] backdrop-blur">
 	          <div className="flex flex-col gap-5">
 	            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
 	              <div>
-                <p className="text-[10px] uppercase tracking-[0.4em] text-(--dash-muted)]">
+                <p className="text-[10px] uppercase tracking-[0.4em] text-(--dash-muted)">
                   Visit Dokter
                 </p>
-                <h1 className="mt-2 text-2xl sm:text-3xl font-semibold font-(--font-display)]">
+                <h1 className="mt-2 text-2xl sm:text-3xl font-semibold font-(--font-display)">
                   Manajemen Jadwal Visit
                 </h1>
-                <p className="mt-2 text-sm text-(--dash-muted)]">
+                <p className="mt-2 text-sm text-(--dash-muted)">
                   Kelola jadwal, status, repeat bulanan, dan pantau operator/perawat dengan cepat.
                 </p>
               </div>
@@ -321,7 +321,7 @@ export default function SchedulesPage() {
 	                <Button
 	                  onClick={fetchData}
 	                  variant="secondary"
-	                  className="border border-white/10 bg-white/10 text-(--dash-ink)] hover:bg-white/15"
+	                  className="border border-white/10 bg-white/10 text-(--dash-ink) hover:bg-white/15"
 	                >
 	                  <RefreshCw className="mr-2 h-4 w-4" />
 	                  Refresh
@@ -329,14 +329,14 @@ export default function SchedulesPage() {
                   <Button
                     asChild
                     variant="secondary"
-                    className="border border-white/10 bg-white/10 text-(--dash-ink)] hover:bg-white/15 text-slate-50"
+                    className="border border-white/10 bg-white/10 text-(--dash-ink) hover:bg-white/15 text-slate-50"
                   >
                     <a href="/api/visit-dokter/ics" target="_blank" rel="noreferrer">
                       <CalendarDays className="mr-2 h-4 w-4" />
                       Export ICS
                     </a>
                   </Button>
-	                <Button asChild variant="secondary" className="border border-white/10 bg-white/10 text-(--dash-ink)] hover:bg-white/15 text-slate-50">
+	                <Button asChild variant="secondary" className="border border-white/10 bg-white/10 text-(--dash-ink) hover:bg-white/15 text-slate-50">
 	                  <Link href="/list-dokter">
 	                    <ClipboardList className="mr-2 h-4 w-4" />
 	                    List Dokter
@@ -347,7 +347,7 @@ export default function SchedulesPage() {
 	                    type="button"
 	                    onClick={requestBrowserNotification}
 	                    variant="secondary"
-	                    className="border border-cyan-500/30 bg-cyan-500/15 text-(--dash-ink)] hover:bg-cyan-500/20"
+	                    className="border border-cyan-500/30 bg-cyan-500/15 text-(--dash-ink) hover:bg-cyan-500/20"
 	                  >
 	                    Aktifkan Notifikasi
 	                  </Button>
@@ -367,15 +367,15 @@ export default function SchedulesPage() {
 	                    <p className="text-[10px] uppercase tracking-[0.4em] text-cyan-200/80">
 	                      Pengingat
 	                    </p>
-	                    <p className="mt-1 truncate text-sm font-semibold text-(--dash-ink)]">
+	                    <p className="mt-1 truncate text-sm font-semibold text-(--dash-ink)">
 	                      Jadwal terdekat: {nextUpcoming.namaDokter ?? "-"} •{" "}
 	                      {nextUpcoming.rumahSakit ?? "-"}
 	                    </p>
-	                    <p className="mt-1 text-xs text-(--dash-muted)]">
+	                    <p className="mt-1 text-xs text-(--dash-muted)">
 	                      {new Date(nextUpcoming.waktuVisit).toLocaleString("id-ID")}
 	                    </p>
 	                  </div>
-	                  <div className="text-xs text-(--dash-muted)]">
+	                  <div className="text-xs text-(--dash-muted)">
 	                    {upcomingSoon.length
 	                      ? `Dalam ${REMIND_WITHIN_MINUTES} menit ada ${upcomingSoon.length} jadwal.`
 	                      : null}
@@ -386,7 +386,7 @@ export default function SchedulesPage() {
 
 	            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
 	              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-	                <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
+	                <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)">
 	                  Hari Ini
                 </p>
                 <p className="mt-2 text-lg font-semibold tabular-nums">
@@ -394,7 +394,7 @@ export default function SchedulesPage() {
                 </p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
+                <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)">
                   Mendatang
                 </p>
                 <p className="mt-2 text-lg font-semibold tabular-nums">
@@ -402,7 +402,7 @@ export default function SchedulesPage() {
                 </p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
+                <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)">
                   Terjadwal
                 </p>
                 <p className="mt-2 text-lg font-semibold tabular-nums text-sky-300">
@@ -410,7 +410,7 @@ export default function SchedulesPage() {
                 </p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
+                <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)">
                   Selesai
                 </p>
                 <p className="mt-2 text-lg font-semibold tabular-nums text-emerald-300">
@@ -418,7 +418,7 @@ export default function SchedulesPage() {
                 </p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
+                <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)">
                   Dibatalkan
                 </p>
                 <p className="mt-2 text-lg font-semibold tabular-nums text-rose-300">
@@ -426,7 +426,7 @@ export default function SchedulesPage() {
                 </p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
+                <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)">
                   Total
                 </p>
                 <p className="mt-2 text-lg font-semibold tabular-nums">
@@ -438,7 +438,7 @@ export default function SchedulesPage() {
         </header>
 
       {isLoading ? (
-        <div className="flex items-center justify-center gap-2 rounded-3xl border border-white/10 bg-(--dash-surface)] p-10 text-sm text-(--dash-muted)]">
+        <div className="flex items-center justify-center gap-2 rounded-3xl border border-white/10 bg-(--dash-surface) p-10 text-sm text-(--dash-muted)">
           <Loader2 className="h-5 w-5 animate-spin" />
           Memuat jadwal...
         </div>
@@ -457,7 +457,7 @@ export default function SchedulesPage() {
               </TabsList>
 
               <TabsContent value="timeline">
-                <div className="rounded-3xl border border-white/10 bg-(--dash-surface)] p-5 shadow-[0_20px_60px_rgba(2,6,23,0.45)]">
+                <div className="rounded-3xl border border-white/10 bg-(--dash-surface) p-5 shadow-[0_20px_60px_rgba(2,6,23,0.45)]">
                   <MobileTimeline
                     schedules={schedules}
                     isLoading={false}
@@ -484,7 +484,7 @@ export default function SchedulesPage() {
 
           {/* DESKTOP */}
           <div className="hidden lg:flex gap-6">
-            <div className="flex-1 min-w-0 rounded-3xl border border-white/10 bg-(--dash-surface)] p-5 shadow-[0_20px_60px_rgba(2,6,23,0.45)]">
+            <div className="flex-1 min-w-0 rounded-3xl border border-white/10 bg-(--dash-surface) p-5 shadow-[0_20px_60px_rgba(2,6,23,0.45)]">
               <DailyTimelineView
                 schedulesData={schedules}
                 onDataChange={fetchData}
@@ -506,12 +506,12 @@ export default function SchedulesPage() {
 
       {/* MODAL EDIT */}
       <Dialog open={!!editingSchedule} onOpenChange={(open) => !open && closeEdit()}>
-        <DialogContent className="sm:max-w-[560px] border-white/10 bg-(--dash-surface-strong)] text-(--dash-ink)]">
+        <DialogContent className="sm:max-w-[560px] border-white/10 bg-(--dash-surface-strong) text-(--dash-ink)">
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between gap-3">
               <span>Edit Jadwal Visit</span>
               {editingSchedule?.isVirtual ? (
-                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold text-(--dash-muted)]">
+                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold text-(--dash-muted)">
                   Bulanan (series)
                 </span>
               ) : null}
@@ -522,7 +522,7 @@ export default function SchedulesPage() {
             <div className="space-y-3">
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                 <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
-                  <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
+                  <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)">
                     Tanggal
                   </p>
                   <p className="mt-2 inline-flex items-center gap-2 text-sm font-semibold">
@@ -533,7 +533,7 @@ export default function SchedulesPage() {
                   </p>
                 </div>
                 <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
-                  <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
+                  <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)">
                     Jam
                   </p>
                   <p className="mt-2 inline-flex items-center gap-2 text-sm font-semibold">
@@ -548,7 +548,7 @@ export default function SchedulesPage() {
                   </p>
                 </div>
                 <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
-                  <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
+                  <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)">
                     Status cepat
                   </p>
                   <div className="mt-2 flex gap-2">
@@ -556,7 +556,7 @@ export default function SchedulesPage() {
                       type="button"
                       size="sm"
                       variant="secondary"
-                      className="border border-white/10 bg-white/10 text-(--dash-ink)] hover:bg-white/15"
+                      className="border border-white/10 bg-white/10 text-(--dash-ink) hover:bg-white/15"
                       onClick={() => handleQuickStatus(editingSchedule, "Selesai")}
                       disabled={editingSchedule.status === "Selesai"}
                     >
@@ -567,7 +567,7 @@ export default function SchedulesPage() {
                       type="button"
                       size="sm"
                       variant="secondary"
-                      className="border border-white/10 bg-white/10 text-(--dash-ink)] hover:bg-white/15"
+                      className="border border-white/10 bg-white/10 text-(--dash-ink) hover:bg-white/15"
                       onClick={() => handleQuickStatus(editingSchedule, "Dibatalkan")}
                       disabled={editingSchedule.status === "Dibatalkan"}
                     >

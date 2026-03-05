@@ -58,6 +58,7 @@ interface Operation {
   jumlah: number | string;
   klaim: string;
   namaPerawat: string;
+  sourceType?: "operasi" | "meals";
 }
 
 interface ManagerProps {
@@ -711,6 +712,7 @@ export default function OperationManager({
                       : klaimLower.includes("asur")
                         ? "text-violet-300"
                         : "text-amber-300";
+                    const isMealsRow = item.sourceType === "meals";
 
                     return (
                       <motion.tr
@@ -798,27 +800,35 @@ export default function OperationManager({
                         ) : null}
                         <TableCell className="text-center">
                           <div className={isCompact ? "inline-flex items-center gap-0.5" : "inline-flex items-center gap-1"}>
-                            <OperationForm
-                              onFormSubmit={onDataChange}
-                              initialData={{
-                                id: item.id,
-                                date: item.date,
-                                dokter: item.dokter,
-                                tindakanOperasi: item.tindakanOperasi,
-                                rumahSakit: item.rumahSakit,
-                                jumlah: Number(item.jumlah),
-                                klaim: item.klaim,
-                                namaPerawat: item.namaPerawat,
-                              }}
-                            />
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleDelete(item.id)}
-                              className="text-rose-300 hover:bg-white/10 hover:text-rose-200"
-                            >
-                              <Trash2 className={isCompact ? "h-3.5 w-3.5" : "h-4 w-4"} />
-                            </Button>
+                            {isMealsRow ? (
+                              <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-semibold text-sky-300">
+                                Dari Meals
+                              </span>
+                            ) : (
+                              <>
+                                <OperationForm
+                                  onFormSubmit={onDataChange}
+                                  initialData={{
+                                    id: item.id,
+                                    date: item.date,
+                                    dokter: item.dokter,
+                                    tindakanOperasi: item.tindakanOperasi,
+                                    rumahSakit: item.rumahSakit,
+                                    jumlah: Number(item.jumlah),
+                                    klaim: item.klaim,
+                                    namaPerawat: item.namaPerawat,
+                                  }}
+                                />
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDelete(item.id)}
+                                  className="text-rose-300 hover:bg-white/10 hover:text-rose-200"
+                                >
+                                  <Trash2 className={isCompact ? "h-3.5 w-3.5" : "h-4 w-4"} />
+                                </Button>
+                              </>
+                            )}
                           </div>
                         </TableCell>
                       </motion.tr>

@@ -92,7 +92,9 @@ const stripMetaLines = (text: string) =>
       return (
         trimmed.length > 0 &&
         !/^lokasi\s*:/i.test(trimmed) &&
-        !/^peserta\s*:/i.test(trimmed)
+        !/^peserta\s*:/i.test(trimmed) &&
+        !/^dokter\s*operasi\s*:/i.test(trimmed) &&
+        !/^tindakan\s*operasi\s*:/i.test(trimmed)
       );
     })
     .join("\n")
@@ -102,14 +104,36 @@ const extractMeta = (text: string) => {
   const lines = String(text || "").split(/\r?\n/g).map((l) => l.trim());
   const lokasi = lines.find((l) => /^lokasi\s*:/i.test(l))?.replace(/^lokasi\s*:/i, "").trim();
   const peserta = lines.find((l) => /^peserta\s*:/i.test(l))?.replace(/^peserta\s*:/i, "").trim();
+  const dokterOperasi = lines
+    .find((l) => /^dokter\s*operasi\s*:/i.test(l))
+    ?.replace(/^dokter\s*operasi\s*:/i, "")
+    .trim();
+  const tindakanOperasi = lines
+    .find((l) => /^tindakan\s*operasi\s*:/i.test(l))
+    ?.replace(/^tindakan\s*operasi\s*:/i, "")
+    .trim();
   const note = stripMetaLines(text);
-  return { note, lokasi: lokasi || "", peserta: peserta || "" };
+  return {
+    note,
+    lokasi: lokasi || "",
+    peserta: peserta || "",
+    dokterOperasi: dokterOperasi || "",
+    tindakanOperasi: tindakanOperasi || "",
+  };
 };
 
-function buildKeterangan(note: string, lokasi: string, peserta: string) {
+function buildKeterangan(
+  note: string,
+  lokasi: string,
+  peserta: string,
+  dokterOperasi: string,
+  tindakanOperasi: string
+) {
   const cleanNote = stripMetaLines(note);
   const parts = [
     cleanNote || "",
+    dokterOperasi.trim() ? `Dokter Operasi: ${dokterOperasi.trim()}` : "",
+    tindakanOperasi.trim() ? `Tindakan Operasi: ${tindakanOperasi.trim()}` : "",
     lokasi.trim() ? `Lokasi: ${lokasi.trim()}` : "",
     peserta.trim() ? `Peserta: ${peserta.trim()}` : "",
   ].filter(Boolean);
@@ -140,10 +164,14 @@ export default function MealsMeetingManager({
   const [klaim, setKlaim] = useState("Lambang");
   const [sumberBiaya, setSumberBiaya] = useState<MealsPaymentSource>("deposit");
   const [keterangan, setKeterangan] = useState("");
+  const [dokterOperasi, setDokterOperasi] = useState("");
+  const [tindakanOperasi, setTindakanOperasi] = useState("");
   const [lokasi, setLokasi] = useState("");
   const [peserta, setPeserta] = useState("");
   const [berkas, setBerkas] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const formInputClass =
+    "border-white/15 bg-slate-900/80 text-slate-100 placeholder:text-slate-400 caret-cyan-300";
 
   useEffect(() => {
     return () => {
@@ -157,6 +185,8 @@ export default function MealsMeetingManager({
     setKlaim("Lambang");
     setSumberBiaya("deposit");
     setKeterangan("");
+    setDokterOperasi("");
+    setTindakanOperasi("");
     setLokasi("");
     setPeserta("");
     setBerkas(null);
@@ -178,6 +208,8 @@ export default function MealsMeetingManager({
     setSumberBiaya(normalizeMealsPaymentSource(tx.sumberBiaya) ?? "deposit");
     const meta = extractMeta(tx.keterangan || "");
     setKeterangan(meta.note);
+    setDokterOperasi(meta.dokterOperasi);
+    setTindakanOperasi(meta.tindakanOperasi);
     setLokasi(meta.lokasi);
     setPeserta(meta.peserta);
     setBerkas(null);
@@ -198,6 +230,12 @@ export default function MealsMeetingManager({
     if (!tanggal) return toast.error("Tanggal wajib diisi");
     if (!jumlah) return toast.error("Jumlah wajib diisi");
     if (!klaim.trim()) return toast.error("Nama klaim wajib diisi");
+    if (sumberBiaya === "deposit" && !dokterOperasi.trim()) {
+      return toast.error("Dokter Operasi wajib diisi jika sumber biaya Deposit");
+    }
+    if (sumberBiaya === "deposit" && !tindakanOperasi.trim()) {
+      return toast.error("Jenis Tindakan wajib diisi jika sumber biaya Deposit");
+    }
 
     setIsSubmitting(true);
     try {
@@ -212,7 +250,13 @@ export default function MealsMeetingManager({
       const payload = {
         tanggal,
         jenisBiaya: MEALS_TYPE,
-        keterangan: buildKeterangan(keterangan, lokasi, peserta),
+        keterangan: buildKeterangan(
+          keterangan,
+          lokasi,
+          peserta,
+          dokterOperasi,
+          tindakanOperasi
+        ),
         jumlah: Number(jumlah),
         klaim: klaim.trim(),
         fileUrl,
@@ -266,6 +310,8 @@ export default function MealsMeetingManager({
       return {
         Tanggal: tx.tanggal,
         Klaim: tx.klaim,
+        "Dokter Operasi": meta.dokterOperasi,
+        "Tindakan Operasi": meta.tindakanOperasi,
         "Sumber Biaya": normalizeMealsPaymentSource(tx.sumberBiaya) ?? "deposit",
         Lokasi: meta.lokasi,
         Peserta: meta.peserta,
@@ -306,24 +352,24 @@ export default function MealsMeetingManager({
     doc.save(`Meals_Metting_${exportTag()}.pdf`);
   };
 
-  const card = "rounded-3xl border border-white/10 bg-(--dash-surface)] shadow-[0_20px_60px_rgba(2,6,23,0.45)]";
+  const card = "rounded-3xl border border-white/10 bg-(--dash-surface) shadow-[0_20px_60px_rgba(2,6,23,0.45)]";
 
   return (
     <motion.section
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`${card} p-6 text-(--dash-ink)]`}
+      className={`${card} p-6 text-(--dash-ink)`}
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.4em] text-(--dash-muted)]">
+          <p className="text-[10px] uppercase tracking-[0.4em] text-(--dash-muted)">
             Kategori Khusus
           </p>
           <h2 className="mt-1 flex items-center gap-2 text-xl font-semibold">
             <Handshake className="h-5 w-5 text-amber-300" />
             Meals Metting
           </h2>
-          <p className="mt-1 text-sm text-(--dash-muted)]">
+          <p className="mt-1 text-sm text-(--dash-muted)">
             Simpan dan pantau pengeluaran kategori Meals Metting.
           </p>
         </div>
@@ -332,7 +378,7 @@ export default function MealsMeetingManager({
           <Button
             onClick={handleExportExcel}
             variant="secondary"
-            className="border border-white/10 bg-white/10 text-(--dash-ink)] hover:bg-white/15"
+            className="border border-white/10 bg-white/10 text-(--dash-ink) hover:bg-white/15"
           >
             <FileDown className="mr-2 h-4 w-4" />
             Excel
@@ -340,7 +386,7 @@ export default function MealsMeetingManager({
           <Button
             onClick={handleExportPdf}
             variant="secondary"
-            className="border border-white/10 bg-white/10 text-(--dash-ink)] hover:bg-white/15"
+            className="border border-white/10 bg-white/10 text-(--dash-ink) hover:bg-white/15"
           >
             <FileText className="mr-2 h-4 w-4" />
             PDF
@@ -355,9 +401,9 @@ export default function MealsMeetingManager({
                 Tambah
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[720px] border-white/10 bg-slate-950 text-(--dash-ink)]">
+            <DialogContent className="sm:max-w-[720px] border-white/10 bg-slate-950 text-(--dash-ink)">
               <DialogHeader>
-                <DialogTitle className="text-(--dash-ink)]">
+                <DialogTitle className="text-(--dash-ink)">
                   {editing ? "Edit Meals Metting" : "Input Meals Metting"}
                 </DialogTitle>
               </DialogHeader>
@@ -370,7 +416,7 @@ export default function MealsMeetingManager({
                       type="date"
                       value={tanggal}
                       onChange={(e) => setTanggal(e.target.value)}
-                      className="border-white/10 bg-white/5 text-(--dash-ink)]"
+                      className={formInputClass}
                       required
                     />
                   </div>
@@ -381,7 +427,7 @@ export default function MealsMeetingManager({
                       placeholder="2.000.000"
                       value={jumlah || ""}
                       onValueChange={(v) => setJumlah(v)}
-                      className="border-white/10 bg-white/5 text-(--dash-ink)]"
+                      className={formInputClass}
                       required
                     />
                   </div>
@@ -395,22 +441,51 @@ export default function MealsMeetingManager({
                       value={klaim}
                       onChange={(e) => setKlaim(e.target.value)}
                       placeholder="Contoh: Proyek A"
-                      className="border-white/10 bg-white/5 text-(--dash-ink)]"
+                      className={formInputClass}
                       required
                     />
                   </div>
                   <div className="grid gap-2">
                     <Label>Sumber Biaya</Label>
                     <Select value={sumberBiaya} onValueChange={(v) => setSumberBiaya(v as MealsPaymentSource)}>
-                      <SelectTrigger className="border-white/10 bg-white/5 text-(--dash-ink)]">
+                      <SelectTrigger className={formInputClass}>
                         <SelectValue placeholder="Pilih sumber biaya" />
                       </SelectTrigger>
-                      <SelectContent className="border-white/10 bg-(--dash-surface-strong)] text-(--dash-ink)]">
+                      <SelectContent className="border-white/10 bg-slate-950 text-slate-100">
                         <SelectItem value="deposit">Deposit</SelectItem>
                         <SelectItem value="mandiri">Mandiri</SelectItem>
                         <SelectItem value="kantor">Kantor</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="grid gap-2">
+                    <Label htmlFor="meals-dokter-operasi">
+                      Dokter Operasi {sumberBiaya === "deposit" ? "(wajib)" : "(opsional)"}
+                    </Label>
+                    <Input
+                      id="meals-dokter-operasi"
+                      value={dokterOperasi}
+                      onChange={(e) => setDokterOperasi(e.target.value)}
+                      placeholder="Contoh: dr. Budi"
+                      className={formInputClass}
+                      required={sumberBiaya === "deposit"}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="meals-tindakan-operasi">
+                      Jenis Tindakan {sumberBiaya === "deposit" ? "(wajib)" : "(opsional)"}
+                    </Label>
+                    <Input
+                      id="meals-tindakan-operasi"
+                      value={tindakanOperasi}
+                      onChange={(e) => setTindakanOperasi(e.target.value)}
+                      placeholder="Contoh: TKR / THR / Bipolar"
+                      className={formInputClass}
+                      required={sumberBiaya === "deposit"}
+                    />
                   </div>
                 </div>
 
@@ -422,7 +497,7 @@ export default function MealsMeetingManager({
                       value={peserta}
                       onChange={(e) => setPeserta(e.target.value)}
                       placeholder="Contoh: Pak A, Bu B"
-                      className="border-white/10 bg-white/5 text-(--dash-ink)]"
+                      className={formInputClass}
                     />
                   </div>
                   <div className="grid gap-2">
@@ -432,7 +507,7 @@ export default function MealsMeetingManager({
                       value={lokasi}
                       onChange={(e) => setLokasi(e.target.value)}
                       placeholder="Contoh: Cafe X"
-                      className="border-white/10 bg-white/5 text-(--dash-ink)]"
+                      className={formInputClass}
                     />
                   </div>
                 </div>
@@ -444,14 +519,14 @@ export default function MealsMeetingManager({
                       id="meals-file"
                       type="file"
                       onChange={handleFileChange}
-                      className="border-white/10 bg-white/5 text-(--dash-ink)] file:rounded-md file:border-0 file:bg-amber-500 file:px-3 file:py-1 file:text-slate-950 hover:file:bg-amber-400"
+                      className={`${formInputClass} file:rounded-md file:border-0 file:bg-amber-500 file:px-3 file:py-1 file:text-slate-950 hover:file:bg-amber-400`}
                     />
                   </div>
                   <div className="grid gap-2">
-                    <Label className="text-(--dash-muted)]">Info</Label>
-                    <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-(--dash-muted)]">
+                    <Label className="text-(--dash-muted)">Info</Label>
+                    <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-(--dash-muted)">
                       {sumberBiaya === "deposit"
-                        ? "Deposit: masuk hitung pengeluaran"
+                        ? "Deposit: masuk hitung pengeluaran dan wajib isi Dokter Operasi + Jenis Tindakan"
                         : "Mandiri/Kantor: tidak masuk pengeluaran"}
                     </div>
                   </div>
@@ -464,7 +539,7 @@ export default function MealsMeetingManager({
                     value={keterangan}
                     onChange={(e) => setKeterangan(e.target.value)}
                     placeholder="Catatan / tujuan meeting…"
-                    className="min-h-[110px] border-white/10 bg-white/5 text-(--dash-ink)]"
+                    className={`min-h-[110px] ${formInputClass}`}
                     required
                   />
                 </div>
@@ -500,7 +575,7 @@ export default function MealsMeetingManager({
                 ) : null}
 
                 <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-between">
-                  <div className="text-xs text-(--dash-muted)]">
+                  <div className="text-xs text-(--dash-muted)">
                     Disimpan sebagai transaksi: <span className="font-semibold">{MEALS_TYPE}</span>
                   </div>
                   <Button
@@ -521,11 +596,11 @@ export default function MealsMeetingManager({
       {/* SUMMARY */}
       <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
+          <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)">
             Total Meals
           </p>
           <div className="mt-2 flex items-center justify-between gap-3">
-            <div className="inline-flex items-center gap-2 text-[11px] text-(--dash-muted)]">
+            <div className="inline-flex items-center gap-2 text-[11px] text-(--dash-muted)">
               <Wallet className="h-4 w-4" />
               <span>Jumlah</span>
             </div>
@@ -535,11 +610,11 @@ export default function MealsMeetingManager({
           </div>
         </div>
         <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
+          <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)">
             Entri
           </p>
           <div className="mt-2 flex items-center justify-between gap-3">
-            <div className="inline-flex items-center gap-2 text-[11px] text-(--dash-muted)]">
+            <div className="inline-flex items-center gap-2 text-[11px] text-(--dash-muted)">
               <Handshake className="h-4 w-4" />
               <span>Jumlah data</span>
             </div>
@@ -547,11 +622,11 @@ export default function MealsMeetingManager({
           </div>
         </div>
         <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)]">
+          <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)">
             Export
           </p>
           <div className="mt-2 flex items-center justify-between gap-3">
-            <div className="inline-flex items-center gap-2 text-[11px] text-(--dash-muted)]">
+            <div className="inline-flex items-center gap-2 text-[11px] text-(--dash-muted)">
               <FileText className="h-4 w-4" />
               <span>Nama file</span>
             </div>
@@ -563,11 +638,11 @@ export default function MealsMeetingManager({
       {/* CONTENT */}
       <div className="mt-6">
         {isLoading ? (
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-8 text-sm text-(--dash-muted)]">
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-8 text-sm text-(--dash-muted)">
             Memuat...
           </div>
         ) : meals.length === 0 ? (
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-10 text-center text-sm text-(--dash-muted)]">
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-10 text-center text-sm text-(--dash-muted)">
             Belum ada data Meals Metting.
           </div>
         ) : (
@@ -586,7 +661,7 @@ export default function MealsMeetingManager({
                         <p className="text-sm font-semibold">
                           {formatCurrency(Number(tx.jumlah))}
                         </p>
-                        <p className="mt-1 text-xs text-(--dash-muted)]">
+                        <p className="mt-1 text-xs text-(--dash-muted)">
                           {tx.klaim}
                         </p>
                       </div>
@@ -610,7 +685,7 @@ export default function MealsMeetingManager({
                       </div>
                     </div>
 
-                    <div className="mt-3 grid gap-2 text-xs text-(--dash-muted)]">
+                    <div className="mt-3 grid gap-2 text-xs text-(--dash-muted)">
                       <p className="inline-flex items-center gap-2">
                         <CalendarDays className="h-4 w-4" />
                         <span className="tabular-nums">{tx.tanggal}</span>
@@ -636,7 +711,7 @@ export default function MealsMeetingManager({
                       {tx.fileUrl ? (
                         <Button
                           variant="secondary"
-                          className="mt-1 border border-white/10 bg-white/10 text-(--dash-ink)] hover:bg-white/15"
+                          className="mt-1 border border-white/10 bg-white/10 text-(--dash-ink) hover:bg-white/15"
                           onClick={() => window.open(tx.fileUrl, "_blank")}
                         >
                           <ImageIcon className="mr-2 h-4 w-4" />
@@ -654,29 +729,29 @@ export default function MealsMeetingManager({
               <div className="max-h-[560px] overflow-auto">
                 <Table className="min-w-[980px]">
                   <TableHeader>
-                    <TableRow className="bg-(--dash-surface-strong)]">
-                      <TableHead className="sticky top-0 text-slate-400 z-10 bg-(--dash-surface-strong)]">
+                    <TableRow className="bg-(--dash-surface-strong)">
+                      <TableHead className="sticky top-0 text-slate-400 z-10 bg-(--dash-surface-strong)">
                         Tanggal
                       </TableHead>
-                      <TableHead className="sticky top-0 text-slate-400 z-10 bg-(--dash-surface-strong)]">
+                      <TableHead className="sticky top-0 text-slate-400 z-10 bg-(--dash-surface-strong)">
                         Klaim
                       </TableHead>
-                      <TableHead className="sticky top-0 text-slate-400 z-10 bg-(--dash-surface-strong)]">
+                      <TableHead className="sticky top-0 text-slate-400 z-10 bg-(--dash-surface-strong)">
                         Lokasi
                       </TableHead>
-                      <TableHead className="sticky top-0 text-slate-400 z-10 bg-(--dash-surface-strong)]">
+                      <TableHead className="sticky top-0 text-slate-400 z-10 bg-(--dash-surface-strong)">
                         Peserta
                       </TableHead>
-                      <TableHead className="sticky top-0 text-slate-400 z-10 bg-(--dash-surface-strong)]">
+                      <TableHead className="sticky top-0 text-slate-400 z-10 bg-(--dash-surface-strong)">
                         Keterangan
                       </TableHead>
-                      <TableHead className="sticky top-0 text-slate-400 z-10 bg-(--dash-surface-strong)] text-right">
+                      <TableHead className="sticky top-0 text-slate-400 z-10 bg-(--dash-surface-strong) text-right">
                         Jumlah
                       </TableHead>
-                      <TableHead className="sticky top-0 text-slate-400 z-10 bg-(--dash-surface-strong)] text-center">
+                      <TableHead className="sticky top-0 text-slate-400 z-10 bg-(--dash-surface-strong) text-center">
                         Bukti
                       </TableHead>
-                      <TableHead className="sticky top-0 text-slate-400 z-10 bg-(--dash-surface-strong)] text-center">
+                      <TableHead className="sticky top-0 text-slate-400 z-10 bg-(--dash-surface-strong) text-center">
                         Aksi
                       </TableHead>
                     </TableRow>
@@ -688,7 +763,7 @@ export default function MealsMeetingManager({
                         <TableRow key={tx.id} className="border-white/10 hover:bg-white/5">
                           <TableCell className="tabular-nums">
                             <span className="inline-flex items-center gap-2">
-                              <CalendarDays className="h-4 w-4 text-(--dash-muted)]" />
+                              <CalendarDays className="h-4 w-4 text-(--dash-muted)" />
                               {tx.tanggal}
                             </span>
                           </TableCell>
@@ -698,21 +773,21 @@ export default function MealsMeetingManager({
                           <TableCell className="max-w-[220px] truncate">
                             {meta.lokasi ? (
                               <span className="inline-flex items-center gap-2">
-                                <MapPin className="h-4 w-4 text-(--dash-muted)]" />
+                                <MapPin className="h-4 w-4 text-(--dash-muted)" />
                                 <span className="truncate">{meta.lokasi}</span>
                               </span>
                             ) : (
-                              <span className="text-(--dash-muted)]">-</span>
+                              <span className="text-(--dash-muted)">-</span>
                             )}
                           </TableCell>
                           <TableCell className="max-w-60 truncate">
                             {meta.peserta ? (
                               <span className="inline-flex items-center gap-2">
-                                <Users className="h-4 w-4 text-(--dash-muted)]" />
+                                <Users className="h-4 w-4 text-(--dash-muted)" />
                                 <span className="truncate">{meta.peserta}</span>
                               </span>
                             ) : (
-                              <span className="text-(--dash-muted)]">-</span>
+                              <span className="text-(--dash-muted)">-</span>
                             )}
                           </TableCell>
                           <TableCell className="max-w-[360px] whitespace-normal">
@@ -728,14 +803,14 @@ export default function MealsMeetingManager({
                               <Button
                                 variant="secondary"
                                 size="sm"
-                                className="border border-white/10 bg-white/10 text-(--dash-ink)] hover:bg-white/15"
+                                className="border border-white/10 bg-white/10 text-(--dash-ink) hover:bg-white/15"
                                 onClick={() => window.open(tx.fileUrl, "_blank")}
                               >
                                 <ImageIcon className="mr-2 h-4 w-4" />
                                 Lihat
                               </Button>
                             ) : (
-                              <span className="text-(--dash-muted)]">-</span>
+                              <span className="text-(--dash-muted)">-</span>
                             )}
                           </TableCell>
                           <TableCell className="text-center">

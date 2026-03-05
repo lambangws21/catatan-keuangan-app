@@ -236,7 +236,7 @@ export default function StepCard({
       {/* ✅ PREVIEW MODAL */}
       {previewOpen && previewUrl && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-          <div className="relative w-full max-w-md rounded-3xl border border-white/10 bg-[var(--dash-surface-strong)] p-4 text-[color:var(--dash-ink)] shadow-[0_30px_90px_rgba(2,6,23,0.65)]">
+          <div className="relative w-full max-w-md rounded-3xl border border-white/10 bg-[var(--dash-surface-strong) p-4 text-[color:var(--dash-ink) shadow-[0_30px_90px_rgba(2,6,23,0.65)]">
             <div className="flex items-center justify-between gap-3">
               <h3 className="font-semibold">Preview Share</h3>
               <Button
@@ -263,7 +263,7 @@ export default function StepCard({
               <Button
                 variant="secondary"
                 onClick={closePreview}
-                className="flex-1 border border-white/10 bg-white/10 text-[color:var(--dash-ink)] hover:bg-white/15"
+                className="flex-1 border border-white/10 bg-white/10 text-[color:var(--dash-ink) hover:bg-white/15"
               >
                 Batal
               </Button>
