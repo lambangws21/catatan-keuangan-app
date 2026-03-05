@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   BarChart,
@@ -8,7 +8,6 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  ResponsiveContainer,
   Cell,
   CartesianGrid,
 } from "recharts";
@@ -172,6 +171,9 @@ export default function OperationDashboard({
   // ✅ TOGGLES
   const [showSummaryDetail, setShowSummaryDetail] = useState(true); // rata-rata → terimakasih dokter
   const [showHospitalAnalysis, setShowHospitalAnalysis] = useState(true); // analisis RS
+  const chartContainerRef = useRef<HTMLDivElement | null>(null);
+  const [chartSize, setChartSize] = useState({ width: 0, height: 0 });
+  const [isChartReady, setIsChartReady] = useState(false);
 
   useEffect(() => {
     try {
@@ -344,6 +346,33 @@ export default function OperationDashboard({
 
   const COLORS = ["#06b6d4", "#8b5cf6", "#ec4899"];
   const topData = dataGrafik.slice(0, 10).reverse();
+
+  useEffect(() => {
+    if (!showHospitalAnalysis || !visibility.analysisChart) {
+      setIsChartReady(false);
+      return;
+    }
+
+    const element = chartContainerRef.current;
+    if (!element) return;
+
+    const updateReady = () => {
+      const rect = element.getBoundingClientRect();
+      const width = Math.max(0, Math.floor(rect.width));
+      const height = Math.max(0, Math.floor(rect.height));
+      setChartSize({ width, height });
+      setIsChartReady(width > 0 && height > 0);
+    };
+
+    const frameId = window.requestAnimationFrame(updateReady);
+    const observer = new ResizeObserver(() => updateReady());
+    observer.observe(element);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      observer.disconnect();
+    };
+  }, [showHospitalAnalysis, visibility.analysisChart, topData.length]);
 
   const showAnySummaryCards =
     visibility.cardRataRataAsistensi ||
@@ -675,11 +704,10 @@ export default function OperationDashboard({
           {showHospitalAnalysis ? (
             <motion.div
               key="analysis-body"
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.25 }}
-              className="overflow-hidden"
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 6 }}
+              transition={{ duration: 0.2 }}
             >
               {showAnyAnalysisBody ? (
                 <>
@@ -801,9 +829,11 @@ export default function OperationDashboard({
                   ) : null}
 
                   {visibility.analysisChart ? (
-                    <div className="mt-4 h-[360px]">
-                      <ResponsiveContainer width="100%" height="100%">
+                    <div ref={chartContainerRef} className="mt-4 h-[360px] w-full min-w-0">
+                      {isChartReady ? (
                         <BarChart
+                          width={chartSize.width}
+                          height={chartSize.height}
                           data={topData}
                           layout="vertical"
                           margin={{ top: 8, right: 16, bottom: 8, left: 16 }}
@@ -855,7 +885,9 @@ export default function OperationDashboard({
                             ))}
                           </Bar>
                         </BarChart>
-                      </ResponsiveContainer>
+                      ) : (
+                        <div className="h-full w-full rounded-2xl border border-white/10 bg-white/5" />
+                      )}
                     </div>
                   ) : null}
                 </>

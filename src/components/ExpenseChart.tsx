@@ -1,10 +1,9 @@
-import { useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
   PieChart,
   Pie,
   Cell,
-  ResponsiveContainer,
   Tooltip,
 } from "recharts";
 import { Pause, Play, Zap } from "lucide-react";
@@ -31,6 +30,9 @@ export default function ExpenseChartPro({ data }: ChartProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
   const [intervalSpeed, setIntervalSpeed] = useState(7000);
+  const chartContainerRef = useRef<HTMLDivElement | null>(null);
+  const [chartSize, setChartSize] = useState({ width: 0, height: 0 });
+  const [isChartReady, setIsChartReady] = useState(false);
 
   useEffect(() => {
     if (!isPlaying || !data.length) return;
@@ -40,6 +42,28 @@ export default function ExpenseChartPro({ data }: ChartProps) {
 
     return () => clearInterval(loop);
   }, [isPlaying, intervalSpeed, data]);
+
+  useEffect(() => {
+    const element = chartContainerRef.current;
+    if (!element) return;
+
+    const updateReady = () => {
+      const rect = element.getBoundingClientRect();
+      const width = Math.max(0, Math.floor(rect.width));
+      const height = Math.max(0, Math.floor(rect.height));
+      setChartSize({ width, height });
+      setIsChartReady(width > 0 && height > 0);
+    };
+
+    const frameId = window.requestAnimationFrame(updateReady);
+    const observer = new ResizeObserver(() => updateReady());
+    observer.observe(element);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      observer.disconnect();
+    };
+  }, [data.length]);
 
   const totalValue = data.reduce((a, b) => a + b.value, 0);
   const activeItem = data[activeIndex];
@@ -77,9 +101,9 @@ export default function ExpenseChartPro({ data }: ChartProps) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* PIE */}
-        <div className="min-h-[280px] sm:min-h-80" style={{ width: "100%", height: 320 }}>
-          <ResponsiveContainer>
-            <PieChart>
+        <div ref={chartContainerRef} className="min-h-[280px] sm:min-h-80 w-full" style={{ height: 320 }}>
+          {isChartReady ? (
+            <PieChart width={chartSize.width} height={chartSize.height}>
               <Pie
                 data={data}
                 cx="50%"
@@ -101,7 +125,9 @@ export default function ExpenseChartPro({ data }: ChartProps) {
               </Pie>
               <Tooltip formatter={(val: number) => formatCurrency(val)} />
             </PieChart>
-          </ResponsiveContainer>
+          ) : (
+            <div className="h-full w-full rounded-2xl border border-white/10 bg-white/5" />
+          )}
         </div>
 
         {/* DETAIL PANEL */}

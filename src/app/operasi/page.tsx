@@ -43,6 +43,8 @@ interface TransactionItem {
   sumberBiaya?: string | null;
 }
 
+const MEALS_ASISTENSI_AMOUNT = 200_000;
+
 const extractMealsMeta = (text: string) => {
   const lines = String(text || '').split(/\r?\n/g).map((line) => line.trim());
   const lokasi = lines.find((line) => /^lokasi\s*:/i.test(line))?.replace(/^lokasi\s*:/i, '').trim() || '';
@@ -136,7 +138,7 @@ export default function OperationsPage() {
               dokter: meta.dokterOperasi || tx.klaim?.trim() || 'Meals Metting',
               tindakanOperasi: meta.tindakanOperasi || meta.note || 'Meals Metting',
               rumahSakit: meta.lokasi || '-',
-              jumlah: Number(tx.jumlah || 0),
+              jumlah: MEALS_ASISTENSI_AMOUNT,
               klaim: tx.sumberBiaya ? `Meals (${tx.sumberBiaya})` : 'Meals',
               namaPerawat: meta.peserta || '-',
               sourceType: 'meals',

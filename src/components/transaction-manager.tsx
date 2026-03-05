@@ -461,7 +461,7 @@ export default function TransactionManager({
 
   return (
     <motion.div
-      className="premium-card space-y-6 overflow-hidden rounded-3xl border border-white/10 bg-linear-to-b from-slate-900/90 via-slate-950/80 to-slate-950 p-6 text-white shadow-[0_20px_60px_rgba(2,6,23,0.45)]"
+      className="premium-card space-y-5 overflow-hidden rounded-3xl border border-white/10 bg-linear-to-b from-slate-900/90 via-slate-950/80 to-slate-950 p-4 sm:p-6 text-white shadow-[0_20px_60px_rgba(2,6,23,0.45)]"
       variants={containerVariants}
       initial="hidden"
       animate="visible"
@@ -471,8 +471,8 @@ export default function TransactionManager({
           <p className="text-[10px] uppercase tracking-[0.4em] text-(--dash-muted)">
             Riwayat Transaksi
           </p>
-          <h2 className="text-2xl font-semibold text-white">Catatan Pengeluaran</h2>
-          <p className="text-sm text-(--dash-muted)">
+          <h2 className="text-lg font-semibold text-white sm:text-2xl">Catatan Pengeluaran</h2>
+          <p className="text-xs text-(--dash-muted) sm:text-sm">
             {transactions.length} transaksi terakhir siap direkap dan dicetak.
           </p>
         </div>
@@ -511,21 +511,21 @@ export default function TransactionManager({
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="rounded-xl border border-white/10 bg-white/5 p-3 sm:p-4 shadow-inner">
           <div className="flex min-w-0 items-center gap-3">
-            <Wallet className="h-5 w-5 text-cyan-300" />
-            <p className="line-clamp-1 text-[9px] sm:text-[10px] uppercase tracking-[0.2em] text-(--dash-muted)">Total Pengeluaran</p>
+            <Wallet className="h-4 w-4 text-cyan-300 sm:h-5 sm:w-5" />
+            <p className="line-clamp-1 text-[8px] uppercase tracking-[0.18em] text-(--dash-muted) sm:text-[10px]">Total Pengeluaran</p>
           </div>
-          <p className="mt-2 overflow-hidden text-ellipsis whitespace-nowrap text-xl sm:text-2xl font-semibold leading-tight tabular-nums text-white">{displayCurrency(totalJumlah)}</p>
-          <p className="mt-1 text-[10px] sm:text-[11px] text-(--dash-muted)">
+          <p className="mt-2 overflow-hidden text-ellipsis whitespace-nowrap text-base font-semibold leading-tight tabular-nums text-white sm:text-xl">{displayCurrency(totalJumlah)}</p>
+          <p className="mt-1 text-[9px] text-(--dash-muted) sm:text-[11px]">
             {hasEntries ? `${transactions.length} transaksi` : "Tidak ada data"}
           </p>
         </div>
         <div className="rounded-xl border border-white/10 bg-white/5 p-3 sm:p-4 shadow-inner">
           <div className="flex min-w-0 items-center gap-3">
-            <Wallet className="h-5 w-5 text-amber-300" />
-            <p className="line-clamp-1 text-[9px] sm:text-[10px] uppercase tracking-[0.2em] text-(--dash-muted)">Reimbursement</p>
+            <Wallet className="h-4 w-4 text-amber-300 sm:h-5 sm:w-5" />
+            <p className="line-clamp-1 text-[8px] uppercase tracking-[0.18em] text-(--dash-muted) sm:text-[10px]">Reimbursement</p>
           </div>
-          <p className="mt-2 overflow-hidden text-ellipsis whitespace-nowrap text-xl sm:text-2xl font-semibold leading-tight tabular-nums text-white">{displayCurrency(totalReimburse)}</p>
-          <p className="mt-1 text-[10px] sm:text-[11px] text-(--dash-muted)">
+          <p className="mt-2 overflow-hidden text-ellipsis whitespace-nowrap text-base font-semibold leading-tight tabular-nums text-white sm:text-xl">{displayCurrency(totalReimburse)}</p>
+          <p className="mt-1 text-[9px] text-(--dash-muted) sm:text-[11px]">
             {reimbursements.length ? `${reimbursements.length} entri` : "Tidak ada yang perlu direimburse"}
           </p>
         </div>
@@ -533,27 +533,27 @@ export default function TransactionManager({
           <div className="absolute inset-0 bg-linear-to-br from-cyan-500/10 via-transparent to-emerald-400/10" />
           <div className="relative z-10 space-y-2">
             <div className="flex items-center justify-between">
-              <p className="text-[9px] sm:text-[10px] uppercase tracking-[0.28em] text-(--dash-muted)">Entri terbaru</p>
-              <span className="rounded-full bg-white/10 px-2 py-1 text-[10px] text-white/80">
+              <p className="text-[8px] uppercase tracking-[0.18em] text-(--dash-muted) sm:text-[10px]">Entri terbaru</p>
+              <span className="rounded-full bg-white/10 px-2 py-0.5 text-[9px] text-white/80 sm:text-[10px]">
                 {latestTransactions.length} entri
               </span>
             </div>
             {latestTransactions.length === 0 ? (
-              <p className="text-xs sm:text-sm text-(--dash-muted) mt-1">Tambahkan biaya untuk melihat ringkasan.</p>
+              <p className="mt-1 text-[11px] text-(--dash-muted) sm:text-sm">Tambahkan biaya untuk melihat ringkasan.</p>
             ) : (
-              <ul className="mt-1 space-y-2 text-xs sm:text-sm text-white/90">
+              <ul className="mt-1 space-y-1.5 text-[11px] text-white/90 sm:space-y-2 sm:text-sm">
                 {latestTransactions.map((tx) => (
                   <li
                     key={tx.id}
-                    className="rounded-lg border border-white/5 bg-white/5 px-3 py-2 backdrop-blur-sm"
+                    className="rounded-lg border border-white/5 bg-white/5 px-2.5 py-1.5 backdrop-blur-sm sm:px-3 sm:py-2"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-[10px] sm:text-[11px] text-(--dash-muted) tabular-nums">{tx.tanggal}</span>
-                      <div className="text-[10px] sm:text-[11px] font-semibold text-emerald-200 tabular-nums truncate">
+                      <span className="text-[9px] text-(--dash-muted) tabular-nums sm:text-[11px]">{tx.tanggal}</span>
+                      <div className="text-[9px] font-semibold text-emerald-200 tabular-nums truncate sm:text-[11px]">
                         {displayCurrency(Number(tx.jumlah))}
                       </div>
                     </div>
-                    <p className="mt-1 truncate text-[10px] sm:text-[11px] text-white/85 font-medium">
+                    <p className="mt-0.5 truncate text-[9px] font-medium text-white/85 sm:mt-1 sm:text-[11px]">
                       {tx.jenisBiaya}
                     </p>
                   </li>
@@ -691,63 +691,63 @@ export default function TransactionManager({
               key={tx.id}
               className="overflow-hidden rounded-2xl border border-white/10 bg-white/5 shadow-[0_12px_30px_rgba(2,6,23,0.45)] shadow-cyan-500/10 transition-transform duration-200 hover:-translate-y-0.5 hover:border-cyan-500/40 hover:bg-white/10"
             >
-                <div className="sticky top-0 z-10 flex items-center justify-between gap-4 bg-linear-to-r from-slate-950/80 to-slate-900/80 px-4 py-3 backdrop-blur">
-                <div>
-                  <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.3em] text-(--dash-muted)">
-                    <CalendarDays className="h-4 w-4 text-cyan-200/70" />
+              <div className="sticky top-0 rounded-3xl z-10 flex items-start justify-between gap-3 bg-linear-to-r from-slate-950/80 to-slate-900/80 px-3 py-2.5 backdrop-blur">
+                <div className="min-w-0">
+                  <p className="inline-flex items-center gap-1.5 text-[9px] uppercase tracking-[0.18em] text-(--dash-muted)">
+                    <CalendarDays className="h-3.5 w-3.5 text-cyan-200/70" />
                     <span>{tx.tanggal}</span>
                   </p>
-                  <p className="mt-1 inline-flex items-center gap-2 text-lg font-semibold text-white">
-                    <StickyNote className="h-4 w-4 text-cyan-200/70" />
-                    <span>{tx.keterangan}</span>
+                  <p className="mt-1 inline-flex items-start gap-1.5 text-sm font-semibold text-white">
+                    <StickyNote className="mt-0.5 h-3.5 w-3.5 shrink-0 text-cyan-200/70" />
+                    <span className="line-clamp-2 wrap-break-word">{tx.keterangan}</span>
                   </p>
                 </div>
-                <div className="text-right">
-                  <p className="text-lg font-semibold text-white">
-                    <span className="inline-flex items-center gap-2">
-                      <Coins className="h-4 w-4 text-cyan-200/70" />
+                <div className="shrink-0 text-right">
+                  <p className="text-sm font-semibold text-white">
+                    <span className="inline-flex items-center gap-1.5">
+                      <Coins className="h-3.5 w-3.5 text-cyan-200/70" />
                       <span>{formatCurrency(Number(tx.jumlah))}</span>
                     </span>
                   </p>
-                  <p className="mt-1 inline-flex items-center gap-2 text-[11px] text-white/60">
-                    <Tags className="h-3.5 w-3.5 text-cyan-200/60" />
-                    <span>{tx.jenisBiaya}</span>
+                  <p className="mt-0.5 inline-flex items-center gap-1 text-[9px] text-white/60">
+                    <Tags className="h-3 w-3 text-cyan-200/60" />
+                    <span className="max-w-[92px] truncate">{tx.jenisBiaya}</span>
                   </p>
                 </div>
                 <button
                   onClick={toggleExpanded}
                   aria-expanded={isExpanded}
-                  className="rounded-full border border-white/10 bg-white/10 p-2 text-white/70 transition hover:border-white/20 hover:text-white"
+                  className="rounded-full border border-white/10 bg-white/10 p-1.5 text-white/70 transition hover:border-white/20 hover:text-white"
                 >
                   {isExpanded ? (
-                    <ChevronUp className="h-4 w-4" />
+                    <ChevronUp className="h-3.5 w-3.5" />
                   ) : (
-                    <ChevronDown className="h-4 w-4" />
+                    <ChevronDown className="h-3.5 w-3.5" />
                   )}
                 </button>
               </div>
               <div
                 className={`overflow-hidden transition-all duration-300 ${
-                  isExpanded ? "max-h-[520px] px-4 py-3" : "max-h-0 px-4"
+                  isExpanded ? "max-h-[520px] px-3 py-2.5" : "max-h-0 px-3"
                 }`}
               >
-                <div className="grid gap-2 text-[12px] text-white/70">
-                  <div className="flex items-center justify-between rounded-xl bg-white/5 px-3 py-2">
+                <div className="grid gap-1.5 text-[11px] text-white/70">
+                  <div className="flex items-center justify-between rounded-xl bg-white/5 px-2.5 py-1.5">
                     <span className="font-semibold text-white/90">Jenis Biaya</span>
                     <span>{tx.jenisBiaya}</span>
                   </div>
-                  <div className="flex items-center justify-between rounded-xl bg-white/5 px-3 py-2">
+                  <div className="flex items-center justify-between rounded-xl bg-white/5 px-2.5 py-1.5">
                     <span className="font-semibold text-white/90">Klaim</span>
                     <span>{tx.klaim || "-"}</span>
                   </div>
-                  <div className="flex items-start justify-between rounded-xl bg-white/5 px-3 py-2">
+                  <div className="flex items-start justify-between rounded-xl bg-white/5 px-2.5 py-1.5">
                     <span className="font-semibold text-white/90">Detail</span>
-                    <span className="max-w-[60%] text-right text-sm text-white/70">
+                    <span className="max-w-[62%] text-right text-[11px] leading-relaxed text-white/70">
                       {tx.keterangan}
                     </span>
                   </div>
                 </div>
-                <div className="mt-3 flex flex-wrap justify-end gap-2">
+                <div className="mt-2.5 flex flex-wrap justify-end gap-1.5">
                   {tx.fileUrl && (
                     <Button
                       variant="ghost"
@@ -796,6 +796,9 @@ export default function TransactionManager({
             <DialogTitle className="text-cyan-700 dark:text-cyan-300">
               Edit Transaksi
             </DialogTitle>
+            <DialogDescription className="sr-only">
+              Form untuk mengubah data transaksi, termasuk detail biaya, klaim, dan berkas pendukung.
+            </DialogDescription>
           </DialogHeader>
           {transactionToEdit && (
             <div className="grid gap-4 py-4">

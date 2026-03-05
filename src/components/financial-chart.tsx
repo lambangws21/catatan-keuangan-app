@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
   LineChart,
@@ -8,7 +8,6 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  ResponsiveContainer,
   Tooltip,
   Area,
 } from "recharts";
@@ -45,6 +44,9 @@ export default function FinancialChartTitan({
 }) {
   const { theme } = useTheme();
   const isDark = theme === "dark";
+  const chartContainerRef = useRef<HTMLDivElement | null>(null);
+  const [chartSize, setChartSize] = useState({ width: 0, height: 0 });
+  const [isChartReady, setIsChartReady] = useState(false);
 
   /* ===== DATA TRANSFORM ===== */
 
@@ -73,6 +75,28 @@ export default function FinancialChartTitan({
     () => dailyTrend.reduce((a, b) => a + b.value, 0),
     [dailyTrend]
   );
+
+  useEffect(() => {
+    const element = chartContainerRef.current;
+    if (!element) return;
+
+    const updateReady = () => {
+      const rect = element.getBoundingClientRect();
+      const width = Math.max(0, Math.floor(rect.width));
+      const height = Math.max(0, Math.floor(rect.height));
+      setChartSize({ width, height });
+      setIsChartReady(width > 0 && height > 0);
+    };
+
+    const frameId = window.requestAnimationFrame(updateReady);
+    const observer = new ResizeObserver(() => updateReady());
+    observer.observe(element);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      observer.disconnect();
+    };
+  }, [dailyTrend.length]);
 
   /* ===== TOOLTIP ===== */
 
@@ -146,9 +170,11 @@ export default function FinancialChartTitan({
       </div>
 
       {/* MAIN GRAPH */}
-      <div className="h-[300px] sm:h-[380px]">
-        <ResponsiveContainer>
+      <div ref={chartContainerRef} className="h-[300px] sm:h-[380px] w-full min-w-0">
+        {isChartReady ? (
           <LineChart
+            width={chartSize.width}
+            height={chartSize.height}
             data={dailyTrend}
             margin={{ top: 12, right: 16, bottom: 4, left: 20 }}
           >
@@ -191,7 +217,9 @@ export default function FinancialChartTitan({
               }}
             />
           </LineChart>
-        </ResponsiveContainer>
+        ) : (
+          <div className="h-full w-full rounded-2xl border border-white/10 bg-white/5" />
+        )}
       </div>
     </motion.div>
   );

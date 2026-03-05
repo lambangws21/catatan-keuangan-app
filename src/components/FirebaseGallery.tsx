@@ -289,9 +289,9 @@ export default function ImageGallery() {
         ) : (
             <div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 mb-4">
-                    {currentImages.map((item) => (
+                    {currentImages.map((item, index) => (
                         <div key={item.id} className="relative aspect-square rounded-lg overflow-hidden cursor-pointer group shadow-lg hover:shadow-xl transition-shadow" onClick={() => setSelectedItem(item)}>
-                          <Image src={item.fileUrl!} alt={item.keterangan} fill sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 20vw" style={{ objectFit: 'cover' }} />
+                          <Image src={item.fileUrl!} alt={item.keterangan} fill sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 20vw" loading={index === 0 ? "eager" : "lazy"} style={{ objectFit: 'cover' }} />
                           <div className="absolute inset-0 bg-linear-to-t from-black/80 to-transparent flex items-end p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                             <p className="text-white text-xs font-semibold truncate">{item.keterangan}</p>
                           </div>
