@@ -6,7 +6,7 @@ import { format } from "date-fns";
 import {
   NotebookPen,
   Star,
-  XCircle,
+  CircleX,
   CheckCircle,
 } from "lucide-react";
 
@@ -48,7 +48,7 @@ export function TimelineItem({
     schedule.status === "Selesai"
       ? CheckCircle
       : schedule.status === "Dibatalkan"
-      ? XCircle
+      ? CircleX
       : Star;
 
   return (

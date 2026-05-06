@@ -12,7 +12,7 @@ import {
   Search,
   ChevronRight,
   CheckCircle2,
-  XCircle,
+  CircleX,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -475,7 +475,7 @@ function SidebarItem({
                 onQuickStatus(schedule, "Dibatalkan");
               }}
             >
-              <XCircle className="h-4 w-4 text-red-500" />
+              <CircleX className="h-4 w-4 text-red-500" />
             </Button>
           </>
         ) : null}

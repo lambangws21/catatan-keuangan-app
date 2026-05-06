@@ -1,6 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState, ChangeEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  ChangeEvent,
+  PointerEvent,
+  WheelEvent,
+} from "react";
 import {
   Edit,
   Trash2,
@@ -17,8 +25,11 @@ import {
   StickyNote,
   Tags,
   Coins,
-  CheckCircle2,
-  XCircle,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
+  ChevronsLeft,
+  ChevronsRight,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import Image from "next/image";
@@ -31,6 +42,7 @@ import { storage } from "@/lib/firebase/client";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useTableUiConfig } from "@/hooks/use-table-ui-config";
 import { CurrencyInput } from "@/components/CurencyInput";
+import { detectCompanyGroup, companyGroupLabel } from "@/lib/company-groups";
 
 import {
   Table,
@@ -72,9 +84,30 @@ interface Transaction {
   keterangan: string;
   jumlah: number;
   klaim: string;
+  klaimStatus?: KlaimStatus;
   fileUrl?: string;
+  fileUrls?: string[];
   sumberBiaya?: string | null;
 }
+
+type KlaimStatus = "Belum diajukan" | "Diajukan" | "Dibayar";
+
+type NewPhotoSelection = {
+  id: string;
+  file: File;
+  previewUrl: string;
+  width: number;
+  height: number;
+};
+
+type PreviewState = {
+  transactionId: string;
+  tanggal: string;
+  jenisBiaya: string;
+  jumlah: number;
+  urls: string[];
+  index: number;
+};
 
 interface TransactionManagerProps {
   transactions: Transaction[];
@@ -103,6 +136,48 @@ const formatCurrencyCompact = (value: number) => {
   return formatCurrency(Number(value));
 };
 
+const klaimStatusOptions: KlaimStatus[] = [
+  "Belum diajukan",
+  "Diajukan",
+  "Dibayar",
+];
+
+const normalizeKlaimStatus = (value?: string | null): KlaimStatus => {
+  if (!value) return "Belum diajukan";
+  if (klaimStatusOptions.includes(value as KlaimStatus)) return value as KlaimStatus;
+  return "Belum diajukan";
+};
+
+const getTransactionPhotoUrls = (tx?: Pick<Transaction, "fileUrl" | "fileUrls"> | null) => {
+  if (!tx) return [] as string[];
+  const urls = Array.isArray(tx.fileUrls)
+    ? tx.fileUrls.filter((url): url is string => typeof url === "string" && url.trim() !== "")
+    : [];
+  if (tx.fileUrl && tx.fileUrl.trim() && !urls.includes(tx.fileUrl)) {
+    urls.unshift(tx.fileUrl);
+  }
+  return Array.from(new Set(urls));
+};
+
+const formatFileSize = (sizeInBytes: number) => {
+  if (sizeInBytes < 1024 * 1024) return `${(sizeInBytes / 1024).toFixed(1)} KB`;
+  return `${(sizeInBytes / (1024 * 1024)).toFixed(2)} MB`;
+};
+
+const loadImageDimensions = (previewUrl: string) =>
+  new Promise<{ width: number; height: number }>((resolve) => {
+    const image = new window.Image();
+    image.onload = () => {
+      resolve({ width: image.naturalWidth || 0, height: image.naturalHeight || 0 });
+    };
+    image.onerror = () => {
+      resolve({ width: 0, height: 0 });
+    };
+    image.src = previewUrl;
+  });
+
+const buildPhotoId = (file: File) => `${file.name}:${file.size}:${file.lastModified}`;
+
 export default function TransactionManager({
   transactions,
   reimbursements = [],
@@ -113,21 +188,48 @@ export default function TransactionManager({
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [transactionToEdit, setTransactionToEdit] =
     useState<Transaction | null>(null);
-  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
-  const [newPhotoFile, setNewPhotoFile] = useState<File | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [previewState, setPreviewState] = useState<PreviewState | null>(null);
+  const [newPhotoFiles, setNewPhotoFiles] = useState<NewPhotoSelection[]>([]);
   const [isPhotoProcessing, setIsPhotoProcessing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [klaimStatusFilter, setKlaimStatusFilter] = useState<"semua" | KlaimStatus>("semua");
   const [tablePage, setTablePage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [rowsPerPageTouched, setRowsPerPageTouched] = useState(false);
   const rowsPerPageOptions = tableUi.transactionRowsPerPageOptions;
   const [expandedMobileId, setExpandedMobileId] = useState<string | null>(null);
   const [numberMode, setNumberMode] = useState<"compact" | "full">("compact");
+  const [previewZoom, setPreviewZoom] = useState(1);
+  const [previewOffset, setPreviewOffset] = useState({ x: 0, y: 0 });
+  const [isPreviewDragging, setIsPreviewDragging] = useState(false);
+  const [quickStatusUpdatingId, setQuickStatusUpdatingId] = useState<string | null>(null);
+  const previewDragStartRef = useRef<{ x: number; y: number } | null>(null);
+
+  const normalizedTransactions = useMemo(
+    () =>
+      transactions.map((tx) => {
+        const fileUrls = getTransactionPhotoUrls(tx);
+        return {
+          ...tx,
+          fileUrls,
+          fileUrl: fileUrls[0] || "",
+          klaimStatus: normalizeKlaimStatus(tx.klaimStatus),
+          companyGroup: detectCompanyGroup(tx),
+        };
+      }),
+    [transactions]
+  );
+
+  const filteredTransactions = useMemo(() => {
+    if (klaimStatusFilter === "semua") return normalizedTransactions;
+    return normalizedTransactions.filter(
+      (tx) => normalizeKlaimStatus(tx.klaimStatus) === klaimStatusFilter
+    );
+  }, [klaimStatusFilter, normalizedTransactions]);
 
   const tablePageCount = Math.max(
     1,
-    Math.ceil(transactions.length / rowsPerPage)
+    Math.ceil(filteredTransactions.length / rowsPerPage)
   );
 
   useEffect(() => {
@@ -143,16 +245,34 @@ export default function TransactionManager({
 
   const paginatedTransactions = useMemo(() => {
     const start = (tablePage - 1) * rowsPerPage;
-    return transactions.slice(start, start + rowsPerPage);
-  }, [transactions, tablePage, rowsPerPage]);
+    return filteredTransactions.slice(start, start + rowsPerPage);
+  }, [filteredTransactions, tablePage, rowsPerPage]);
 
   const totalJumlah = useMemo(() => {
-    return transactions.reduce((sum, tx) => sum + Number(tx.jumlah), 0);
-  }, [transactions]);
+    return filteredTransactions.reduce((sum, tx) => sum + Number(tx.jumlah), 0);
+  }, [filteredTransactions]);
 
   const totalReimburse = useMemo(() => {
     return reimbursements.reduce((sum, tx) => sum + Number(tx.jumlah), 0);
   }, [reimbursements]);
+
+  const groupSummary = useMemo(() => {
+    return filteredTransactions.reduce(
+      (acc, tx) => {
+        const group = tx.companyGroup;
+        acc[group] = {
+          count: acc[group].count + 1,
+          total: acc[group].total + Number(tx.jumlah || 0),
+        };
+        return acc;
+      },
+      {
+        ZB: { count: 0, total: 0 },
+        NM: { count: 0, total: 0 },
+        OTHER: { count: 0, total: 0 },
+      }
+    );
+  }, [filteredTransactions]);
 
   const displayCurrency = useMemo(
     () => (numberMode === "compact" ? formatCurrencyCompact : formatCurrency),
@@ -160,15 +280,17 @@ export default function TransactionManager({
   );
 
   const handleExportExcel = () => {
-    const dataToExport = transactions
+    const dataToExport = filteredTransactions
       .slice()
       .sort((a, b) => a.tanggal.localeCompare(b.tanggal))
       .map((tx) => ({
       Tanggal: tx.tanggal,
       Keterangan: tx.keterangan,
       "Jenis Biaya": tx.jenisBiaya,
+      Grup: companyGroupLabel(tx.companyGroup),
       Jumlah: Number(tx.jumlah),
       Klaim: tx.klaim,
+      "Status Klaim": normalizeKlaimStatus(tx.klaimStatus),
       }));
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
     const workbook = XLSX.utils.book_new();
@@ -186,15 +308,17 @@ export default function TransactionManager({
   const handleExportPdf = () => {
     const doc = new jsPDF();
     doc.text("Laporan Riwayat Transaksi", 14, 16);
-    const sorted = transactions.slice().sort((a, b) => a.tanggal.localeCompare(b.tanggal));
+    const sorted = filteredTransactions.slice().sort((a, b) => a.tanggal.localeCompare(b.tanggal));
     autoTable(doc, {
-      head: [["Tanggal", "Keterangan", "Jenis Biaya", "Jumlah", "Klaim"]],
+      head: [["Tanggal", "Keterangan", "Jenis Biaya", "Grup", "Jumlah", "Klaim", "Status"]],
       body: sorted.map((tx) => [
         tx.tanggal,
         tx.keterangan,
         tx.jenisBiaya,
+        companyGroupLabel(tx.companyGroup),
         formatCurrency(Number(tx.jumlah)),
         tx.klaim,
+        normalizeKlaimStatus(tx.klaimStatus),
       ]),
       startY: 22,
       headStyles: { fillColor: [38, 145, 158] },
@@ -209,31 +333,141 @@ export default function TransactionManager({
     await onDataChange();
   };
 
+  const handleQuickKlaimStatusChange = async (
+    tx: Transaction,
+    nextStatus: KlaimStatus
+  ) => {
+    setQuickStatusUpdatingId(tx.id);
+    try {
+      const fileUrls = getTransactionPhotoUrls(tx);
+      const payload: Transaction = {
+        ...tx,
+        jumlah: Number(tx.jumlah),
+        fileUrls,
+        fileUrl: fileUrls[0] || "",
+        klaimStatus: nextStatus,
+      };
+
+      const response = await fetch(`/api/transactions/${tx.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error("Gagal memperbarui status klaim.");
+      }
+
+      await onDataChange();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setQuickStatusUpdatingId(null);
+    }
+  };
+
   const handleOpenEditModal = (tx: Transaction) => {
-    setTransactionToEdit({ ...tx });
+    const fileUrls = getTransactionPhotoUrls(tx);
+    setTransactionToEdit({
+      ...tx,
+      fileUrls,
+      fileUrl: fileUrls[0] || "",
+      klaimStatus: normalizeKlaimStatus(tx.klaimStatus),
+    });
+    setNewPhotoFiles([]);
     setIsEditModalOpen(true);
   };
 
   const handleCloseEditModal = () => {
+    setNewPhotoFiles((prev) => {
+      prev.forEach((photo) => URL.revokeObjectURL(photo.previewUrl));
+      return [];
+    });
     setIsEditModalOpen(false);
     setTransactionToEdit(null);
+  };
+
+  const appendSelectedPhotoFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const imageFiles = Array.from(files).filter((file) => file.type.startsWith("image/"));
+    if (imageFiles.length === 0) return;
+
+    const existingIds = new Set(newPhotoFiles.map((photo) => photo.id));
+    const nextFiles: NewPhotoSelection[] = [];
+
+    for (const file of imageFiles) {
+      const id = buildPhotoId(file);
+      if (existingIds.has(id)) continue;
+      const previewUrl = URL.createObjectURL(file);
+      const dimensions = await loadImageDimensions(previewUrl);
+      nextFiles.push({
+        id,
+        file,
+        previewUrl,
+        width: dimensions.width,
+        height: dimensions.height,
+      });
+      existingIds.add(id);
+    }
+
+    if (nextFiles.length === 0) return;
+    setNewPhotoFiles((prev) => [...prev, ...nextFiles]);
+  };
+
+  const clearNewPhotoFiles = () => {
+    setNewPhotoFiles((prev) => {
+      prev.forEach((photo) => URL.revokeObjectURL(photo.previewUrl));
+      return [];
+    });
+  };
+
+  const handlePhotoSelection = async (e: ChangeEvent<HTMLInputElement>) => {
+    await appendSelectedPhotoFiles(e.target.files);
+    e.target.value = "";
+  };
+
+  const removeNewPhotoFile = (id: string) => {
+    setNewPhotoFiles((prev) => {
+      const target = prev.find((photo) => photo.id === id);
+      if (target) URL.revokeObjectURL(target.previewUrl);
+      return prev.filter((photo) => photo.id !== id);
+    });
   };
 
   const handleUpdateTransaction = async () => {
     if (!transactionToEdit) return;
     setIsSaving(true);
     try {
-      const payload: Transaction = { ...transactionToEdit, jumlah: Number(transactionToEdit.jumlah) };
-      if (newPhotoFile) {
+      const payload: Transaction = {
+        ...transactionToEdit,
+        jumlah: Number(transactionToEdit.jumlah),
+      };
+      const existingPhotoUrls = getTransactionPhotoUrls(transactionToEdit);
+      let uploadedPhotoUrls: string[] = [];
+
+      if (newPhotoFiles.length > 0) {
         setIsPhotoProcessing(true);
-        const storageRef = ref(
-          storage,
-          `berkas/${transactionToEdit.id}_${Date.now()}_${newPhotoFile.name}`
+        uploadedPhotoUrls = await Promise.all(
+          newPhotoFiles.map(async (photo, index) => {
+            const safeName = photo.file.name.replace(/\s+/g, "-");
+            const storageRef = ref(
+              storage,
+              `berkas/${transactionToEdit.id}_${Date.now()}_${index + 1}_${safeName}`
+            );
+            const metadata = photo.file.type
+              ? { contentType: photo.file.type }
+              : undefined;
+            const snapshot = await uploadBytes(storageRef, photo.file, metadata);
+            return getDownloadURL(snapshot.ref);
+          })
         );
-        const snapshot = await uploadBytes(storageRef, newPhotoFile);
-        payload.fileUrl = await getDownloadURL(snapshot.ref);
         setIsPhotoProcessing(false);
       }
+
+      const mergedPhotoUrls = [...existingPhotoUrls, ...uploadedPhotoUrls];
+      payload.fileUrls = mergedPhotoUrls;
+      payload.fileUrl = mergedPhotoUrls[0] || "";
+      payload.klaimStatus = normalizeKlaimStatus(payload.klaimStatus);
 
       await fetch(`/api/transactions/${transactionToEdit.id}`, {
         method: "PUT",
@@ -244,7 +478,7 @@ export default function TransactionManager({
       await onDataChange();
     } finally {
       setIsSaving(false);
-      setNewPhotoFile(null);
+      clearNewPhotoFiles();
     }
   };
 
@@ -261,58 +495,172 @@ export default function TransactionManager({
     setTransactionToEdit((prev) => (prev ? { ...prev, [name]: value } : null));
   };
 
-  useEffect(() => {
-    if (!transactionToEdit) {
-      setPhotoPreview(null);
-      setNewPhotoFile(null);
-      return;
-    }
-    setPhotoPreview(transactionToEdit.fileUrl || null);
-    setNewPhotoFile(null);
-  }, [transactionToEdit]);
-
-  useEffect(() => {
-    return () => {
-      if (photoPreview && photoPreview.startsWith("blob:")) {
-        URL.revokeObjectURL(photoPreview);
-      }
-    };
-  }, [photoPreview]);
-
-  const handlePhotoSelection = (e: ChangeEvent<HTMLInputElement>) => {
-    if (!transactionToEdit) return;
-    if (photoPreview && photoPreview.startsWith("blob:")) {
-      URL.revokeObjectURL(photoPreview);
-    }
-    const file = e.target.files?.[0] ?? null;
-    setNewPhotoFile(file);
-    if (file && file.type.startsWith("image/")) {
-      setPhotoPreview(URL.createObjectURL(file));
-    } else {
-      setPhotoPreview(transactionToEdit.fileUrl || null);
-    }
-  };
-
-  const deleteTransactionPhoto = async (id: string) => {
+  const deleteTransactionPhoto = async (id: string, photoUrl?: string) => {
     const response = await fetch("/api/transactions/photo", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id }),
+      body: JSON.stringify({
+        id,
+        photoUrl,
+      }),
     });
     return response.ok;
   };
 
-  const handleDeletePhoto = async () => {
-    if (!transactionToEdit?.fileUrl) return;
+  const extractFilenameFromStorageUrl = (url: string) => {
+    try {
+      const parsed = new URL(url);
+      const storagePathMatch = parsed.pathname.match(/\/o\/(.+)$/);
+      if (storagePathMatch?.[1]) {
+        const decodedPath = decodeURIComponent(storagePathMatch[1]);
+        const filename = decodedPath.split("/").pop();
+        if (filename) return filename;
+      }
+      const fallback = parsed.pathname.split("/").pop();
+      if (fallback) return fallback;
+    } catch {
+      // ignored
+    }
+    return `foto-transaksi-${Date.now()}`;
+  };
+
+  const buildDownloadFilename = (state: PreviewState) => {
+    const sourceUrl = state.urls[state.index];
+    const sourceName = extractFilenameFromStorageUrl(sourceUrl);
+    const extension = sourceName.includes(".")
+      ? sourceName.split(".").pop() || "jpg"
+      : "jpg";
+    const rawDate = state.tanggal || new Date().toISOString().split("T")[0];
+    const category = state.jenisBiaya
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+    const amount = Number.isFinite(state.jumlah) ? `_${Math.round(state.jumlah)}` : "";
+    return `${rawDate}_${category || "transaksi"}${amount}_${state.index + 1}.${extension}`;
+  };
+
+  const handleOpenPreview = (tx: Transaction, index = 0) => {
+    const urls = getTransactionPhotoUrls(tx);
+    if (urls.length === 0) return;
+    const safeIndex = Math.max(0, Math.min(index, urls.length - 1));
+    setPreviewState({
+      transactionId: tx.id,
+      tanggal: tx.tanggal,
+      jenisBiaya: tx.jenisBiaya,
+      jumlah: Number(tx.jumlah),
+      urls,
+      index: safeIndex,
+    });
+    setPreviewZoom(1);
+    setPreviewOffset({ x: 0, y: 0 });
+    setIsPreviewDragging(false);
+  };
+
+  const closePreview = () => {
+    setPreviewState(null);
+    setPreviewZoom(1);
+    setPreviewOffset({ x: 0, y: 0 });
+    setIsPreviewDragging(false);
+  };
+
+  const handleDownloadOriginalPhoto = async () => {
+    if (!previewState) return;
+    const currentUrl = previewState.urls[previewState.index];
+    try {
+      const response = await fetch(currentUrl);
+      if (!response.ok) throw new Error("Download gagal");
+
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = objectUrl;
+      anchor.download = buildDownloadFilename(previewState);
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(objectUrl);
+    } catch {
+      window.open(currentUrl, "_blank", "noopener,noreferrer");
+    }
+  };
+
+  const handlePreviewNext = () => {
+    setPreviewState((prev) => {
+      if (!prev) return prev;
+      const nextIndex = (prev.index + 1) % prev.urls.length;
+      return { ...prev, index: nextIndex };
+    });
+  };
+
+  const handlePreviewPrev = () => {
+    setPreviewState((prev) => {
+      if (!prev) return prev;
+      const nextIndex = (prev.index - 1 + prev.urls.length) % prev.urls.length;
+      return { ...prev, index: nextIndex };
+    });
+  };
+
+  const handlePreviewWheel = (event: WheelEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    const delta = event.deltaY < 0 ? 0.2 : -0.2;
+    setPreviewZoom((prev) => Math.min(5, Math.max(1, prev + delta)));
+  };
+
+  const handlePreviewPointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    if (previewZoom <= 1) return;
+    setIsPreviewDragging(true);
+    previewDragStartRef.current = {
+      x: event.clientX - previewOffset.x,
+      y: event.clientY - previewOffset.y,
+    };
+  };
+
+  const handlePreviewPointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    if (!isPreviewDragging || !previewDragStartRef.current) return;
+    setPreviewOffset({
+      x: event.clientX - previewDragStartRef.current.x,
+      y: event.clientY - previewDragStartRef.current.y,
+    });
+  };
+
+  const handlePreviewPointerUp = () => {
+    setIsPreviewDragging(false);
+    previewDragStartRef.current = null;
+  };
+
+  useEffect(() => {
+    if (previewZoom <= 1) {
+      setPreviewOffset({ x: 0, y: 0 });
+    }
+  }, [previewZoom]);
+
+  const handleDeletePhoto = async (photoUrl?: string) => {
+    if (!transactionToEdit) return;
+    const existingUrls = getTransactionPhotoUrls(transactionToEdit);
+    if (existingUrls.length === 0) return;
+
     setIsPhotoProcessing(true);
     try {
-      const success = await deleteTransactionPhoto(transactionToEdit.id);
+      const success = await deleteTransactionPhoto(transactionToEdit.id, photoUrl);
       if (success) {
+        const nextUrls = photoUrl
+          ? existingUrls.filter((url) => url !== photoUrl)
+          : [];
         setTransactionToEdit((prev) =>
-          prev ? { ...prev, fileUrl: "" } : prev
+          prev
+            ? {
+                ...prev,
+                fileUrls: nextUrls,
+                fileUrl: nextUrls[0] || "",
+              }
+            : prev
         );
-        setPhotoPreview(null);
-        setNewPhotoFile(null);
+        setPreviewState((prev) => {
+          if (!prev || prev.transactionId !== transactionToEdit.id) return prev;
+          if (nextUrls.length === 0) return null;
+          const nextIndex = Math.min(prev.index, nextUrls.length - 1);
+          return { ...prev, urls: nextUrls, index: nextIndex };
+        });
       }
     } finally {
       setIsPhotoProcessing(false);
@@ -321,7 +669,13 @@ export default function TransactionManager({
 
   useEffect(() => {
     setTablePage(1);
-  }, [transactions]);
+  }, [filteredTransactions.length, klaimStatusFilter]);
+
+  useEffect(() => {
+    if (tablePage > tablePageCount) {
+      setTablePage(tablePageCount);
+    }
+  }, [tablePage, tablePageCount]);
 
   useEffect(() => {
     const options = tableUi.transactionRowsPerPageOptions;
@@ -357,16 +711,21 @@ export default function TransactionManager({
   };
 
   const startEntry =
-    transactions.length === 0 ? 0 : (tablePage - 1) * rowsPerPage + 1;
-  const endEntry = Math.min(transactions.length, tablePage * rowsPerPage);
+    filteredTransactions.length === 0 ? 0 : (tablePage - 1) * rowsPerPage + 1;
+  const endEntry = Math.min(filteredTransactions.length, tablePage * rowsPerPage);
 
-  const hasEntries = transactions.length > 0;
-  const latestTransactions = hasEntries ? transactions.slice(0, 3) : [];
+  const hasEntries = filteredTransactions.length > 0;
+  const latestTransactions = hasEntries ? filteredTransactions.slice(0, 3) : [];
 
   const rangeLabel =
-    transactions.length === 0
+    filteredTransactions.length === 0
       ? "Belum ada entri"
-      : `Menampilkan ${startEntry}-${endEntry} dari ${transactions.length} entri`;
+      : `Menampilkan ${startEntry}-${endEntry} dari ${filteredTransactions.length} entri`;
+
+  const editExistingPhotoUrls = useMemo(
+    () => getTransactionPhotoUrls(transactionToEdit),
+    [transactionToEdit]
+  );
 
   const renderRowsPerPageSelector = () => (
     <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -473,7 +832,7 @@ export default function TransactionManager({
           </p>
           <h2 className="text-lg font-semibold text-white sm:text-2xl">Catatan Pengeluaran</h2>
           <p className="text-xs text-(--dash-muted) sm:text-sm">
-            {transactions.length} transaksi terakhir siap direkap dan dicetak.
+            {filteredTransactions.length} transaksi siap direkap dan dicetak.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -508,6 +867,54 @@ export default function TransactionManager({
         </div>
       </header>
 
+      <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-2">
+        <span className="text-[10px] uppercase tracking-[0.22em] text-(--dash-muted)">
+          Filter Status Klaim
+        </span>
+        <Select
+          value={klaimStatusFilter}
+          onValueChange={(value) =>
+            setKlaimStatusFilter(value as "semua" | KlaimStatus)
+          }
+        >
+          <SelectTrigger className="h-9 w-[220px] border-white/10 bg-black/20 text-white">
+            <SelectValue placeholder="Semua status klaim" />
+          </SelectTrigger>
+          <SelectContent className="border-white/10 bg-slate-900 text-white">
+            <SelectItem value="semua">Semua status</SelectItem>
+            {klaimStatusOptions.map((status) => (
+              <SelectItem key={status} value={status}>
+                {status}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <span className="text-xs text-(--dash-muted)">
+          {filteredTransactions.length} transaksi ditampilkan
+        </span>
+      </div>
+
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+        {(["ZB", "NM", "OTHER"] as const).map((group) => (
+          <div
+            key={group}
+            className="rounded-xl border border-white/10 bg-white/5 px-3 py-2"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[10px] uppercase tracking-[0.22em] text-(--dash-muted)">
+                {companyGroupLabel(group)}
+              </span>
+              <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] text-white/75">
+                {groupSummary[group].count}
+              </span>
+            </div>
+            <p className="mt-1 truncate text-sm font-semibold text-white">
+              {displayCurrency(groupSummary[group].total)}
+            </p>
+          </div>
+        ))}
+      </div>
+
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="rounded-xl border border-white/10 bg-white/5 p-3 sm:p-4 shadow-inner">
           <div className="flex min-w-0 items-center gap-3">
@@ -516,7 +923,7 @@ export default function TransactionManager({
           </div>
           <p className="mt-2 overflow-hidden text-ellipsis whitespace-nowrap text-base font-semibold leading-tight tabular-nums text-white sm:text-xl">{displayCurrency(totalJumlah)}</p>
           <p className="mt-1 text-[9px] text-(--dash-muted) sm:text-[11px]">
-            {hasEntries ? `${transactions.length} transaksi` : "Tidak ada data"}
+            {hasEntries ? `${filteredTransactions.length} transaksi` : "Tidak ada data"}
           </p>
         </div>
         <div className="rounded-xl border border-white/10 bg-white/5 p-3 sm:p-4 shadow-inner">
@@ -576,6 +983,7 @@ export default function TransactionManager({
                 <TableHead className="py-2 sm:py-3">Tanggal</TableHead>
                 <TableHead className="py-2 sm:py-3">Keterangan</TableHead>
                 <TableHead className="py-2 sm:py-3">Jenis Biaya</TableHead>
+                <TableHead className="py-2 sm:py-3">Grup</TableHead>
                 <TableHead className="py-2 sm:py-3 text-center">Jumlah</TableHead>
                 <TableHead className="py-2 sm:py-3">Klaim</TableHead>
                 <TableHead className="py-2 sm:py-3 text-center">Aksi</TableHead>
@@ -605,6 +1013,11 @@ export default function TransactionManager({
                       {tx.jenisBiaya}
                     </span>
                   </TableCell>
+                  <TableCell className="py-2 px-2 sm:py-3 sm:px-3">
+                    <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-semibold text-white/80">
+                      {companyGroupLabel(tx.companyGroup)}
+                    </span>
+                  </TableCell>
                   <TableCell className="py-3 px-3 text-center font-mono text-white/80">
                     <span className="inline-flex items-center justify-center gap-2">
                       <Coins className="h-4 w-4 text-cyan-200/70" />
@@ -612,33 +1025,30 @@ export default function TransactionManager({
                     </span>
                   </TableCell>
                   <TableCell className="py-2 px-2 sm:py-3 sm:px-3">
-                    <span className="inline-flex items-center gap-2">
-                      {String(tx.klaim).toLowerCase() === "ya" ? (
-                        <CheckCircle2 className="h-4 w-4 text-emerald-300" />
-                      ) : String(tx.klaim).toLowerCase() === "tidak" ? (
-                        <XCircle className="h-4 w-4 text-rose-300" />
-                      ) : (
-                        <span className="h-2 w-2 rounded-full bg-white/30" />
-                      )}
-                      <span>{tx.klaim || "-"}</span>
-                    </span>
+                    <div className="flex flex-col gap-1">
+                      <span className="inline-flex w-fit items-center rounded-full border border-cyan-400/30 bg-cyan-500/10 px-2 py-0.5 text-[10px] text-cyan-100">
+                        {normalizeKlaimStatus(tx.klaimStatus)}
+                      </span>
+                    </div>
                   </TableCell>
                   <TableCell className="py-3 px-3 text-center">
                     <div className="flex items-center justify-center gap-2">
                       <TooltipProvider>
-                        {tx.fileUrl && (
+                        {getTransactionPhotoUrls(tx).length > 0 && (
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => setPreviewImageUrl(tx.fileUrl!)}
+                                onClick={() => handleOpenPreview(tx, 0)}
                                 className="text-cyan-300 hover:text-cyan-200"
                               >
                                 <FileText className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
-                            <TooltipContent>Lihat Berkas</TooltipContent>
+                            <TooltipContent>
+                              Lihat {getTransactionPhotoUrls(tx).length} berkas
+                            </TooltipContent>
                           </Tooltip>
                         )}
                         <Tooltip>
@@ -654,6 +1064,40 @@ export default function TransactionManager({
                           </TooltipTrigger>
                           <TooltipContent>Edit Transaksi</TooltipContent>
                         </Tooltip>
+                        {normalizeKlaimStatus(tx.klaimStatus) === "Belum diajukan" && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                disabled={quickStatusUpdatingId === tx.id}
+                                onClick={() => handleQuickKlaimStatusChange(tx, "Diajukan")}
+                                className="h-8 rounded-full border-amber-300/40 bg-amber-400/10 px-3 text-[10px] font-semibold text-amber-100 hover:bg-amber-400/20"
+                              >
+                                {quickStatusUpdatingId === tx.id ? "..." : "Ajukan"}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Ubah status menjadi Diajukan</TooltipContent>
+                          </Tooltip>
+                        )}
+                        {normalizeKlaimStatus(tx.klaimStatus) !== "Dibayar" && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                disabled={quickStatusUpdatingId === tx.id}
+                                onClick={() => handleQuickKlaimStatusChange(tx, "Dibayar")}
+                                className="h-8 rounded-full border-emerald-300/40 bg-emerald-400/10 px-3 text-[10px] font-semibold text-emerald-100 hover:bg-emerald-400/20"
+                              >
+                                {quickStatusUpdatingId === tx.id ? "..." : "Bayar"}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Ubah status menjadi Dibayar</TooltipContent>
+                          </Tooltip>
+                        )}
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
@@ -737,8 +1181,14 @@ export default function TransactionManager({
                     <span>{tx.jenisBiaya}</span>
                   </div>
                   <div className="flex items-center justify-between rounded-xl bg-white/5 px-2.5 py-1.5">
+                    <span className="font-semibold text-white/90">Grup</span>
+                    <span>{companyGroupLabel(tx.companyGroup)}</span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-xl bg-white/5 px-2.5 py-1.5">
                     <span className="font-semibold text-white/90">Klaim</span>
-                    <span>{tx.klaim || "-"}</span>
+                    <span className="rounded-full border border-cyan-400/30 bg-cyan-500/10 px-2 py-0.5 text-[10px] text-cyan-100">
+                      {normalizeKlaimStatus(tx.klaimStatus)}
+                    </span>
                   </div>
                   <div className="flex items-start justify-between rounded-xl bg-white/5 px-2.5 py-1.5">
                     <span className="font-semibold text-white/90">Detail</span>
@@ -748,11 +1198,11 @@ export default function TransactionManager({
                   </div>
                 </div>
                 <div className="mt-2.5 flex flex-wrap justify-end gap-1.5">
-                  {tx.fileUrl && (
+                  {getTransactionPhotoUrls(tx).length > 0 && (
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => setPreviewImageUrl(tx.fileUrl!)}
+                      onClick={() => handleOpenPreview(tx, 0)}
                       className="rounded-full bg-white/5 text-cyan-300 hover:text-cyan-200"
                     >
                       <FileText className="h-4 w-4" />
@@ -766,6 +1216,28 @@ export default function TransactionManager({
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
+                  {normalizeKlaimStatus(tx.klaimStatus) === "Belum diajukan" && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={quickStatusUpdatingId === tx.id}
+                      onClick={() => handleQuickKlaimStatusChange(tx, "Diajukan")}
+                      className="h-8 rounded-full border-amber-300/40 bg-amber-400/10 px-3 text-[10px] font-semibold text-amber-100 hover:bg-amber-400/20"
+                    >
+                      Ajukan
+                    </Button>
+                  )}
+                  {normalizeKlaimStatus(tx.klaimStatus) !== "Dibayar" && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={quickStatusUpdatingId === tx.id}
+                      onClick={() => handleQuickKlaimStatusChange(tx, "Dibayar")}
+                      className="h-8 rounded-full border-emerald-300/40 bg-emerald-400/10 px-3 text-[10px] font-semibold text-emerald-100 hover:bg-emerald-400/20"
+                    >
+                      Bayar
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     size="icon"
@@ -790,7 +1262,16 @@ export default function TransactionManager({
         </div>
       )}
 
-      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+      <Dialog
+        open={isEditModalOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            handleCloseEditModal();
+            return;
+          }
+          setIsEditModalOpen(true);
+        }}
+      >
         <DialogContent className="sm:max-w-[700px] border-slate-200 bg-white text-slate-900 shadow-2xl dark:border-white/10 dark:bg-slate-950 dark:text-slate-100">
           <DialogHeader>
             <DialogTitle className="text-cyan-700 dark:text-cyan-300">
@@ -857,41 +1338,120 @@ export default function TransactionManager({
 
               <div className="grid gap-2">
                 <Label>Foto Berkas</Label>
-                {photoPreview ? (
-                  <div className="relative aspect-video w-full max-w-md overflow-hidden rounded-lg border border-white/10 bg-black">
-                    <Image
-                      src={photoPreview}
-                      alt="Preview berkas"
-                      fill
-                      sizes="(max-width: 640px) 90vw, 60vw"
-                      style={{ objectFit: "contain" }}
-                      className="rounded-lg"
-                    />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleDeletePhoto}
-                      disabled={isPhotoProcessing}
-                      className="absolute top-2 right-2 rounded-full border border-white/20 bg-black/60"
-                    >
-                      {isPhotoProcessing ? "Menghapus..." : "Hapus Foto"}
-                    </Button>
+                {editExistingPhotoUrls.length > 0 ? (
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    {editExistingPhotoUrls.map((url, index) => (
+                      <div
+                        key={`${url}-${index}`}
+                        className="rounded-lg border border-white/10 bg-black/20 p-2"
+                      >
+                        <button
+                          type="button"
+                          className="relative block aspect-4/3 w-full overflow-hidden rounded-md border border-white/10"
+                          onClick={() => handleOpenPreview(transactionToEdit, index)}
+                        >
+                          <Image
+                            src={url}
+                            alt={`Foto berkas ${index + 1}`}
+                            fill
+                            unoptimized
+                            sizes="(max-width: 640px) 48vw, 24vw"
+                            style={{ objectFit: "cover" }}
+                            className="rounded-md"
+                          />
+                        </button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeletePhoto(url)}
+                          disabled={isPhotoProcessing}
+                          className="mt-2 h-7 w-full border-rose-400/40 text-rose-300 hover:bg-rose-500/10"
+                        >
+                          Hapus
+                        </Button>
+                      </div>
+                    ))}
                   </div>
                 ) : (
-                  <p className="text-xs text-gray-400">
-                    Belum ada foto terlampir.
-                  </p>
+                  <p className="text-xs text-gray-400">Belum ada foto terlampir.</p>
                 )}
                 <Input
                   id="file-upload"
                   type="file"
                   accept="image/*"
+                  multiple
                   onChange={handlePhotoSelection}
                   className="text-slate-500 file:rounded-md file:border-0 file:bg-cyan-600 file:px-3 file:py-1 file:text-white hover:file:bg-cyan-700 dark:text-slate-400 dark:file:bg-cyan-500 dark:hover:file:bg-cyan-400"
                 />
+                {newPhotoFiles.length > 0 ? (
+                  <div className="space-y-2">
+                    <p className="text-xs text-cyan-300">
+                      {newPhotoFiles.length} foto baru akan ditambahkan saat simpan.
+                    </p>
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                      {newPhotoFiles.map((photo) => (
+                        <div
+                          key={photo.id}
+                          className="rounded-lg border border-cyan-400/30 bg-cyan-500/10 p-2"
+                        >
+                          <div className="relative aspect-4/3 overflow-hidden rounded-md border border-cyan-400/20">
+                            <Image
+                              src={photo.previewUrl}
+                              alt={photo.file.name}
+                              fill
+                              unoptimized
+                              sizes="(max-width: 640px) 48vw, 24vw"
+                              style={{ objectFit: "cover" }}
+                              className="rounded-md"
+                            />
+                          </div>
+                          <div className="mt-1 text-[10px] text-cyan-100/90">
+                            <p className="line-clamp-1">{photo.file.name}</p>
+                            <p>
+                              {photo.width > 0 && photo.height > 0
+                                ? `${photo.width}x${photo.height}`
+                                : "resolusi -"}{" "}
+                              | {formatFileSize(photo.file.size)}
+                            </p>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeNewPhotoFile(photo.id)}
+                            className="mt-1 h-6 w-full text-rose-300 hover:text-rose-200"
+                          >
+                            Batal
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={clearNewPhotoFiles}
+                    >
+                      Bersihkan Foto Baru
+                    </Button>
+                  </div>
+                ) : null}
+                {editExistingPhotoUrls.length > 0 ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDeletePhoto()}
+                    disabled={isPhotoProcessing}
+                    className="w-fit border-rose-400/40 text-rose-300 hover:bg-rose-500/10"
+                  >
+                    {isPhotoProcessing ? "Menghapus..." : "Hapus Semua Foto"}
+                  </Button>
+                ) : null}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div className="grid gap-2">
                   <Label htmlFor="jumlah">Jumlah (Rp)</Label>
                   <CurrencyInput
@@ -913,6 +1473,30 @@ export default function TransactionManager({
                     className="bg-white border-slate-200 dark:bg-slate-900/60 dark:border-white/10"
                   />
                 </div>
+                <div className="grid gap-2">
+                  <Label>Status Klaim</Label>
+                  <Select
+                    value={normalizeKlaimStatus(transactionToEdit.klaimStatus)}
+                    onValueChange={(value) =>
+                      setTransactionToEdit((prev) =>
+                        prev
+                          ? { ...prev, klaimStatus: value as KlaimStatus }
+                          : prev
+                      )
+                    }
+                  >
+                    <SelectTrigger className="w-full bg-white border-slate-200 dark:bg-slate-900/60 dark:border-white/10">
+                      <SelectValue placeholder="Pilih status klaim" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white text-slate-900 border-slate-200 dark:bg-slate-900 dark:text-slate-100 dark:border-white/10">
+                      {klaimStatusOptions.map((status) => (
+                        <SelectItem key={status} value={status}>
+                          {status}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
           )}
@@ -931,10 +1515,7 @@ export default function TransactionManager({
         </DialogContent>
       </Dialog>
 
-      <Dialog
-        open={!!previewImageUrl}
-        onOpenChange={(isOpen) => !isOpen && setPreviewImageUrl(null)}
-      >
+      <Dialog open={!!previewState} onOpenChange={(isOpen) => !isOpen && closePreview()}>
         <DialogContent className="sm:max-w-4xl w-auto bg-transparent border-none shadow-none p-0">
           <DialogHeader className="sr-only">
             <DialogTitle>Pratinjau Gambar Berkas</DialogTitle>
@@ -949,42 +1530,119 @@ export default function TransactionManager({
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.8, opacity: 0 }}
           >
-            <div className="relative w-auto h-auto max-w-[90vw] max-h-[90vh]">
-              {previewImageUrl && (
-                <Image
-                  src={previewImageUrl}
-                  alt="Preview Berkas"
-                  width={1920}
-                  height={1080}
-                  style={{
-                    width: "auto",
-                    height: "auto",
-                    maxWidth: "100%",
-                    maxHeight: "100%",
-                    objectFit: "contain",
-                  }}
-                  className="rounded-lg shadow-2xl"
-                />
-              )}
+            <div className="absolute top-3 left-3 z-20 flex items-center gap-2 rounded-full bg-black/40 p-1 backdrop-blur">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() =>
+                  setPreviewZoom((prev) => Math.max(1, Number((prev - 0.2).toFixed(2))))
+                }
+                className="h-8 w-8 text-white hover:bg-white/10"
+              >
+                <ZoomOut className="h-4 w-4" />
+              </Button>
+              <span className="min-w-12 text-center text-xs text-white">
+                {Math.round(previewZoom * 100)}%
+              </span>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() =>
+                  setPreviewZoom((prev) => Math.min(5, Number((prev + 0.2).toFixed(2))))
+                }
+                className="h-8 w-8 text-white hover:bg-white/10"
+              >
+                <ZoomIn className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  setPreviewZoom(1);
+                  setPreviewOffset({ x: 0, y: 0 });
+                }}
+                className="h-8 w-8 text-white hover:bg-white/10"
+              >
+                <RotateCcw className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="relative flex w-auto max-h-[90vh] max-w-[90vw] items-center justify-center overflow-hidden rounded-lg bg-black/40">
+              {previewState ? (
+                <div
+                  className={`relative max-h-[90vh] max-w-[90vw] ${previewZoom > 1 ? "cursor-grab" : ""}`}
+                  onWheel={handlePreviewWheel}
+                  onPointerDown={handlePreviewPointerDown}
+                  onPointerMove={handlePreviewPointerMove}
+                  onPointerUp={handlePreviewPointerUp}
+                  onPointerCancel={handlePreviewPointerUp}
+                  onPointerLeave={handlePreviewPointerUp}
+                >
+                  <Image
+                    src={previewState.urls[previewState.index]}
+                    alt="Preview Berkas"
+                    width={2048}
+                    height={2048}
+                    unoptimized
+                    style={{
+                      width: "auto",
+                      height: "auto",
+                      maxWidth: "90vw",
+                      maxHeight: "90vh",
+                      objectFit: "contain",
+                      transform: `translate(${previewOffset.x}px, ${previewOffset.y}px) scale(${previewZoom})`,
+                      transformOrigin: "center center",
+                      transition: isPreviewDragging ? "none" : "transform 120ms ease",
+                    }}
+                    className="rounded-lg shadow-2xl"
+                  />
+                </div>
+              ) : null}
             </div>
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setPreviewImageUrl(null)}
+              onClick={closePreview}
               className="absolute top-2 right-2 bg-black/50 hover:bg-black/75 text-white rounded-full h-8 w-8"
             >
               <X className="h-5 w-5" />
             </Button>
+            {previewState && previewState.urls.length > 1 ? (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  type="button"
+                  onClick={handlePreviewPrev}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/75 text-white rounded-full h-9 w-9"
+                >
+                  <ChevronsLeft className="h-5 w-5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  type="button"
+                  onClick={handlePreviewNext}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/75 text-white rounded-full h-9 w-9"
+                >
+                  <ChevronsRight className="h-5 w-5" />
+                </Button>
+                <div className="absolute bottom-4 left-4 rounded-full bg-black/55 px-3 py-1 text-xs text-white">
+                  {previewState.index + 1} / {previewState.urls.length}
+                </div>
+              </>
+            ) : null}
             <Button
               variant="default"
               size="sm"
+              type="button"
+              onClick={handleDownloadOriginalPhoto}
               className="absolute bottom-4 right-4 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg"
-              asChild
             >
-              <a href={previewImageUrl || "#"} download>
+              <span className="inline-flex items-center">
                 <Download className="h-4 w-4 mr-2" />
                 Unduh
-              </a>
+              </span>
             </Button>
           </motion.div>
         </DialogContent>

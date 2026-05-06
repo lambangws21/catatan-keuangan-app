@@ -7,7 +7,7 @@ import {
   RefreshCw,
   CalendarDays,
   CheckCircle2,
-  XCircle,
+  CircleX,
   Clock,
 } from "lucide-react";
 import Link from "next/link";
@@ -571,7 +571,7 @@ export default function SchedulesPage() {
                       onClick={() => handleQuickStatus(editingSchedule, "Dibatalkan")}
                       disabled={editingSchedule.status === "Dibatalkan"}
                     >
-                      <XCircle className="mr-2 h-4 w-4 text-rose-300" />
+                      <CircleX className="mr-2 h-4 w-4 text-rose-300" />
                       Batal
                     </Button>
                   </div>

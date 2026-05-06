@@ -56,6 +56,7 @@ const pageTitles: { [key: string]: string } = {
     '/transaction-manager': 'Transaksi',
     '/saldo': 'Saldo',
     '/operasi': 'Operasi',
+    '/penjadwalan-ts': 'Penjadwalan TS',
     '/gallery': 'Galeri',
     '/settings': 'Pengaturan',
 };

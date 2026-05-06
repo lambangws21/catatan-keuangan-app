@@ -18,6 +18,11 @@ import {
 import { Search, Calendar } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getUserBudgetSettings, type BudgetSettings } from "@/lib/userSettingService";
+import {
+  COMPANY_GROUP_OPTIONS,
+  type CompanyGroup,
+  matchesCompanyGroup,
+} from "@/lib/company-groups";
 
 // =======================
 // ✅ TYPE DATA
@@ -44,6 +49,7 @@ export default function TransactionsPage() {
   // ✅ FILTER STATE
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedCompanyGroup, setSelectedCompanyGroup] = useState<CompanyGroup>("all");
 
   // ✅ RANGE DATE FILTER
   const [startDate, setStartDate] = useState("");
@@ -121,7 +127,15 @@ export default function TransactionsPage() {
         if (activeTab === "meals") return tx.jenisBiaya === "Meals Metting";
         return selectedCategory === "all" || tx.jenisBiaya === selectedCategory;
       })
-      .filter((tx) => tx.keterangan.toLowerCase().includes(searchTerm.toLowerCase()))
+      .filter((tx) => matchesCompanyGroup(tx, selectedCompanyGroup))
+      .filter((tx) => {
+        const q = searchTerm.toLowerCase();
+        return [tx.keterangan, tx.jenisBiaya, tx.klaim, tx.sumberBiaya]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase()
+          .includes(q);
+      })
       .filter((tx) => {
         if (!startDate && !endDate) return true;
         const txDate = new Date(tx.tanggal).getTime();
@@ -132,13 +146,21 @@ export default function TransactionsPage() {
         if (end) return txDate <= end;
         return true;
       });
-  }, [allTransactions, selectedCategory, searchTerm, startDate, endDate, activeTab]);
+  }, [allTransactions, selectedCategory, selectedCompanyGroup, searchTerm, startDate, endDate, activeTab]);
 
   // Untuk tab transaksi: selalu ambil seluruh transaksi (bukan hanya view tab) lalu filter expense.
   const expenseBase = useMemo(() => {
     return allTransactions
       .filter((tx) => selectedCategory === "all" || tx.jenisBiaya === selectedCategory)
-      .filter((tx) => tx.keterangan.toLowerCase().includes(searchTerm.toLowerCase()))
+      .filter((tx) => matchesCompanyGroup(tx, selectedCompanyGroup))
+      .filter((tx) => {
+        const q = searchTerm.toLowerCase();
+        return [tx.keterangan, tx.jenisBiaya, tx.klaim, tx.sumberBiaya]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase()
+          .includes(q);
+      })
       .filter((tx) => {
         if (!startDate && !endDate) return true;
         const txDate = new Date(tx.tanggal).getTime();
@@ -149,7 +171,7 @@ export default function TransactionsPage() {
         if (end) return txDate <= end;
         return true;
       });
-  }, [allTransactions, selectedCategory, searchTerm, startDate, endDate]);
+  }, [allTransactions, selectedCategory, selectedCompanyGroup, searchTerm, startDate, endDate]);
 
   const filteredTransactionsNonMeals = useMemo(() => {
     return expenseBase.filter((tx) => isCountedAsExpense(tx));
@@ -263,7 +285,7 @@ export default function TransactionsPage() {
         </TabsList>
 
       {/* ✅ FILTER BAR */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-gray-800/50 rounded-xl border border-gray-700">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 bg-gray-800/50 rounded-xl border border-gray-700">
         {/* SEARCH */}
         <div className="relative md:col-span-2">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
@@ -297,6 +319,22 @@ export default function TransactionsPage() {
             Kategori: <span className="ml-2 font-semibold text-amber-300">Meals Metting</span>
           </div>
         )}
+
+        <Select
+          value={selectedCompanyGroup}
+          onValueChange={(value) => setSelectedCompanyGroup(value as CompanyGroup)}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Semua Grup" />
+          </SelectTrigger>
+          <SelectContent className="bg-popover bg-slate-900 dark:bg-gray-800 dark:text-white text-popover-foreground border-border text-slate-500">
+            {COMPANY_GROUP_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
         {/* PRESET BULAN INI */}
         <button

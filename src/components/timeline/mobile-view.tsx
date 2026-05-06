@@ -13,7 +13,7 @@ import {
   ClipboardList,
   Pencil,
   Trash2,
-  XCircle,
+  CircleX,
 } from "lucide-react";
 import clsx from "clsx";
 import ScheduleForm from "@/components/visit-dokter/form-input";
@@ -261,7 +261,7 @@ export default function MobileTimeline({
                         onQuickStatus(item, "Dibatalkan");
                       }}
                     >
-                      <XCircle className="mr-2 h-4 w-4" />
+                      <CircleX className="mr-2 h-4 w-4" />
                       Batal
                     </Button>
                   </>

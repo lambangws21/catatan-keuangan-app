@@ -174,7 +174,7 @@ export default function SaldoForm({ onSaldoAdded }: SaldoFormProps) {
               value={tanggal}
               onChange={(e) => setTanggal(e.target.value)}
               required
-              className="bg-white border-slate-200 dark:bg-slate-900/60 dark:border-white/10"
+              className="border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-100 dark:placeholder:text-slate-500"
             />
           </div>
           
@@ -186,7 +186,7 @@ export default function SaldoForm({ onSaldoAdded }: SaldoFormProps) {
               onChange={(e) => setKeterangan(e.target.value)}
               required
               placeholder="Contoh: Saldo Awal, Pemasukan Proyek B..."
-              className="bg-white border-slate-200 dark:bg-slate-900/60 dark:border-white/10"
+              className="border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-100 dark:placeholder:text-slate-500"
             />
           </div>
 
@@ -198,7 +198,7 @@ export default function SaldoForm({ onSaldoAdded }: SaldoFormProps) {
                 required
                 value={jumlah || ''}
                 onValueChange={handleJumlahChange}
-                className="bg-white border-slate-200 dark:bg-slate-900/60 dark:border-white/10"
+                className="border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-100 dark:placeholder:text-slate-500"
             />
           </div>
           

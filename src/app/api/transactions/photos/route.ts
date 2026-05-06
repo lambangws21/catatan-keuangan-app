@@ -7,6 +7,18 @@ const extractStoragePath = (downloadUrl?: string) => {
   return match ? decodeURIComponent(match[1]) : null;
 };
 
+const normalizeFileUrls = (fileUrls: unknown, fileUrl?: unknown) => {
+  const urls = Array.isArray(fileUrls)
+    ? fileUrls.filter((url): url is string => typeof url === "string" && url.trim() !== "")
+    : [];
+
+  if (typeof fileUrl === "string" && fileUrl.trim() !== "" && !urls.includes(fileUrl)) {
+    urls.unshift(fileUrl);
+  }
+
+  return Array.from(new Set(urls));
+};
+
 export async function POST(request: Request) {
   try {
     const { month, year } = await request.json();
@@ -27,15 +39,22 @@ export async function POST(request: Request) {
 
     const batch = db.batch();
     let deletedCount = 0;
+    let deletedPhotoCount = 0;
 
     for (const doc of snapshot.docs) {
       const data = doc.data();
-      if (data?.fileUrl) {
-        const storagePath = extractStoragePath(data.fileUrl as string);
-        if (storagePath) {
-          await bucket.file(storagePath).delete().catch(() => undefined);
-        }
+      const fileUrls = normalizeFileUrls(data?.fileUrls, data?.fileUrl);
+      if (fileUrls.length > 0) {
+        await Promise.all(
+          fileUrls.map(async (url) => {
+            const storagePath = extractStoragePath(url);
+            if (!storagePath) return;
+            await bucket.file(storagePath).delete().catch(() => undefined);
+            deletedPhotoCount += 1;
+          })
+        );
         batch.update(doc.ref, {
+          fileUrls: [],
           fileUrl: "",
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         });
@@ -47,7 +66,7 @@ export async function POST(request: Request) {
       await batch.commit();
     }
 
-    return NextResponse.json({ deletedCount });
+    return NextResponse.json({ deletedCount, deletedPhotoCount });
   } catch (error) {
     console.error("Error deleting photo batch:", error);
     return NextResponse.json({ error: "Gagal menghapus foto" }, { status: 500 });

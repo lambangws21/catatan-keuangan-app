@@ -20,6 +20,20 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { CurrencyInput } from "@/components/CurencyInput";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  COMPANY_GROUP_OPTIONS,
+  type CompanyGroup,
+  companyGroupLabel,
+  detectCompanyGroup,
+  matchesCompanyGroup,
+} from "@/lib/company-groups";
 
 // Definisikan tipe data saldo
 interface Saldo {
@@ -36,12 +50,43 @@ interface SaldoManagerProps {
   onDataChange: () => Promise<void>;
 }
 
+type SaldoGroup = Exclude<CompanyGroup, "all">;
+
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat("id-ID", {
     style: "currency",
     currency: "IDR",
     minimumFractionDigits: 0,
   }).format(value);
+};
+
+const saldoGroupStyles: Record<
+  SaldoGroup,
+  {
+    card: string;
+    badge: string;
+    title: string;
+    value: string;
+  }
+> = {
+  ZB: {
+    card: "border-sky-300/60 bg-sky-50 text-sky-950 dark:border-sky-400/30 dark:bg-sky-500/10 dark:text-sky-50",
+    badge: "border-sky-300 bg-sky-100 text-sky-700 dark:border-sky-400/30 dark:bg-sky-400/10 dark:text-sky-100",
+    title: "font-black text-sky-700 dark:text-sky-200",
+    value: "font-black text-sky-950 dark:text-sky-50",
+  },
+  NM: {
+    card: "border-violet-300/60 bg-violet-50 text-violet-950 dark:border-violet-400/30 dark:bg-violet-500/10 dark:text-violet-50",
+    badge: "border-violet-300 bg-violet-100 text-violet-700 dark:border-violet-400/30 dark:bg-violet-400/10 dark:text-violet-100",
+    title: "font-black italic text-violet-700 dark:text-violet-200",
+    value: "font-black italic text-violet-950 dark:text-violet-50",
+  },
+  OTHER: {
+    card: "border-slate-200 bg-white/80 text-slate-900 dark:border-white/10 dark:bg-white/5 dark:text-slate-100",
+    badge: "border-slate-200 bg-slate-100 text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-white/75",
+    title: "font-semibold text-(--dash-muted)",
+    value: "font-semibold text-slate-950 dark:text-white",
+  },
 };
 
 export default function SaldoManager({
@@ -53,20 +98,54 @@ export default function SaldoManager({
   const { user } = useAuth(); // Dapatkan info pengguna untuk autentikasi
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [itemToEdit, setItemToEdit] = useState<Saldo | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCompanyGroup, setSelectedCompanyGroup] = useState<CompanyGroup>("all");
+
+  const filteredSaldoData = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+    return saldoData.filter((item) => {
+      const matchesSearch =
+        q.length === 0 ||
+        [item.tanggal, item.keterangan, String(item.jumlah)]
+          .join(" ")
+          .toLowerCase()
+          .includes(q);
+      return matchesSearch && matchesCompanyGroup(item.keterangan, selectedCompanyGroup);
+    });
+  }, [saldoData, searchTerm, selectedCompanyGroup]);
 
   const totalSaldo = useMemo(() => {
-    if (!Array.isArray(saldoData)) return 0;
-    return saldoData.reduce((sum, item) => sum + Number(item.jumlah || 0), 0);
-  }, [saldoData]);
+    if (!Array.isArray(filteredSaldoData)) return 0;
+    return filteredSaldoData.reduce((sum, item) => sum + Number(item.jumlah || 0), 0);
+  }, [filteredSaldoData]);
+
+  const groupSummary = useMemo(() => {
+    return filteredSaldoData.reduce(
+      (acc, item) => {
+        const group = detectCompanyGroup(item.keterangan);
+        acc[group] = {
+          count: acc[group].count + 1,
+          total: acc[group].total + Number(item.jumlah || 0),
+        };
+        return acc;
+      },
+      {
+        ZB: { count: 0, total: 0 },
+        NM: { count: 0, total: 0 },
+        OTHER: { count: 0, total: 0 },
+      }
+    );
+  }, [filteredSaldoData]);
 
   // --- Fungsi Ekspor ---
   const handleExportExcel = () => {
-    const dataToExport = saldoData
+    const dataToExport = filteredSaldoData
       .slice()
       .sort((a, b) => String(a.tanggal).localeCompare(String(b.tanggal)))
       .map((item) => ({
       Tanggal: item.tanggal,
       Keterangan: item.keterangan,
+      Grup: companyGroupLabel(detectCompanyGroup(item.keterangan)),
       Jumlah: Number(item.jumlah),
       }));
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
@@ -80,10 +159,11 @@ export default function SaldoManager({
     const doc = new jsPDF();
     doc.text("Laporan Riwayat Saldo", 14, 16);
     autoTable(doc, {
-      head: [["Tanggal", "Keterangan", "Jumlah"]],
-      body: saldoData.map((item) => [
+      head: [["Tanggal", "Keterangan", "Grup", "Jumlah"]],
+      body: filteredSaldoData.map((item) => [
         item.tanggal,
         item.keterangan,
+        companyGroupLabel(detectCompanyGroup(item.keterangan)),
         formatCurrency(Number(item.jumlah)),
       ]),
       startY: 22,
@@ -167,9 +247,9 @@ export default function SaldoManager({
       </div>
     );
 
-  const hasEntries = Array.isArray(saldoData) && saldoData.length > 0;
-  const totalEntries = hasEntries ? saldoData.length : 0;
-  const latestEntries = hasEntries ? saldoData.slice(0, 3) : [];
+  const hasEntries = Array.isArray(filteredSaldoData) && filteredSaldoData.length > 0;
+  const totalEntries = hasEntries ? filteredSaldoData.length : 0;
+  const latestEntries = hasEntries ? filteredSaldoData.slice(0, 3) : [];
   const enableScroll = totalEntries > tableUi.saldoScrollThreshold;
 
   const containerVariants = {
@@ -225,20 +305,45 @@ export default function SaldoManager({
         </div>
       </div>
 
+      <div className="grid gap-3 rounded-2xl border border-slate-200 bg-white/70 p-3 text-slate-900 dark:border-white/10 dark:bg-white/5 dark:text-slate-100 md:grid-cols-[minmax(0,1fr)_220px]">
+        <Input
+          type="search"
+          value={searchTerm}
+          onChange={(event) => setSearchTerm(event.target.value)}
+          placeholder="Cari tanggal, keterangan, jumlah, ZB, Zimmer Biomet, NM, Normed..."
+          className="border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 dark:border-white/10 dark:bg-black/20 dark:text-slate-100 dark:placeholder:text-white/40"
+        />
+        <Select
+          value={selectedCompanyGroup}
+          onValueChange={(value) => setSelectedCompanyGroup(value as CompanyGroup)}
+        >
+          <SelectTrigger className="border-slate-200 bg-white text-slate-900 dark:border-white/10 dark:bg-black/20 dark:text-slate-100">
+            <SelectValue placeholder="Semua Grup" />
+          </SelectTrigger>
+          <SelectContent className="border-slate-200 bg-white text-slate-900 dark:border-white/10 dark:bg-slate-900 dark:text-white">
+            {COMPANY_GROUP_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-inner">
+        <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 text-slate-900 shadow-inner dark:border-white/10 dark:bg-white/5 dark:text-slate-100">
           <div className="flex items-center gap-3">
             <Wallet className="h-5 w-5 text-emerald-300" />
             <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)">
               Total Saldo
             </p>
           </div>
-          <p className="mt-3 text-3xl font-semibold text-white">{formatCurrency(totalSaldo)}</p>
+          <p className="mt-3 text-3xl font-semibold text-slate-950 dark:text-white">{formatCurrency(totalSaldo)}</p>
           <p className="mt-2 text-[11px] text-(--dash-muted)">
             {hasEntries ? `${totalEntries} transaksi` : "Belum ada data"}
           </p>
         </div>
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+        <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 text-slate-900 dark:border-white/10 dark:bg-white/5 dark:text-slate-100">
           <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)">
             Entri terbaru
           </p>
@@ -247,7 +352,7 @@ export default function SaldoManager({
               Tambahkan saldo untuk melihat ringkasan.
             </p>
           ) : (
-            <ul className="mt-3 space-y-2 text-sm text-white/90">
+            <ul className="mt-3 space-y-2 text-sm text-slate-800 dark:text-white/90">
               {latestEntries.map((item) => (
                 <li key={item.id} className="flex items-center justify-between">
                   <span className="font-medium">{item.tanggal}</span>
@@ -257,6 +362,27 @@ export default function SaldoManager({
             </ul>
           )}
         </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {(["ZB", "NM", "OTHER"] as const).map((group) => (
+          <div
+            key={group}
+            className={`rounded-2xl border p-4 ${saldoGroupStyles[group].card}`}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <p className={`text-[10px] uppercase tracking-[0.24em] ${saldoGroupStyles[group].title}`}>
+                {companyGroupLabel(group)}
+              </p>
+              <span className={`rounded-full border px-2 py-0.5 text-[10px] ${saldoGroupStyles[group].badge}`}>
+                {groupSummary[group].count}
+              </span>
+            </div>
+            <p className={`mt-2 truncate text-lg ${saldoGroupStyles[group].value}`}>
+              {formatCurrency(groupSummary[group].total)}
+            </p>
+          </div>
+        ))}
       </div>
 
       {hasEntries ? (
@@ -270,35 +396,44 @@ export default function SaldoManager({
                   : undefined
               }
             >
-              <Table className="min-w-full text-sm">
+              <Table className="min-w-full text-sm text-white">
                 <TableHeader>
-                  <TableRow className="bg-slate-900 text-left text-white">
+                  <TableRow className="bg-slate-100 text-left text-slate-700 dark:bg-slate-900 dark:text-white">
                     <TableHead className="p-3">Tanggal</TableHead>
                     <TableHead className="p-3">Keterangan</TableHead>
+                    <TableHead className="p-3">Grup</TableHead>
                     <TableHead className="p-3 text-right">Jumlah</TableHead>
                     <TableHead className="p-3 text-center">Aksi</TableHead>
                   </TableRow>
                 </TableHeader>
-                <motion.tbody variants={containerVariants} initial="hidden" animate="visible">
-                  {saldoData.map((item) => (
+                <motion.tbody className="text-white" variants={containerVariants} initial="hidden" animate="visible">
+                  {filteredSaldoData.map((item) => (
+                    (() => {
+                      const group = detectCompanyGroup(item.keterangan);
+                      return (
                     <motion.tr
                       key={item.id}
-                      className="border-b border-white/10"
+                      className="border-b border-slate-200 dark:border-white/10"
                       variants={itemVariants}
                     >
-                      <TableCell className="py-3 px-3">
+                      <TableCell className="py-3 px-3 text-white">
                         <span className="inline-flex items-center gap-2">
                           <CalendarDays className="h-4 w-4 text-emerald-200/80" />
                           <span>{item.tanggal}</span>
                         </span>
                       </TableCell>
-                      <TableCell className="py-3 px-3 font-medium">
+                      <TableCell className="py-3 px-3 font-medium text-white">
                         <span className="inline-flex items-center gap-2">
                           <StickyNote className="h-4 w-4 text-emerald-200/70" />
                           <span>{item.keterangan}</span>
                         </span>
                       </TableCell>
-                      <TableCell className="py-3 px-3 text-right font-mono text-white/80">
+                      <TableCell className="py-3 px-3">
+                        <span className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] ${saldoGroupStyles[group].badge} ${group === "NM" ? "font-black italic" : "font-black"}`}>
+                          {companyGroupLabel(group)}
+                        </span>
+                      </TableCell>
+                      <TableCell className="py-3 px-3 text-right font-mono text-white/90">
                         <span className="inline-flex items-center justify-end gap-2">
                           <Coins className="h-4 w-4 text-emerald-200/70" />
                           <span>{formatCurrency(Number(item.jumlah))}</span>
@@ -337,6 +472,8 @@ export default function SaldoManager({
                         </div>
                       </TableCell>
                     </motion.tr>
+                      );
+                    })()
                   ))}
                 </motion.tbody>
               </Table>
@@ -351,10 +488,13 @@ export default function SaldoManager({
                 : undefined
             }
           >
-            {saldoData.map((item) => (
+            {filteredSaldoData.map((item) => (
+              (() => {
+                const group = detectCompanyGroup(item.keterangan);
+                return (
               <motion.article
                 key={item.id}
-                className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-[0_12px_30px_rgba(2,6,23,0.45)]"
+                className={`rounded-2xl border p-4 shadow-[0_12px_30px_rgba(15,23,42,0.12)] dark:shadow-[0_12px_30px_rgba(2,6,23,0.45)] ${saldoGroupStyles[group].card}`}
                 variants={itemVariants}
               >
                 <div className="flex flex-col gap-2">
@@ -364,12 +504,12 @@ export default function SaldoManager({
                         <CalendarDays className="h-4 w-4 text-emerald-200/70" />
                         <span>{item.tanggal}</span>
                       </p>
-                      <p className="mt-1 inline-flex items-center gap-2 text-lg font-semibold text-white">
+                      <p className="mt-1 inline-flex items-center gap-2 text-lg font-semibold text-slate-950 dark:text-white">
                         <StickyNote className="h-4 w-4 text-emerald-200/70" />
                         <span>{item.keterangan}</span>
                       </p>
                     </div>
-                    <span className="text-right text-sm font-mono text-white/70">
+                    <span className="text-right text-sm font-mono text-slate-700 dark:text-white/70">
                       <span className="inline-flex items-center gap-2">
                         <Coins className="h-4 w-4 text-emerald-200/70" />
                         <span>{formatCurrency(Number(item.jumlah))}</span>
@@ -377,7 +517,7 @@ export default function SaldoManager({
                     </span>
                   </div>
                   <p className="text-[10px] font-medium text-(--dash-muted)">
-                    Catatan: {item.keterangan || "—"}
+                    Grup: <span className={group === "NM" ? "font-black italic" : "font-black"}>{companyGroupLabel(group)}</span> • Catatan: {item.keterangan || "—"}
                   </p>
                 </div>
                 <div className="mt-3 flex justify-end gap-2">
@@ -399,13 +539,15 @@ export default function SaldoManager({
                   </Button>
                 </div>
               </motion.article>
+                );
+              })()
             ))}
           </div>
         </>
       ) : (
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-8 text-center text-sm text-(--dash-muted)">
+        <div className="rounded-2xl border border-slate-200 bg-white/80 p-8 text-center text-sm text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-(--dash-muted)">
           <ArchiveX className="mx-auto mb-3 h-10 w-10 text-white/60" />
-          <p className="font-semibold text-white/90">Belum ada data saldo</p>
+          <p className="font-semibold text-slate-900 dark:text-white/90">Belum ada data saldo</p>
           <p>Tambahkan saldo agar riwayat dapat ditampilkan.</p>
         </div>
       )}
@@ -427,7 +569,7 @@ export default function SaldoManager({
                   type="date"
                   value={itemToEdit.tanggal}
                   onChange={handleEditFormChange}
-                  className="bg-white border-slate-200 dark:bg-slate-900/60 dark:border-white/10"
+                  className="border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-100 dark:placeholder:text-slate-500"
                 />
               </div>
               <div className="grid gap-2">
@@ -437,7 +579,7 @@ export default function SaldoManager({
                   name="keterangan"
                   value={itemToEdit.keterangan}
                   onChange={handleEditFormChange}
-                  className="bg-white border-slate-200 dark:bg-slate-900/60 dark:border-white/10"
+                  className="border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-100 dark:placeholder:text-slate-500"
                 />
               </div>
               <div className="grid gap-2">
@@ -447,7 +589,7 @@ export default function SaldoManager({
                   placeholder="1.000.000"
                   value={itemToEdit.jumlah}
                   onValueChange={handleEditJumlahChange}
-                  className="bg-white border-slate-200 dark:bg-slate-900/60 dark:border-white/10"
+                  className="border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-100 dark:placeholder:text-slate-500"
                 />
               </div>
             </div>
