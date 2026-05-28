@@ -1,17 +1,6 @@
 import { NextResponse } from 'next/server';
 import admin from '@/lib/firebase/admin';
-
-const KLAIM_STATUS = ["Belum diajukan", "Diajukan", "Dibayar"] as const;
-type KlaimStatus = (typeof KLAIM_STATUS)[number];
-
-const normalizeKlaimStatus = (value: unknown): KlaimStatus => {
-  if (typeof value !== "string") return "Belum diajukan";
-  const normalized = value.trim();
-  if (KLAIM_STATUS.includes(normalized as KlaimStatus)) {
-    return normalized as KlaimStatus;
-  }
-  return "Belum diajukan";
-};
+import { normalizeKlaimStatus, normalizeStoredKlaimStatus } from '@/lib/transactions';
 
 const normalizeFileUrls = (fileUrls: unknown, fileUrl?: unknown) => {
   const urls = Array.isArray(fileUrls)
@@ -76,7 +65,12 @@ export async function POST(request: Request) {
     }
 
     const normalizedFileUrls = normalizeFileUrls(fileUrls, fileUrl);
-    const normalizedKlaimStatus = normalizeKlaimStatus(klaimStatus);
+    const normalizedKlaimStatus = normalizeStoredKlaimStatus({
+      jenisBiaya,
+      sumberBiaya,
+      klaim,
+      klaimStatus,
+    });
 
     const db = admin.firestore();
     await db.collection('transactions').add({

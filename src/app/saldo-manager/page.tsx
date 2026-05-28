@@ -10,7 +10,8 @@ import SaldoManager from "@/components/ManajerSaldo";
 import {useAuth} from "@/components/AuthProvider";// Komponen yang ada di Canvas Anda
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MealsMeetingManager from "@/components/MealsMeetingManager";
-import { isCountedAsExpense } from "@/lib/transactions";
+import FinanceFloatingActions from "@/components/FinanceFloatingActions";
+import { isCountedAsExpense, isReimbursement } from "@/lib/transactions";
 
 
 
@@ -90,6 +91,10 @@ export default function Home() {
     return transactions.filter((tx) => isCountedAsExpense(tx));
   }, [transactions]);
 
+  const reimbursementTransactions = useMemo(() => {
+    return transactions.filter((tx) => isReimbursement(tx));
+  }, [transactions]);
+
   return (
     <main className="min-h-screen bg-gray-900 p-4 sm:p-6 md:p-8 text-white">
       <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
@@ -110,9 +115,6 @@ export default function Home() {
               <TabsTrigger value="transaksi" className="min-w-[92px] text-xs">
                 Transaksi
               </TabsTrigger>
-              <TabsTrigger value="meals" className="min-w-[92px] text-xs">
-                Meals
-              </TabsTrigger>
               <TabsTrigger value="galeri" className="min-w-[92px] text-xs">
                 Galeri
               </TabsTrigger>
@@ -127,27 +129,29 @@ export default function Home() {
               />
             </TabsContent>
 
-            <TabsContent value="saldo">
+            <TabsContent value="saldo" className="space-y-4">
               <SaldoManager
                 saldoData={saldoData}
                 isLoading={isLoading}
                 onDataChange={fetchSaldo}
+                floatingActionOffset="stacked"
+                showCreateAction={false}
+              />
+              <MealsMeetingManager
+                transactions={transactions}
+                isLoading={isLoading}
+                onDataChange={fetchTransactions}
               />
             </TabsContent>
 
             <TabsContent value="transaksi">
               <TransactionManager
                 transactions={transactionsNonMeals}
+                saldoData={saldoData}
+                reimbursements={reimbursementTransactions}
                 isLoading={isLoading}
                 onDataChange={fetchTransactions}
-              />
-            </TabsContent>
-
-            <TabsContent value="meals">
-              <MealsMeetingManager
-                transactions={transactions}
-                isLoading={isLoading}
-                onDataChange={fetchTransactions}
+                showCreateAction={false}
               />
             </TabsContent>
 
@@ -166,30 +170,38 @@ export default function Home() {
           />
 
           <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
-            <div className="min-w-0">
+            <div className="min-w-0 space-y-6">
               <SaldoManager
                 saldoData={saldoData}
                 isLoading={isLoading}
                 onDataChange={fetchSaldo}
+                floatingActionOffset="stacked"
+                showCreateAction={false}
+              />
+              <MealsMeetingManager
+                transactions={transactions}
+                isLoading={isLoading}
+                onDataChange={fetchTransactions}
               />
             </div>
             <div className="min-w-0">
               <TransactionManager
                 transactions={transactionsNonMeals}
+                saldoData={saldoData}
+                reimbursements={reimbursementTransactions}
                 isLoading={isLoading}
                 onDataChange={fetchTransactions}
+                showCreateAction={false}
               />
             </div>
           </div>
 
-          <MealsMeetingManager
-            transactions={transactions}
-            isLoading={isLoading}
-            onDataChange={fetchTransactions}
-          />
-
           <ImageGallery transactions={transactions} isLoading={isLoading}/>
         </div>
+        <FinanceFloatingActions
+          onSaldoAdded={fetchSaldo}
+          onTransactionAdded={fetchTransactions}
+        />
       </div>
     </main>
   );

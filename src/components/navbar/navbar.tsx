@@ -25,7 +25,7 @@ import {
   markNotificationAsRead,
   type Notification,
 } from "@/lib/notificationService";
-import { navItems } from "@/components/navbar/sidebar";
+import { navItems } from "@/components/navbar/nav-items";
 import { useVisitSchedules } from "@/hooks/use-visit-schedules";
 import { getVisitAlertsForNextDays } from "@/lib/visit-dokter-alerts";
 

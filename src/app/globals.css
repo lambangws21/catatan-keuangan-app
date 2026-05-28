@@ -135,6 +135,18 @@ body.premium .premium-card {
   box-shadow: 0 25px 60px rgba(2, 6, 23, 0.65);
 }
 
+@keyframes page-loader {
+  0% {
+    transform: translateX(-120%);
+  }
+  50% {
+    transform: translateX(70%);
+  }
+  100% {
+    transform: translateX(240%);
+  }
+}
+
 .dark {
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);

@@ -53,8 +53,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  KLAIM_STATUS_OPTIONS,
   MEALS_TYPE,
   normalizeMealsPaymentSource,
+  normalizeStoredKlaimStatus,
+  type KlaimStatus,
   type MealsPaymentSource,
 } from "@/lib/transactions";
 
@@ -65,6 +68,7 @@ interface Transaction {
   keterangan: string;
   jumlah: number;
   klaim: string;
+  klaimStatus?: KlaimStatus;
   fileUrl?: string;
   sumberBiaya?: MealsPaymentSource | string | null;
 }
@@ -163,6 +167,7 @@ export default function MealsMeetingManager({
   const [jumlah, setJumlah] = useState<number | undefined>(350_000);
   const [klaim, setKlaim] = useState("Lambang");
   const [sumberBiaya, setSumberBiaya] = useState<MealsPaymentSource>("deposit");
+  const [klaimStatus, setKlaimStatus] = useState<KlaimStatus>("Dibayar");
   const [keterangan, setKeterangan] = useState("");
   const [dokterOperasi, setDokterOperasi] = useState("");
   const [tindakanOperasi, setTindakanOperasi] = useState("");
@@ -179,11 +184,20 @@ export default function MealsMeetingManager({
     };
   }, [previewUrl]);
 
+  useEffect(() => {
+    if (sumberBiaya === "mandiri") {
+      setKlaimStatus((prev) => (prev === "Dibayar" ? "Belum diajukan" : prev));
+      return;
+    }
+    setKlaimStatus("Dibayar");
+  }, [sumberBiaya]);
+
   const resetForm = () => {
     setTanggal(new Date().toISOString().split("T")[0]);
     setJumlah(350_000);
     setKlaim("Lambang");
     setSumberBiaya("deposit");
+    setKlaimStatus("Dibayar");
     setKeterangan("");
     setDokterOperasi("");
     setTindakanOperasi("");
@@ -206,6 +220,7 @@ export default function MealsMeetingManager({
     setJumlah(Number(tx.jumlah));
     setKlaim(tx.klaim || "");
     setSumberBiaya(normalizeMealsPaymentSource(tx.sumberBiaya) ?? "deposit");
+    setKlaimStatus(tx.klaimStatus ?? "Belum diajukan");
     const meta = extractMeta(tx.keterangan || "");
     setKeterangan(meta.note);
     setDokterOperasi(meta.dokterOperasi);
@@ -259,6 +274,12 @@ export default function MealsMeetingManager({
         ),
         jumlah: Number(jumlah),
         klaim: klaim.trim(),
+        klaimStatus: normalizeStoredKlaimStatus({
+          jenisBiaya: MEALS_TYPE,
+          sumberBiaya,
+          klaim: klaim.trim(),
+          klaimStatus: editing?.klaimStatus ?? klaimStatus,
+        }),
         fileUrl,
         sumberBiaya,
       };
@@ -352,24 +373,24 @@ export default function MealsMeetingManager({
     doc.save(`Meals_Metting_${exportTag()}.pdf`);
   };
 
-  const card = "rounded-3xl border border-white/10 bg-(--dash-surface) shadow-[0_20px_60px_rgba(2,6,23,0.45)]";
+  const card = "rounded-2xl border border-white/10 bg-(--dash-surface) shadow-[0_18px_50px_rgba(2,6,23,0.4)]";
 
   return (
     <motion.section
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`${card} p-6 text-(--dash-ink)`}
+      className={`${card} p-3 text-(--dash-ink) sm:p-4`}
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.4em] text-(--dash-muted)">
+          <p className="text-[9px] uppercase tracking-[0.32em] text-(--dash-muted)">
             Kategori Khusus
           </p>
-          <h2 className="mt-1 flex items-center gap-2 text-xl font-semibold">
-            <Handshake className="h-5 w-5 text-amber-300" />
+          <h2 className="mt-1 flex items-center gap-2 text-lg font-semibold sm:text-xl">
+            <Handshake className="h-4 w-4 text-amber-300" />
             Meals Metting
           </h2>
-          <p className="mt-1 text-sm text-(--dash-muted)">
+          <p className="mt-1 text-[11px] text-(--dash-muted)">
             Simpan dan pantau pengeluaran kategori Meals Metting.
           </p>
         </div>
@@ -378,17 +399,19 @@ export default function MealsMeetingManager({
           <Button
             onClick={handleExportExcel}
             variant="secondary"
-            className="border border-white/10 bg-white/10 text-(--dash-ink) hover:bg-white/15"
+            size="sm"
+            className="h-8 border border-white/10 bg-white/10 text-xs text-(--dash-ink) hover:bg-white/15"
           >
-            <FileDown className="mr-2 h-4 w-4" />
+            <FileDown className="mr-1.5 h-3.5 w-3.5" />
             Excel
           </Button>
           <Button
             onClick={handleExportPdf}
             variant="secondary"
-            className="border border-white/10 bg-white/10 text-(--dash-ink) hover:bg-white/15"
+            size="sm"
+            className="h-8 border border-white/10 bg-white/10 text-xs text-(--dash-ink) hover:bg-white/15"
           >
-            <FileText className="mr-2 h-4 w-4" />
+            <FileText className="mr-1.5 h-3.5 w-3.5" />
             PDF
           </Button>
 
@@ -396,7 +419,8 @@ export default function MealsMeetingManager({
             <DialogTrigger asChild>
               <Button
                 onClick={openCreate}
-                className="bg-amber-500 text-slate-950 hover:bg-amber-400"
+                size="sm"
+                className="h-8 bg-amber-500 text-xs text-slate-950 hover:bg-amber-400"
               >
                 Tambah
               </Button>
@@ -408,7 +432,7 @@ export default function MealsMeetingManager({
                 </DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="grid gap-4">
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                   <div className="grid gap-2">
                     <Label htmlFor="meals-tanggal">Tanggal</Label>
                     <Input
@@ -433,7 +457,7 @@ export default function MealsMeetingManager({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                   <div className="grid gap-2">
                     <Label htmlFor="meals-klaim">Nama Klaim</Label>
                     <Input
@@ -445,9 +469,9 @@ export default function MealsMeetingManager({
                       required
                     />
                   </div>
-                  <div className="grid gap-2">
-                    <Label>Sumber Biaya</Label>
-                    <Select value={sumberBiaya} onValueChange={(v) => setSumberBiaya(v as MealsPaymentSource)}>
+	                  <div className="grid gap-2">
+	                    <Label>Sumber Biaya</Label>
+	                    <Select value={sumberBiaya} onValueChange={(v) => setSumberBiaya(v as MealsPaymentSource)}>
                       <SelectTrigger className={formInputClass}>
                         <SelectValue placeholder="Pilih sumber biaya" />
                       </SelectTrigger>
@@ -456,9 +480,28 @@ export default function MealsMeetingManager({
                         <SelectItem value="mandiri">Mandiri</SelectItem>
                         <SelectItem value="kantor">Kantor</SelectItem>
                       </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+	                    </Select>
+	                  </div>
+	                  <div className="grid gap-2">
+	                    <Label>Status Klaim</Label>
+	                    {sumberBiaya === "mandiri" ? (
+	                      <Select value={klaimStatus} onValueChange={(v) => setKlaimStatus(v as KlaimStatus)}>
+	                        <SelectTrigger className={formInputClass}>
+	                          <SelectValue placeholder="Pilih status klaim" />
+	                        </SelectTrigger>
+	                        <SelectContent className="border-white/10 bg-slate-950 text-slate-100">
+	                          {KLAIM_STATUS_OPTIONS.map((status) => (
+	                            <SelectItem key={status} value={status}>
+	                              {status}
+	                            </SelectItem>
+	                          ))}
+	                        </SelectContent>
+	                      </Select>
+	                    ) : (
+	                      <Input value="Tidak perlu klaim" readOnly className={formInputClass} />
+	                    )}
+	                  </div>
+	                </div>
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="grid gap-2">
@@ -594,55 +637,55 @@ export default function MealsMeetingManager({
       </div>
 
       {/* SUMMARY */}
-      <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)">
+      <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+          <p className="text-[9px] uppercase tracking-[0.24em] text-(--dash-muted)">
             Total Meals
           </p>
-          <div className="mt-2 flex items-center justify-between gap-3">
+          <div className="mt-1.5 flex items-center justify-between gap-2">
             <div className="inline-flex items-center gap-2 text-[11px] text-(--dash-muted)">
-              <Wallet className="h-4 w-4" />
+              <Wallet className="h-3.5 w-3.5" />
               <span>Jumlah</span>
             </div>
-            <p className="text-lg font-semibold text-amber-300 tabular-nums">
+            <p className="truncate text-sm font-semibold text-amber-300 tabular-nums sm:text-base">
               {formatCurrency(totalMeals)}
             </p>
           </div>
         </div>
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)">
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+          <p className="text-[9px] uppercase tracking-[0.24em] text-(--dash-muted)">
             Entri
           </p>
-          <div className="mt-2 flex items-center justify-between gap-3">
+          <div className="mt-1.5 flex items-center justify-between gap-2">
             <div className="inline-flex items-center gap-2 text-[11px] text-(--dash-muted)">
-              <Handshake className="h-4 w-4" />
+              <Handshake className="h-3.5 w-3.5" />
               <span>Jumlah data</span>
             </div>
-            <p className="text-lg font-semibold tabular-nums">{meals.length}</p>
+            <p className="text-base font-semibold tabular-nums">{meals.length}</p>
           </div>
         </div>
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)">
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+          <p className="text-[9px] uppercase tracking-[0.24em] text-(--dash-muted)">
             Export
           </p>
-          <div className="mt-2 flex items-center justify-between gap-3">
+          <div className="mt-1.5 flex items-center justify-between gap-2">
             <div className="inline-flex items-center gap-2 text-[11px] text-(--dash-muted)">
-              <FileText className="h-4 w-4" />
+              <FileText className="h-3.5 w-3.5" />
               <span>Nama file</span>
             </div>
-            <p className="text-sm font-semibold tabular-nums">{exportTag()}</p>
+            <p className="text-xs font-semibold tabular-nums">{exportTag()}</p>
           </div>
         </div>
       </div>
 
       {/* CONTENT */}
-      <div className="mt-6">
+      <div className="mt-4">
         {isLoading ? (
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-8 text-sm text-(--dash-muted)">
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-sm text-(--dash-muted)">
             Memuat...
           </div>
         ) : meals.length === 0 ? (
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-10 text-center text-sm text-(--dash-muted)">
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-8 text-center text-sm text-(--dash-muted)">
             Belum ada data Meals Metting.
           </div>
         ) : (
@@ -654,14 +697,14 @@ export default function MealsMeetingManager({
                 return (
                   <div
                     key={tx.id}
-                    className="rounded-2xl border border-white/10 bg-white/5 p-4"
+                    className="rounded-2xl border border-white/10 bg-white/5 p-3"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold">
+                        <p className="text-xs font-semibold">
                           {formatCurrency(Number(tx.jumlah))}
                         </p>
-                        <p className="mt-1 text-xs text-(--dash-muted)">
+                        <p className="mt-1 text-[11px] text-(--dash-muted)">
                           {tx.klaim}
                         </p>
                       </div>
@@ -685,25 +728,25 @@ export default function MealsMeetingManager({
                       </div>
                     </div>
 
-                    <div className="mt-3 grid gap-2 text-xs text-(--dash-muted)">
+                    <div className="mt-3 grid gap-1.5 text-[11px] text-(--dash-muted)">
                       <p className="inline-flex items-center gap-2">
-                        <CalendarDays className="h-4 w-4" />
+                        <CalendarDays className="h-3.5 w-3.5" />
                         <span className="tabular-nums">{tx.tanggal}</span>
                       </p>
                       {meta.lokasi ? (
                         <p className="inline-flex items-center gap-2">
-                          <MapPin className="h-4 w-4" />
+                          <MapPin className="h-3.5 w-3.5" />
                           <span className="truncate">{meta.lokasi}</span>
                         </p>
                       ) : null}
                       {meta.peserta ? (
                         <p className="inline-flex items-center gap-2">
-                          <Users className="h-4 w-4" />
+                          <Users className="h-3.5 w-3.5" />
                           <span className="truncate">{meta.peserta}</span>
                         </p>
                       ) : null}
                       <p className="inline-flex items-start gap-2">
-                        <FileText className="mt-0.5 h-4 w-4" />
+                        <FileText className="mt-0.5 h-3.5 w-3.5" />
                         <span className="line-clamp-3 whitespace-pre-line">
                           {meta.note}
                         </span>
@@ -711,10 +754,11 @@ export default function MealsMeetingManager({
                       {tx.fileUrl ? (
                         <Button
                           variant="secondary"
-                          className="mt-1 border border-white/10 bg-white/10 text-(--dash-ink) hover:bg-white/15"
+                          size="sm"
+                          className="mt-1 h-8 border border-white/10 bg-white/10 text-xs text-(--dash-ink) hover:bg-white/15"
                           onClick={() => window.open(tx.fileUrl, "_blank")}
                         >
-                          <ImageIcon className="mr-2 h-4 w-4" />
+                          <ImageIcon className="mr-1.5 h-3.5 w-3.5" />
                           Lihat Bukti
                         </Button>
                       ) : null}
@@ -725,33 +769,33 @@ export default function MealsMeetingManager({
             </div>
 
             {/* Desktop table */}
-            <div className="hidden md:block overflow-auto rounded-2xl border border-white/10 bg-white/5">
-              <div className="max-h-[560px] overflow-auto">
-                <Table className="min-w-[980px]">
+            <div className="hidden overflow-auto rounded-2xl border border-white/10 bg-white/5 md:block">
+              <div className="max-h-[420px] overflow-auto">
+                <Table className="min-w-[860px] text-[11px]">
                   <TableHeader>
                     <TableRow className="bg-(--dash-surface-strong)">
-                      <TableHead className="sticky top-0 text-slate-400 z-10 bg-(--dash-surface-strong)">
+                      <TableHead className="sticky top-0 z-10 bg-(--dash-surface-strong) py-2 text-xs text-slate-400">
                         Tanggal
                       </TableHead>
-                      <TableHead className="sticky top-0 text-slate-400 z-10 bg-(--dash-surface-strong)">
+                      <TableHead className="sticky top-0 z-10 bg-(--dash-surface-strong) py-2 text-xs text-slate-400">
                         Klaim
                       </TableHead>
-                      <TableHead className="sticky top-0 text-slate-400 z-10 bg-(--dash-surface-strong)">
+                      <TableHead className="sticky top-0 z-10 bg-(--dash-surface-strong) py-2 text-xs text-slate-400">
                         Lokasi
                       </TableHead>
-                      <TableHead className="sticky top-0 text-slate-400 z-10 bg-(--dash-surface-strong)">
+                      <TableHead className="sticky top-0 z-10 bg-(--dash-surface-strong) py-2 text-xs text-slate-400">
                         Peserta
                       </TableHead>
-                      <TableHead className="sticky top-0 text-slate-400 z-10 bg-(--dash-surface-strong)">
+                      <TableHead className="sticky top-0 z-10 bg-(--dash-surface-strong) py-2 text-xs text-slate-400">
                         Keterangan
                       </TableHead>
-                      <TableHead className="sticky top-0 text-slate-400 z-10 bg-(--dash-surface-strong) text-right">
+                      <TableHead className="sticky top-0 z-10 bg-(--dash-surface-strong) py-2 text-right text-xs text-slate-400">
                         Jumlah
                       </TableHead>
-                      <TableHead className="sticky top-0 text-slate-400 z-10 bg-(--dash-surface-strong) text-center">
+                      <TableHead className="sticky top-0 z-10 bg-(--dash-surface-strong) py-2 text-center text-xs text-slate-400">
                         Bukti
                       </TableHead>
-                      <TableHead className="sticky top-0 text-slate-400 z-10 bg-(--dash-surface-strong) text-center">
+                      <TableHead className="sticky top-0 z-10 bg-(--dash-surface-strong) py-2 text-center text-xs text-slate-400">
                         Aksi
                       </TableHead>
                     </TableRow>
@@ -761,59 +805,59 @@ export default function MealsMeetingManager({
                       const meta = extractMeta(tx.keterangan || "");
                       return (
                         <TableRow key={tx.id} className="border-white/10 hover:bg-white/5">
-                          <TableCell className="tabular-nums">
+                          <TableCell className="py-2 tabular-nums">
                             <span className="inline-flex items-center gap-2">
-                              <CalendarDays className="h-4 w-4 text-(--dash-muted)" />
+                              <CalendarDays className="h-3.5 w-3.5 text-(--dash-muted)" />
                               {tx.tanggal}
                             </span>
                           </TableCell>
-                          <TableCell className="max-w-[200px] truncate">
+                          <TableCell className="max-w-36 truncate py-2">
                             {tx.klaim}
                           </TableCell>
-                          <TableCell className="max-w-[220px] truncate">
+                          <TableCell className="max-w-40 truncate py-2">
                             {meta.lokasi ? (
                               <span className="inline-flex items-center gap-2">
-                                <MapPin className="h-4 w-4 text-(--dash-muted)" />
+                                <MapPin className="h-3.5 w-3.5 text-(--dash-muted)" />
                                 <span className="truncate">{meta.lokasi}</span>
                               </span>
                             ) : (
                               <span className="text-(--dash-muted)">-</span>
                             )}
                           </TableCell>
-                          <TableCell className="max-w-60 truncate">
+                          <TableCell className="max-w-40 truncate py-2">
                             {meta.peserta ? (
                               <span className="inline-flex items-center gap-2">
-                                <Users className="h-4 w-4 text-(--dash-muted)" />
+                                <Users className="h-3.5 w-3.5 text-(--dash-muted)" />
                                 <span className="truncate">{meta.peserta}</span>
                               </span>
                             ) : (
                               <span className="text-(--dash-muted)">-</span>
                             )}
                           </TableCell>
-                          <TableCell className="max-w-[360px] whitespace-normal">
+                          <TableCell className="max-w-56 whitespace-normal py-2">
                             <span className="line-clamp-2 whitespace-pre-line">
                               {meta.note}
                             </span>
                           </TableCell>
-                          <TableCell className="text-right font-semibold tabular-nums">
+                          <TableCell className="py-2 text-right font-semibold tabular-nums">
                             {formatCurrency(Number(tx.jumlah))}
                           </TableCell>
-                          <TableCell className="text-center">
+                          <TableCell className="py-2 text-center">
                             {tx.fileUrl ? (
                               <Button
                                 variant="secondary"
                                 size="sm"
-                                className="border border-white/10 bg-white/10 text-(--dash-ink) hover:bg-white/15"
+                                className="h-8 border border-white/10 bg-white/10 text-xs text-(--dash-ink) hover:bg-white/15"
                                 onClick={() => window.open(tx.fileUrl, "_blank")}
                               >
-                                <ImageIcon className="mr-2 h-4 w-4" />
+                                <ImageIcon className="mr-1 h-3.5 w-3.5" />
                                 Lihat
                               </Button>
                             ) : (
                               <span className="text-(--dash-muted)">-</span>
                             )}
                           </TableCell>
-                          <TableCell className="text-center">
+                          <TableCell className="py-2 text-center">
                             <div className="inline-flex items-center gap-1">
                               <Button
                                 variant="ghost"

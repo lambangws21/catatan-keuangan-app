@@ -48,6 +48,8 @@ interface SaldoManagerProps {
   saldoData: Saldo[];
   isLoading: boolean;
   onDataChange: () => Promise<void>;
+  floatingActionOffset?: "bottom" | "stacked";
+  showCreateAction?: boolean;
 }
 
 type SaldoGroup = Exclude<CompanyGroup, "all">;
@@ -93,6 +95,8 @@ export default function SaldoManager({
   saldoData,
   isLoading,
   onDataChange,
+  floatingActionOffset = "bottom",
+  showCreateAction = true,
 }: SaldoManagerProps) {
   const { config: tableUi } = useTableUiConfig();
   const { user } = useAuth(); // Dapatkan info pengguna untuk autentikasi
@@ -143,10 +147,9 @@ export default function SaldoManager({
       .slice()
       .sort((a, b) => String(a.tanggal).localeCompare(String(b.tanggal)))
       .map((item) => ({
-      Tanggal: item.tanggal,
-      Keterangan: item.keterangan,
-      Grup: companyGroupLabel(detectCompanyGroup(item.keterangan)),
-      Jumlah: Number(item.jumlah),
+        Tanggal: item.tanggal,
+        Keterangan: item.keterangan,
+        Jumlah: Number(item.jumlah),
       }));
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
     const workbook = XLSX.utils.book_new();
@@ -159,11 +162,10 @@ export default function SaldoManager({
     const doc = new jsPDF();
     doc.text("Laporan Riwayat Saldo", 14, 16);
     autoTable(doc, {
-      head: [["Tanggal", "Keterangan", "Grup", "Jumlah"]],
+      head: [["Tanggal", "Keterangan", "Jumlah"]],
       body: filteredSaldoData.map((item) => [
         item.tanggal,
         item.keterangan,
-        companyGroupLabel(detectCompanyGroup(item.keterangan)),
         formatCurrency(Number(item.jumlah)),
       ]),
       startY: 22,
@@ -262,62 +264,67 @@ export default function SaldoManager({
     visible: { y: 0, opacity: 1 },
   };
 
-  const cardBackground = "border border-white/10 bg-[var(--dash-surface) shadow-[0_20px_60px_rgba(2,6,23,0.45)]";
+  const cardBackground = "border border-white/10 bg-(--dash-surface) shadow-[0_20px_60px_rgba(2,6,23,0.45)]";
 
   return (
     <motion.div
-      className={`space-y-6 rounded-3xl ${cardBackground} p-6 text-(--dash-ink)`}
+      className={`space-y-3 rounded-2xl ${cardBackground} p-3 text-(--dash-ink) sm:p-4`}
       variants={containerVariants}
       initial="hidden"
       animate="visible"
     >
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.4em] text-(--dash-muted)">
+          <p className="text-[9px] uppercase tracking-[0.32em] text-(--dash-muted)">
             Riwayat Saldo
           </p>
-          <h2 className="text-2xl font-semibold text-white">Sirkulasi Dana Terkini</h2>
-          <p className="text-sm text-(--dash-muted)">
+          <h2 className="text-lg font-semibold text-white sm:text-xl">Sirkulasi Dana Terkini</h2>
+          <p className="text-[11px] text-(--dash-muted)">
             {totalEntries} entri dapat diekspor dengan cepat.
           </p>
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <SaldoForm onSaldoAdded={onDataChange} />
+          {showCreateAction ? (
+            <SaldoForm
+              onSaldoAdded={onDataChange}
+              floatingOffset={floatingActionOffset}
+            />
+          ) : null}
           <Button
             variant="outline"
             size="sm"
             onClick={handleExportExcel}
             disabled={!hasEntries}
-            className="border-slate-200 bg-white/70 text-slate-800 hover:bg-white hover:border-slate-300 dark:border-white/20 dark:bg-white/5 dark:text-white/80 dark:hover:border-white/40"
+            className="h-8 border-slate-200 bg-white/70 text-xs text-slate-800 hover:bg-white hover:border-slate-300 dark:border-white/20 dark:bg-white/5 dark:text-white/80 dark:hover:border-white/40"
           >
-            <FileDown className="h-4 w-4 mr-2" /> Excel
+            <FileDown className="h-3.5 w-3.5 mr-1.5" /> Excel
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={handleExportPdf}
             disabled={!hasEntries}
-            className="border-slate-200 bg-white/70 text-slate-800 hover:bg-white hover:border-slate-300 dark:border-white/20 dark:bg-white/5 dark:text-white/80 dark:hover:border-white/40"
+            className="h-8 border-slate-200 bg-white/70 text-xs text-slate-800 hover:bg-white hover:border-slate-300 dark:border-white/20 dark:bg-white/5 dark:text-white/80 dark:hover:border-white/40"
           >
-            <FileDown className="h-4 w-4 mr-2" /> PDF
+            <FileDown className="h-3.5 w-3.5 mr-1.5" /> PDF
           </Button>
         </div>
       </div>
 
-      <div className="grid gap-3 rounded-2xl border border-slate-200 bg-white/70 p-3 text-slate-900 dark:border-white/10 dark:bg-white/5 dark:text-slate-100 md:grid-cols-[minmax(0,1fr)_220px]">
+      <div className="grid gap-2 rounded-xl border border-slate-200 bg-white/70 p-2 text-slate-900 dark:border-white/10 dark:bg-white/5 dark:text-slate-100 md:grid-cols-[minmax(0,1fr)_150px]">
         <Input
           type="search"
           value={searchTerm}
           onChange={(event) => setSearchTerm(event.target.value)}
           placeholder="Cari tanggal, keterangan, jumlah, ZB, Zimmer Biomet, NM, Normed..."
-          className="border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 dark:border-white/10 dark:bg-black/20 dark:text-slate-100 dark:placeholder:text-white/40"
+          className="h-9 border-slate-200 bg-white text-xs text-slate-900 placeholder:text-slate-400 dark:border-white/10 dark:bg-black/20 dark:text-slate-100 dark:placeholder:text-white/40"
         />
         <Select
           value={selectedCompanyGroup}
           onValueChange={(value) => setSelectedCompanyGroup(value as CompanyGroup)}
         >
-          <SelectTrigger className="border-slate-200 bg-white text-slate-900 dark:border-white/10 dark:bg-black/20 dark:text-slate-100">
+          <SelectTrigger className="h-9 border-slate-200 bg-white text-xs text-slate-900 dark:border-white/10 dark:bg-black/20 dark:text-slate-100">
             <SelectValue placeholder="Semua Grup" />
           </SelectTrigger>
           <SelectContent className="border-slate-200 bg-white text-slate-900 dark:border-white/10 dark:bg-slate-900 dark:text-white">
@@ -330,29 +337,29 @@ export default function SaldoManager({
         </Select>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 text-slate-900 shadow-inner dark:border-white/10 dark:bg-white/5 dark:text-slate-100">
-          <div className="flex items-center gap-3">
-            <Wallet className="h-5 w-5 text-emerald-300" />
-            <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <div className="rounded-xl border border-slate-200 bg-white/80 p-2.5 text-slate-900 shadow-inner dark:border-white/10 dark:bg-white/5 dark:text-slate-100">
+          <div className="flex items-center gap-2">
+            <Wallet className="h-3.5 w-3.5 text-emerald-300" />
+            <p className="text-[8px] uppercase tracking-[0.22em] text-(--dash-muted)">
               Total Saldo
             </p>
           </div>
-          <p className="mt-3 text-3xl font-semibold text-slate-950 dark:text-white">{formatCurrency(totalSaldo)}</p>
-          <p className="mt-2 text-[11px] text-(--dash-muted)">
+          <p className="mt-1.5 truncate text-xl font-semibold text-slate-950 dark:text-white sm:text-2xl">{formatCurrency(totalSaldo)}</p>
+          <p className="mt-1 text-[10px] text-(--dash-muted)">
             {hasEntries ? `${totalEntries} transaksi` : "Belum ada data"}
           </p>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 text-slate-900 dark:border-white/10 dark:bg-white/5 dark:text-slate-100">
-          <p className="text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)">
+        <div className="rounded-xl border border-slate-200 bg-white/80 p-2.5 text-slate-900 dark:border-white/10 dark:bg-white/5 dark:text-slate-100">
+          <p className="text-[8px] uppercase tracking-[0.22em] text-(--dash-muted)">
             Entri terbaru
           </p>
           {latestEntries.length === 0 ? (
-            <p className="text-sm text-(--dash-muted) mt-2">
+            <p className="mt-2 text-[11px] text-(--dash-muted)">
               Tambahkan saldo untuk melihat ringkasan.
             </p>
           ) : (
-            <ul className="mt-3 space-y-2 text-sm text-slate-800 dark:text-white/90">
+            <ul className="mt-2 space-y-1.5 text-[11px] text-slate-800 dark:text-white/90">
               {latestEntries.map((item) => (
                 <li key={item.id} className="flex items-center justify-between">
                   <span className="font-medium">{item.tanggal}</span>
@@ -364,21 +371,21 @@ export default function SaldoManager({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
         {(["ZB", "NM", "OTHER"] as const).map((group) => (
           <div
             key={group}
-            className={`rounded-2xl border p-4 ${saldoGroupStyles[group].card}`}
+            className={`rounded-xl border p-2.5 ${saldoGroupStyles[group].card}`}
           >
             <div className="flex items-center justify-between gap-2">
-              <p className={`text-[10px] uppercase tracking-[0.24em] ${saldoGroupStyles[group].title}`}>
+              <p className={`text-[8px] uppercase tracking-[0.18em] ${saldoGroupStyles[group].title}`}>
                 {companyGroupLabel(group)}
               </p>
-              <span className={`rounded-full border px-2 py-0.5 text-[10px] ${saldoGroupStyles[group].badge}`}>
+              <span className={`rounded-full border px-1.5 py-0.5 text-[8px] ${saldoGroupStyles[group].badge}`}>
                 {groupSummary[group].count}
               </span>
             </div>
-            <p className={`mt-2 truncate text-lg ${saldoGroupStyles[group].value}`}>
+            <p className={`mt-1.5 truncate text-sm sm:text-base ${saldoGroupStyles[group].value}`}>
               {formatCurrency(groupSummary[group].total)}
             </p>
           </div>
@@ -396,14 +403,14 @@ export default function SaldoManager({
                   : undefined
               }
             >
-              <Table className="min-w-full text-sm text-white">
+              <Table className="min-w-full text-[11px] text-white">
                 <TableHeader>
                   <TableRow className="bg-slate-100 text-left text-slate-700 dark:bg-slate-900 dark:text-white">
-                    <TableHead className="p-3">Tanggal</TableHead>
-                    <TableHead className="p-3">Keterangan</TableHead>
-                    <TableHead className="p-3">Grup</TableHead>
-                    <TableHead className="p-3 text-right">Jumlah</TableHead>
-                    <TableHead className="p-3 text-center">Aksi</TableHead>
+                    <TableHead className="p-2 text-xs">Tanggal</TableHead>
+                    <TableHead className="p-2 text-xs">Keterangan</TableHead>
+                    <TableHead className="p-2 text-xs">Grup</TableHead>
+                    <TableHead className="p-2 text-right text-xs">Jumlah</TableHead>
+                    <TableHead className="p-2 text-center text-xs">Aksi</TableHead>
                   </TableRow>
                 </TableHeader>
                 <motion.tbody className="text-white" variants={containerVariants} initial="hidden" animate="visible">
@@ -416,30 +423,30 @@ export default function SaldoManager({
                       className="border-b border-slate-200 dark:border-white/10"
                       variants={itemVariants}
                     >
-                      <TableCell className="py-3 px-3 text-white">
+                      <TableCell className="px-2 py-1.5 text-white">
                         <span className="inline-flex items-center gap-2">
-                          <CalendarDays className="h-4 w-4 text-emerald-200/80" />
+                          <CalendarDays className="h-3.5 w-3.5 text-emerald-200/80" />
                           <span>{item.tanggal}</span>
                         </span>
                       </TableCell>
-                      <TableCell className="py-3 px-3 font-medium text-white">
+                      <TableCell className="px-2 py-1.5 font-medium text-white">
                         <span className="inline-flex items-center gap-2">
-                          <StickyNote className="h-4 w-4 text-emerald-200/70" />
+                          <StickyNote className="h-3.5 w-3.5 text-emerald-200/70" />
                           <span>{item.keterangan}</span>
                         </span>
                       </TableCell>
-                      <TableCell className="py-3 px-3">
-                        <span className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] ${saldoGroupStyles[group].badge} ${group === "NM" ? "font-black italic" : "font-black"}`}>
+                      <TableCell className="px-2 py-1.5">
+                        <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] ${saldoGroupStyles[group].badge} ${group === "NM" ? "font-black italic" : "font-black"}`}>
                           {companyGroupLabel(group)}
                         </span>
                       </TableCell>
-                      <TableCell className="py-3 px-3 text-right font-mono text-white/90">
+                      <TableCell className="px-2 py-1.5 text-right font-mono text-white/90">
                         <span className="inline-flex items-center justify-end gap-2">
-                          <Coins className="h-4 w-4 text-emerald-200/70" />
+                          <Coins className="h-3.5 w-3.5 text-emerald-200/70" />
                           <span>{formatCurrency(Number(item.jumlah))}</span>
                         </span>
                       </TableCell>
-                      <TableCell className="py-3 px-3 text-center">
+                      <TableCell className="px-2 py-1.5 text-center">
                         <div className="flex items-center justify-center gap-2">
                           <TooltipProvider>
                             <Tooltip>
@@ -494,24 +501,24 @@ export default function SaldoManager({
                 return (
               <motion.article
                 key={item.id}
-                className={`rounded-2xl border p-4 shadow-[0_12px_30px_rgba(15,23,42,0.12)] dark:shadow-[0_12px_30px_rgba(2,6,23,0.45)] ${saldoGroupStyles[group].card}`}
+                className={`rounded-2xl border p-3 shadow-[0_12px_30px_rgba(15,23,42,0.12)] dark:shadow-[0_12px_30px_rgba(2,6,23,0.45)] ${saldoGroupStyles[group].card}`}
                 variants={itemVariants}
               >
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.3em] text-(--dash-muted)">
-                        <CalendarDays className="h-4 w-4 text-emerald-200/70" />
+                      <p className="inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.24em] text-(--dash-muted)">
+                        <CalendarDays className="h-3.5 w-3.5 text-emerald-200/70" />
                         <span>{item.tanggal}</span>
                       </p>
-                      <p className="mt-1 inline-flex items-center gap-2 text-lg font-semibold text-slate-950 dark:text-white">
-                        <StickyNote className="h-4 w-4 text-emerald-200/70" />
+                      <p className="mt-1 inline-flex items-center gap-2 text-sm font-semibold text-slate-950 dark:text-white">
+                        <StickyNote className="h-3.5 w-3.5 text-emerald-200/70" />
                         <span>{item.keterangan}</span>
                       </p>
                     </div>
-                    <span className="text-right text-sm font-mono text-slate-700 dark:text-white/70">
+                    <span className="text-right text-xs font-mono text-slate-700 dark:text-white/70">
                       <span className="inline-flex items-center gap-2">
-                        <Coins className="h-4 w-4 text-emerald-200/70" />
+                        <Coins className="h-3.5 w-3.5 text-emerald-200/70" />
                         <span>{formatCurrency(Number(item.jumlah))}</span>
                       </span>
                     </span>

@@ -11,6 +11,7 @@ import Sidebar from '@/components/navbar/sidebar';
 import { cn } from '@/lib/utils';
 import PWARegister from '@/components/PWARegister';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
+import PageTransitionLoader from '@/components/PageTransitionLoader';
 
 // Komponen AppLayout yang diperbarui untuk tampilan yang fleksibel dan responsif
 function AppLayout({ children }: { children: ReactNode }) {
@@ -18,7 +19,7 @@ function AppLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   // State untuk mengelola status sidebar (minimize/maximize)
-  const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isSidebarCollapsed, setSidebarCollapsed] = useState(true);
 
   useEffect(() => {
     // Jika pengecekan selesai dan tidak ada user, paksa ke halaman login
@@ -80,6 +81,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <PWARegister />
             <PWAInstallPrompt />
             <Toaster richColors position="top-right" />
+            <PageTransitionLoader />
             <AppLayout>{children}</AppLayout>
           </AuthProvider>
       </body>

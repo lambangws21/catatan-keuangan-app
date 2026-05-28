@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, FormEvent } from "react";
+import { useEffect, useState, FormEvent, type ReactNode } from "react";
 import { Loader2, Landmark } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import { toast } from "sonner";
@@ -23,9 +23,15 @@ import { CurrencyInput } from "@/components/CurencyInput";
 // Definisikan props yang akan diterima komponen ini
 interface SaldoFormProps {
     onSaldoAdded: () => Promise<void>; // Fungsi untuk me-refresh data setelah penambahan
+    floatingOffset?: "bottom" | "stacked";
+    trigger?: ReactNode;
 }
 
-export default function SaldoForm({ onSaldoAdded }: SaldoFormProps) {
+export default function SaldoForm({
+  onSaldoAdded,
+  floatingOffset = "bottom",
+  trigger,
+}: SaldoFormProps) {
   const { user } = useAuth(); // Dapatkan info pengguna untuk autentikasi
   const [isOpen, setIsOpen] = useState(false);
   const [tanggal, setTanggal] = useState(new Date().toISOString().split("T")[0]);
@@ -142,6 +148,11 @@ export default function SaldoForm({ onSaldoAdded }: SaldoFormProps) {
     }
   };
 
+  const floatingOffsetClass =
+    floatingOffset === "stacked"
+      ? "bottom-[calc(env(safe-area-inset-bottom)+9.75rem)] lg:bottom-[calc(env(safe-area-inset-bottom)+5.75rem)]"
+      : "bottom-[calc(env(safe-area-inset-bottom)+5.75rem)] lg:bottom-[calc(env(safe-area-inset-bottom)+1.25rem)]";
+
   return (
     <Dialog
       open={isOpen}
@@ -151,18 +162,22 @@ export default function SaldoForm({ onSaldoAdded }: SaldoFormProps) {
       }}
     >
       <DialogTrigger asChild>
-        <Button
-          variant="outline"
-          className="font-bold md:rounded-lg rounded-full p-3 md:px-4 md:py-2 transition-all border-cyan-600 bg-cyan-600 text-white hover:bg-cyan-700 hover:text-white dark:border-cyan-400 dark:bg-cyan-500 dark:hover:bg-cyan-400"
-        >
-            <Landmark className="h-5 w-5 md:mr-2" />
-            <span className="hidden md:inline">Input Saldo</span>
-        </Button>
+        {trigger ?? (
+          <Button
+            variant="outline"
+            className={`fixed right-4 ${floatingOffsetClass} z-40 h-14 rounded-full border border-white/30 bg-white/75 px-5 font-bold text-slate-900 shadow-[0_18px_55px_rgba(15,23,42,0.25)] shadow-cyan-500/20 backdrop-blur-2xl transition-all hover:-translate-y-0.5 hover:bg-white/90 hover:text-slate-950 hover:shadow-[0_22px_70px_rgba(6,182,212,0.28)] dark:border-white/15 dark:bg-slate-950/70 dark:text-white dark:shadow-cyan-950/40 dark:hover:bg-slate-900/85 print:hidden`}
+          >
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-cyan-500 text-white shadow-inner shadow-white/20">
+                <Landmark className="h-4 w-4" />
+              </span>
+              <span className="ml-2 hidden sm:inline">Input Saldo</span>
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="w-[calc(100vw-1rem)] max-w-none max-h-[calc(100dvh-1rem)] overflow-y-auto border-slate-200 bg-white text-slate-900 shadow-2xl dark:border-white/10 dark:bg-slate-950 dark:text-slate-100 sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="text-cyan-700 dark:text-cyan-300">
-            Input Saldo Baru
+            Input Saldo
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="grid gap-4 py-4">

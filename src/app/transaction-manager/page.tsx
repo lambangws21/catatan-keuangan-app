@@ -38,10 +38,18 @@ interface Transaction {
   sumberBiaya?: string | null;
 }
 
+interface Saldo {
+  id: string;
+  tanggal: string;
+  keterangan: string;
+  jumlah: number;
+}
+
 export default function TransactionsPage() {
   const { user } = useAuth();
 
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
+  const [allSaldoData, setAllSaldoData] = useState<Saldo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"transaksi" | "meals">("transaksi");
   const [budget, setBudget] = useState<BudgetSettings | null>(null);
@@ -80,9 +88,34 @@ export default function TransactionsPage() {
     }
   }, [user]);
 
+  const fetchSaldo = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      const token = await user.getIdToken();
+      const response = await fetch("/api/saldo", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) throw new Error("Gagal mengambil data saldo.");
+
+      const data = await response.json();
+      setAllSaldoData(data);
+    } catch (error) {
+      console.error(error);
+      setAllSaldoData([]);
+    }
+  }, [user]);
+
   useEffect(() => {
-    fetchTransactions();
-  }, [fetchTransactions]);
+    const fetchAll = async () => {
+      setIsLoading(true);
+      await Promise.all([fetchTransactions(), fetchSaldo()]);
+      setIsLoading(false);
+    };
+
+    fetchAll();
+  }, [fetchTransactions, fetchSaldo]);
 
   useEffect(() => {
     if (!user) {
@@ -176,6 +209,21 @@ export default function TransactionsPage() {
   const filteredTransactionsNonMeals = useMemo(() => {
     return expenseBase.filter((tx) => isCountedAsExpense(tx));
   }, [expenseBase]);
+
+  const filteredSaldoData = useMemo(() => {
+    return allSaldoData
+      .filter((item) => matchesCompanyGroup(item.keterangan, selectedCompanyGroup))
+      .filter((item) => {
+        if (!startDate && !endDate) return true;
+        const itemDate = new Date(item.tanggal).getTime();
+        const start = startDate ? new Date(startDate).getTime() : null;
+        const end = endDate ? new Date(endDate + "T23:59:59").getTime() : null;
+        if (start && end) return itemDate >= start && itemDate <= end;
+        if (start) return itemDate >= start;
+        if (end) return itemDate <= end;
+        return true;
+      });
+  }, [allSaldoData, selectedCompanyGroup, startDate, endDate]);
 
   // Reimbursement list: Meals Metting yang dibayar personal/mandiri.
   const reimbursementList = useMemo(() => {
@@ -364,9 +412,12 @@ export default function TransactionsPage() {
         <TabsContent value="transaksi">
           <TransactionManager
             transactions={filteredTransactionsNonMeals}
+            saldoData={filteredSaldoData}
             reimbursements={reimbursementList}
             isLoading={isLoading}
-            onDataChange={fetchTransactions}
+            onDataChange={async () => {
+              await Promise.all([fetchTransactions(), fetchSaldo()]);
+            }}
           />
         </TabsContent>
 

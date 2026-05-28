@@ -21,7 +21,7 @@ import { MEALS_TYPE } from '@/lib/transactions';
 // ======================
 // ✅ TYPE
 // ======================
-export interface Operation {
+interface Operation {
   id: string;
   date: string;
   dokter: string;

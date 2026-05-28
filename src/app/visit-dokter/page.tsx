@@ -23,7 +23,7 @@ import MobileTimeline from "@/components/timeline/mobile-view";
 
 import type { Schedule } from "@/types/visit-dokter";
 
-export interface Doctor {
+interface Doctor {
   id: string;
   namaDokter: string;
   rumahSakit: string[];

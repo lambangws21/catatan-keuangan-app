@@ -102,9 +102,7 @@ export default function SummaryCards({
 
   const valueFormatter = numberMode === "compact" ? formatSaldoDisplay : formatCurrency;
   
-  // Reimburse: saat pengeluaran > pemasukan / saldo minus (defisit)
-  const computedReimbursement = Math.max(0, pengeluaran - pemasukan);
-  const reimbursementValue = Math.max(0, reimbursementAmount || computedReimbursement);
+  const reimbursementValue = Math.max(0, reimbursementAmount);
 
   const summaryData: SummaryItem[] = [
     {
@@ -133,7 +131,7 @@ export default function SummaryCards({
     },
   ];
 
-  if (saldo < 0 && pengeluaran > 0 && reimbursementValue > 0) {
+  if (reimbursementValue > 0) {
     summaryData.push({
       title: "Reimburse",
       value: reimbursementValue,

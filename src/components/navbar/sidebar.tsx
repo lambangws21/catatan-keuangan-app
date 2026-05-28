@@ -2,21 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  Home,
-  Wallet,
-  GalleryHorizontal,
-  Settings,
-  Landmark,
-  ChevronsLeft,
-  HeartHandshakeIcon,
-  StethoscopeIcon,
-  DollarSign,
-  Database,
-  Wrench,
-} from "lucide-react";
+import { ChevronsLeft, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { navItems } from "@/components/navbar/nav-items";
 
 // Impor komponen dari shadcn/ui
 import {
@@ -26,20 +15,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
-
-// Daftar item navigasi yang bisa dibagikan
-export const navItems = [
-  { href: "/dashboard", icon: Home, label: "Dashboard" },
-  { href: "/transaction-manager", icon: Wallet, label: "Transaksi" },
-  { href: "/saldo", icon: Landmark, label: "Saldo" },
-  { href: "/gallery", icon: GalleryHorizontal, label: "Galeri Berkas" },
-  { href: "/operasi", icon: StethoscopeIcon, label: "Operasi" },
-  { href: "/visit-dokter", icon: HeartHandshakeIcon, label: "Visit Dokter" },
-  { href: "/penjadwalan-ts", icon: Wrench, label: "Penjadwalan TS" },
-  { href: "/prices", icon: DollarSign, label: "List harga" },
-  { href: "/stock-dasboard", icon: Database, label: "Stock" },
-  { href: "/settings", icon: Settings, label: "Pengaturan" },
-];
 
 // Varian animasi untuk teks
 const textVariants = {

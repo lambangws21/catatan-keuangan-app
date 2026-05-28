@@ -42,7 +42,21 @@ import { storage } from "@/lib/firebase/client";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useTableUiConfig } from "@/hooks/use-table-ui-config";
 import { CurrencyInput } from "@/components/CurencyInput";
-import { detectCompanyGroup, companyGroupLabel } from "@/lib/company-groups";
+import { detectCompanyGroup, companyGroupLabel, type CompanyGroup } from "@/lib/company-groups";
+import {
+  KLAIM_FILTER_STATUS_OPTIONS,
+  KLAIM_STATUS_OPTIONS,
+  canMarkKlaimPaid,
+  canSubmitKlaim,
+  getKlaimDisplayStatus,
+  groupReimbursementSummary,
+  normalizeKlaimStatus,
+  normalizeStoredKlaimStatus,
+  type CompanyGroupKey,
+  type KlaimDisplayStatus,
+  type KlaimStatus,
+  type MealsPaymentSource,
+} from "@/lib/transactions";
 
 import {
   Table,
@@ -90,7 +104,17 @@ interface Transaction {
   sumberBiaya?: string | null;
 }
 
-type KlaimStatus = "Belum diajukan" | "Diajukan" | "Dibayar";
+type TransactionGroup = Exclude<CompanyGroup, "all">;
+
+type NormalizedTransaction = Transaction & {
+  companyGroup: TransactionGroup;
+  klaimStatus: KlaimStatus;
+  klaimDisplayStatus: KlaimDisplayStatus;
+  fileUrl: string;
+  fileUrls: string[];
+};
+
+const TRANSACTION_GROUPS: TransactionGroup[] = ["ZB", "NM", "OTHER"];
 
 type NewPhotoSelection = {
   id: string;
@@ -111,9 +135,16 @@ type PreviewState = {
 
 interface TransactionManagerProps {
   transactions: Transaction[];
+  saldoData?: Array<{
+    id?: string;
+    tanggal?: string;
+    keterangan: string;
+    jumlah: number | string;
+  }>;
   reimbursements?: Transaction[];
   isLoading: boolean;
   onDataChange: () => Promise<void>;
+  showCreateAction?: boolean;
 }
 
 const formatCurrency = (value: number) =>
@@ -134,18 +165,6 @@ const formatCurrencyCompact = (value: number) => {
     }).format(Number(value));
   }
   return formatCurrency(Number(value));
-};
-
-const klaimStatusOptions: KlaimStatus[] = [
-  "Belum diajukan",
-  "Diajukan",
-  "Dibayar",
-];
-
-const normalizeKlaimStatus = (value?: string | null): KlaimStatus => {
-  if (!value) return "Belum diajukan";
-  if (klaimStatusOptions.includes(value as KlaimStatus)) return value as KlaimStatus;
-  return "Belum diajukan";
 };
 
 const getTransactionPhotoUrls = (tx?: Pick<Transaction, "fileUrl" | "fileUrls"> | null) => {
@@ -180,9 +199,11 @@ const buildPhotoId = (file: File) => `${file.name}:${file.size}:${file.lastModif
 
 export default function TransactionManager({
   transactions,
+  saldoData = [],
   reimbursements = [],
   isLoading,
   onDataChange,
+  showCreateAction = true,
 }: TransactionManagerProps) {
   const { config: tableUi } = useTableUiConfig();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -192,7 +213,7 @@ export default function TransactionManager({
   const [newPhotoFiles, setNewPhotoFiles] = useState<NewPhotoSelection[]>([]);
   const [isPhotoProcessing, setIsPhotoProcessing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [klaimStatusFilter, setKlaimStatusFilter] = useState<"semua" | KlaimStatus>("semua");
+  const [klaimStatusFilter, setKlaimStatusFilter] = useState<"semua" | KlaimDisplayStatus>("semua");
   const [tablePage, setTablePage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [rowsPerPageTouched, setRowsPerPageTouched] = useState(false);
@@ -205,27 +226,65 @@ export default function TransactionManager({
   const [quickStatusUpdatingId, setQuickStatusUpdatingId] = useState<string | null>(null);
   const previewDragStartRef = useRef<{ x: number; y: number } | null>(null);
 
-  const normalizedTransactions = useMemo(
+  const normalizedTransactions = useMemo<NormalizedTransaction[]>(
     () =>
       transactions.map((tx) => {
         const fileUrls = getTransactionPhotoUrls(tx);
-        return {
+        const normalizedTx = {
           ...tx,
           fileUrls,
           fileUrl: fileUrls[0] || "",
           klaimStatus: normalizeKlaimStatus(tx.klaimStatus),
           companyGroup: detectCompanyGroup(tx),
         };
+        return {
+          ...normalizedTx,
+          klaimDisplayStatus: getKlaimDisplayStatus(normalizedTx),
+        };
       }),
     [transactions]
+  );
+
+  const normalizedReimbursements = useMemo<NormalizedTransaction[]>(
+    () =>
+      reimbursements.map((tx) => {
+        const fileUrls = getTransactionPhotoUrls(tx);
+        const normalizedTx = {
+          ...tx,
+          fileUrls,
+          fileUrl: fileUrls[0] || "",
+          klaimStatus: normalizeKlaimStatus(tx.klaimStatus),
+          companyGroup: detectCompanyGroup(tx),
+        };
+        return {
+          ...normalizedTx,
+          klaimDisplayStatus: getKlaimDisplayStatus(normalizedTx),
+        };
+      }),
+    [reimbursements]
   );
 
   const filteredTransactions = useMemo(() => {
     if (klaimStatusFilter === "semua") return normalizedTransactions;
     return normalizedTransactions.filter(
-      (tx) => normalizeKlaimStatus(tx.klaimStatus) === klaimStatusFilter
+      (tx) => tx.klaimDisplayStatus === klaimStatusFilter
     );
   }, [klaimStatusFilter, normalizedTransactions]);
+
+  const filteredReimbursements = useMemo(() => {
+    if (klaimStatusFilter === "semua") return normalizedReimbursements;
+    return normalizedReimbursements.filter(
+      (tx) => tx.klaimDisplayStatus === klaimStatusFilter
+    );
+  }, [klaimStatusFilter, normalizedReimbursements]);
+
+  const filteredExportTransactions = useMemo(
+    () =>
+      [...filteredTransactions, ...filteredReimbursements].sort((a, b) =>
+        a.tanggal.localeCompare(b.tanggal)
+      ),
+    [filteredTransactions, filteredReimbursements]
+  );
 
   const tablePageCount = Math.max(
     1,
@@ -252,27 +311,31 @@ export default function TransactionManager({
     return filteredTransactions.reduce((sum, tx) => sum + Number(tx.jumlah), 0);
   }, [filteredTransactions]);
 
-  const totalReimburse = useMemo(() => {
-    return reimbursements.reduce((sum, tx) => sum + Number(tx.jumlah), 0);
-  }, [reimbursements]);
+  const groupBalanceSummary = useMemo(
+    () => groupReimbursementSummary(saldoData, normalizedTransactions),
+    [normalizedTransactions, saldoData]
+  );
 
-  const groupSummary = useMemo(() => {
-    return filteredTransactions.reduce(
-      (acc, tx) => {
-        const group = tx.companyGroup;
-        acc[group] = {
-          count: acc[group].count + 1,
-          total: acc[group].total + Number(tx.jumlah || 0),
-        };
-        return acc;
-      },
-      {
-        ZB: { count: 0, total: 0 },
-        NM: { count: 0, total: 0 },
-        OTHER: { count: 0, total: 0 },
-      }
-    );
-  }, [filteredTransactions]);
+  const groupBalanceReimbursementTotal = useMemo(
+    () => groupBalanceSummary.ZB.reimbursementTotal + groupBalanceSummary.NM.reimbursementTotal,
+    [groupBalanceSummary]
+  );
+
+  const groupedTables = useMemo(() => {
+    return TRANSACTION_GROUPS.map((group) => {
+      const expenses = filteredTransactions.filter((tx) => tx.companyGroup === group);
+      const expenseTotal = expenses.reduce((sum, tx) => sum + Number(tx.jumlah || 0), 0);
+      const balance = groupBalanceSummary[group as CompanyGroupKey];
+
+      return {
+        group,
+        expenses,
+        expenseTotal,
+        balanceReimbursementTotal: balance.reimbursementTotal,
+        saldoTotal: balance.saldoTotal,
+      };
+    });
+  }, [filteredTransactions, groupBalanceSummary]);
 
   const displayCurrency = useMemo(
     () => (numberMode === "compact" ? formatCurrencyCompact : formatCurrency),
@@ -280,17 +343,13 @@ export default function TransactionManager({
   );
 
   const handleExportExcel = () => {
-    const dataToExport = filteredTransactions
-      .slice()
-      .sort((a, b) => a.tanggal.localeCompare(b.tanggal))
-      .map((tx) => ({
-      Tanggal: tx.tanggal,
-      Keterangan: tx.keterangan,
-      "Jenis Biaya": tx.jenisBiaya,
-      Grup: companyGroupLabel(tx.companyGroup),
-      Jumlah: Number(tx.jumlah),
-      Klaim: tx.klaim,
-      "Status Klaim": normalizeKlaimStatus(tx.klaimStatus),
+    const dataToExport = filteredExportTransactions.map((tx) => ({
+        Tanggal: tx.tanggal,
+        Keterangan: tx.keterangan,
+        "Jenis Biaya": tx.jenisBiaya,
+        Jumlah: Number(tx.jumlah),
+        Klaim: tx.klaim,
+        "Status Klaim": tx.klaimDisplayStatus,
       }));
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
     const workbook = XLSX.utils.book_new();
@@ -301,6 +360,7 @@ export default function TransactionManager({
       { wch: 20 },
       { wch: 15 },
       { wch: 15 },
+      { wch: 15 },
     ];
     XLSX.writeFile(workbook, "Laporan Transaksi.xlsx");
   };
@@ -308,17 +368,15 @@ export default function TransactionManager({
   const handleExportPdf = () => {
     const doc = new jsPDF();
     doc.text("Laporan Riwayat Transaksi", 14, 16);
-    const sorted = filteredTransactions.slice().sort((a, b) => a.tanggal.localeCompare(b.tanggal));
     autoTable(doc, {
-      head: [["Tanggal", "Keterangan", "Jenis Biaya", "Grup", "Jumlah", "Klaim", "Status"]],
-      body: sorted.map((tx) => [
+      head: [["Tanggal", "Keterangan", "Jenis Biaya", "Jumlah", "Klaim", "Status"]],
+      body: filteredExportTransactions.map((tx) => [
         tx.tanggal,
         tx.keterangan,
         tx.jenisBiaya,
-        companyGroupLabel(tx.companyGroup),
         formatCurrency(Number(tx.jumlah)),
         tx.klaim,
-        normalizeKlaimStatus(tx.klaimStatus),
+        tx.klaimDisplayStatus,
       ]),
       startY: 22,
       headStyles: { fillColor: [38, 145, 158] },
@@ -337,6 +395,12 @@ export default function TransactionManager({
     tx: Transaction,
     nextStatus: KlaimStatus
   ) => {
+    const allowed =
+      (nextStatus === "Diajukan" && canSubmitKlaim(tx)) ||
+      (nextStatus === "Dibayar" && canMarkKlaimPaid(tx));
+
+    if (!allowed) return;
+
     setQuickStatusUpdatingId(tx.id);
     try {
       const fileUrls = getTransactionPhotoUrls(tx);
@@ -345,7 +409,7 @@ export default function TransactionManager({
         jumlah: Number(tx.jumlah),
         fileUrls,
         fileUrl: fileUrls[0] || "",
-        klaimStatus: nextStatus,
+        klaimStatus: normalizeStoredKlaimStatus({ ...tx, klaimStatus: nextStatus }),
       };
 
       const response = await fetch(`/api/transactions/${tx.id}`, {
@@ -467,7 +531,7 @@ export default function TransactionManager({
       const mergedPhotoUrls = [...existingPhotoUrls, ...uploadedPhotoUrls];
       payload.fileUrls = mergedPhotoUrls;
       payload.fileUrl = mergedPhotoUrls[0] || "";
-      payload.klaimStatus = normalizeKlaimStatus(payload.klaimStatus);
+      payload.klaimStatus = normalizeStoredKlaimStatus(payload);
 
       await fetch(`/api/transactions/${transactionToEdit.id}`, {
         method: "PUT",
@@ -715,6 +779,8 @@ export default function TransactionManager({
   const endEntry = Math.min(filteredTransactions.length, tablePage * rowsPerPage);
 
   const hasEntries = filteredTransactions.length > 0;
+  const hasGroupedEntries = hasEntries || filteredReimbursements.length > 0;
+  const hasExportEntries = filteredExportTransactions.length > 0;
   const latestTransactions = hasEntries ? filteredTransactions.slice(0, 3) : [];
 
   const rangeLabel =
@@ -810,6 +876,10 @@ export default function TransactionManager({
     visible: { opacity: 1 },
   };
 
+  const transactionToEditClaimable = transactionToEdit
+    ? getKlaimDisplayStatus(transactionToEdit) !== "Tidak perlu klaim"
+    : false;
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center p-16">
@@ -832,16 +902,16 @@ export default function TransactionManager({
           </p>
           <h2 className="text-lg font-semibold text-white sm:text-2xl">Catatan Pengeluaran</h2>
           <p className="text-xs text-(--dash-muted) sm:text-sm">
-            {filteredTransactions.length} transaksi siap direkap dan dicetak.
+            {filteredTransactions.length} pengeluaran + {filteredReimbursements.length} reimbursement siap direkap.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <ExpenseForm onTransactionAdded={onDataChange} />
+          {showCreateAction ? <ExpenseForm onTransactionAdded={onDataChange} /> : null}
           <Button
             variant="outline"
             size="sm"
             onClick={() => handleExportExcel()}
-            disabled={!hasEntries}
+            disabled={!hasExportEntries}
             className="border-slate-200 bg-white/70 text-slate-800 hover:bg-white hover:border-slate-300 dark:border-white/20 dark:bg-white/5 dark:text-white/80 dark:hover:border-white/40"
           >
             <FileDown className="h-4 w-4 mr-2" /> Excel
@@ -850,7 +920,7 @@ export default function TransactionManager({
             variant="outline"
             size="sm"
             onClick={() => handleExportPdf()}
-            disabled={!hasEntries}
+            disabled={!hasExportEntries}
             className="border-slate-200 bg-white/70 text-slate-800 hover:bg-white hover:border-slate-300 dark:border-white/20 dark:bg-white/5 dark:text-white/80 dark:hover:border-white/40"
           >
             <FileDown className="h-4 w-4 mr-2" /> PDF
@@ -874,7 +944,7 @@ export default function TransactionManager({
         <Select
           value={klaimStatusFilter}
           onValueChange={(value) =>
-            setKlaimStatusFilter(value as "semua" | KlaimStatus)
+            setKlaimStatusFilter(value as "semua" | KlaimDisplayStatus)
           }
         >
           <SelectTrigger className="h-9 w-[220px] border-white/10 bg-black/20 text-white">
@@ -882,7 +952,7 @@ export default function TransactionManager({
           </SelectTrigger>
           <SelectContent className="border-white/10 bg-slate-900 text-white">
             <SelectItem value="semua">Semua status</SelectItem>
-            {klaimStatusOptions.map((status) => (
+            {KLAIM_FILTER_STATUS_OPTIONS.map((status) => (
               <SelectItem key={status} value={status}>
                 {status}
               </SelectItem>
@@ -890,30 +960,88 @@ export default function TransactionManager({
           </SelectContent>
         </Select>
         <span className="text-xs text-(--dash-muted)">
-          {filteredTransactions.length} transaksi ditampilkan
+          {filteredTransactions.length} pengeluaran, {filteredReimbursements.length} reimbursement
         </span>
       </div>
 
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-        {(["ZB", "NM", "OTHER"] as const).map((group) => (
-          <div
-            key={group}
-            className="rounded-xl border border-white/10 bg-white/5 px-3 py-2"
-          >
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-[10px] uppercase tracking-[0.22em] text-(--dash-muted)">
-                {companyGroupLabel(group)}
-              </span>
-              <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] text-white/75">
-                {groupSummary[group].count}
-              </span>
-            </div>
-            <p className="mt-1 truncate text-sm font-semibold text-white">
-              {displayCurrency(groupSummary[group].total)}
+      <section className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-3 sm:p-4">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-[9px] uppercase tracking-[0.22em] text-(--dash-muted) sm:text-[10px]">
+              Rekap per Grup
             </p>
+            <h3 className="text-sm font-semibold text-white sm:text-base">
+              Saldo, pengeluaran, dan reimbursement
+            </h3>
           </div>
-        ))}
-      </div>
+          <p className="max-w-md text-[10px] leading-relaxed text-(--dash-muted) sm:text-[11px]">
+            Reimbursement dihitung saat pengeluaran grup lebih besar dari saldo grup.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+          {groupedTables.filter((item) => item.group !== "OTHER").map((item) => (
+            <div
+              key={item.group}
+              className={`overflow-hidden rounded-2xl border bg-slate-950/45 shadow-[0_14px_40px_rgba(2,6,23,0.28)] ${
+                item.group === "ZB"
+                  ? "border-sky-400/30"
+                  : "border-violet-400/30"
+              }`}
+            >
+              <div
+                className={`p-3 sm:p-4 ${
+                  item.group === "ZB"
+                    ? "bg-sky-500/10"
+                    : "bg-violet-500/10"
+                }`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <p
+                    className={`text-[10px] uppercase tracking-[0.2em] sm:text-[11px] ${
+                      item.group === "ZB"
+                        ? "font-black text-sky-100"
+                        : "font-black italic text-violet-100"
+                    }`}
+                  >
+                    {companyGroupLabel(item.group)}
+                  </p>
+                  <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[9px] text-white/70 sm:text-[10px]">
+                    {item.expenses.length} transaksi
+                  </span>
+                </div>
+
+                <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                  <div className="rounded-xl border border-emerald-300/15 bg-emerald-400/10 p-3">
+                    <p className="text-[9px] uppercase tracking-[0.16em] text-emerald-100/70">
+                      Saldo
+                    </p>
+                    <p className="mt-1 truncate text-base font-semibold leading-tight text-emerald-100 sm:text-lg">
+                      {displayCurrency(item.saldoTotal)}
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-cyan-300/15 bg-cyan-400/10 p-3">
+                    <p className="text-[9px] uppercase tracking-[0.16em] text-cyan-100/70">
+                      Pengeluaran
+                    </p>
+                    <p className="mt-1 truncate text-base font-semibold leading-tight text-cyan-100 sm:text-lg">
+                      {displayCurrency(item.expenseTotal)}
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-amber-300/15 bg-amber-400/10 p-3">
+                    <p className="text-[9px] uppercase tracking-[0.16em] text-amber-100/70">
+                      Reimburse
+                    </p>
+                    <p className="mt-1 truncate text-base font-semibold leading-tight text-amber-100 sm:text-lg">
+                      {displayCurrency(item.balanceReimbursementTotal)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="rounded-xl border border-white/10 bg-white/5 p-3 sm:p-4 shadow-inner">
@@ -929,11 +1057,11 @@ export default function TransactionManager({
         <div className="rounded-xl border border-white/10 bg-white/5 p-3 sm:p-4 shadow-inner">
           <div className="flex min-w-0 items-center gap-3">
             <Wallet className="h-4 w-4 text-amber-300 sm:h-5 sm:w-5" />
-            <p className="line-clamp-1 text-[8px] uppercase tracking-[0.18em] text-(--dash-muted) sm:text-[10px]">Reimbursement</p>
+            <p className="line-clamp-1 text-[8px] uppercase tracking-[0.18em] text-(--dash-muted) sm:text-[10px]">Reimbursement Saldo</p>
           </div>
-          <p className="mt-2 overflow-hidden text-ellipsis whitespace-nowrap text-base font-semibold leading-tight tabular-nums text-white sm:text-xl">{displayCurrency(totalReimburse)}</p>
+          <p className="mt-2 overflow-hidden text-ellipsis whitespace-nowrap text-base font-semibold leading-tight tabular-nums text-white sm:text-xl">{displayCurrency(groupBalanceReimbursementTotal)}</p>
           <p className="mt-1 text-[9px] text-(--dash-muted) sm:text-[11px]">
-            {reimbursements.length ? `${reimbursements.length} entri` : "Tidak ada yang perlu direimburse"}
+            ZB + NM dari kekurangan saldo terhadap pengeluaran
           </p>
         </div>
         <div className="rounded-xl border border-white/10 bg-white/5 p-3 sm:p-4 relative overflow-hidden">
@@ -1024,13 +1152,13 @@ export default function TransactionManager({
                       <span>{formatCurrency(Number(tx.jumlah))}</span>
                     </span>
                   </TableCell>
-                  <TableCell className="py-2 px-2 sm:py-3 sm:px-3">
-                    <div className="flex flex-col gap-1">
-                      <span className="inline-flex w-fit items-center rounded-full border border-cyan-400/30 bg-cyan-500/10 px-2 py-0.5 text-[10px] text-cyan-100">
-                        {normalizeKlaimStatus(tx.klaimStatus)}
-                      </span>
-                    </div>
-                  </TableCell>
+	                  <TableCell className="py-2 px-2 sm:py-3 sm:px-3">
+	                    <div className="flex flex-col gap-1">
+	                      <span className="inline-flex w-fit items-center rounded-full border border-cyan-400/30 bg-cyan-500/10 px-2 py-0.5 text-[10px] text-cyan-100">
+	                        {tx.klaimDisplayStatus}
+	                      </span>
+	                    </div>
+	                  </TableCell>
                   <TableCell className="py-3 px-3 text-center">
                     <div className="flex items-center justify-center gap-2">
                       <TooltipProvider>
@@ -1064,8 +1192,8 @@ export default function TransactionManager({
                           </TooltipTrigger>
                           <TooltipContent>Edit Transaksi</TooltipContent>
                         </Tooltip>
-                        {normalizeKlaimStatus(tx.klaimStatus) === "Belum diajukan" && (
-                          <Tooltip>
+	                        {canSubmitKlaim(tx) && (
+	                          <Tooltip>
                             <TooltipTrigger asChild>
                               <Button
                                 type="button"
@@ -1081,8 +1209,8 @@ export default function TransactionManager({
                             <TooltipContent>Ubah status menjadi Diajukan</TooltipContent>
                           </Tooltip>
                         )}
-                        {normalizeKlaimStatus(tx.klaimStatus) !== "Dibayar" && (
-                          <Tooltip>
+	                        {canMarkKlaimPaid(tx) && (
+	                          <Tooltip>
                             <TooltipTrigger asChild>
                               <Button
                                 type="button"
@@ -1185,11 +1313,11 @@ export default function TransactionManager({
                     <span>{companyGroupLabel(tx.companyGroup)}</span>
                   </div>
                   <div className="flex items-center justify-between rounded-xl bg-white/5 px-2.5 py-1.5">
-                    <span className="font-semibold text-white/90">Klaim</span>
-                    <span className="rounded-full border border-cyan-400/30 bg-cyan-500/10 px-2 py-0.5 text-[10px] text-cyan-100">
-                      {normalizeKlaimStatus(tx.klaimStatus)}
-                    </span>
-                  </div>
+	                    <span className="font-semibold text-white/90">Klaim</span>
+	                    <span className="rounded-full border border-cyan-400/30 bg-cyan-500/10 px-2 py-0.5 text-[10px] text-cyan-100">
+	                      {tx.klaimDisplayStatus}
+	                    </span>
+	                  </div>
                   <div className="flex items-start justify-between rounded-xl bg-white/5 px-2.5 py-1.5">
                     <span className="font-semibold text-white/90">Detail</span>
                     <span className="max-w-[62%] text-right text-[11px] leading-relaxed text-white/70">
@@ -1216,8 +1344,8 @@ export default function TransactionManager({
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
-                  {normalizeKlaimStatus(tx.klaimStatus) === "Belum diajukan" && (
-                    <Button
+	                  {canSubmitKlaim(tx) && (
+	                    <Button
                       variant="outline"
                       size="sm"
                       disabled={quickStatusUpdatingId === tx.id}
@@ -1227,8 +1355,8 @@ export default function TransactionManager({
                       Ajukan
                     </Button>
                   )}
-                  {normalizeKlaimStatus(tx.klaimStatus) !== "Dibayar" && (
-                    <Button
+	                  {canMarkKlaimPaid(tx) && (
+	                    <Button
                       variant="outline"
                       size="sm"
                       disabled={quickStatusUpdatingId === tx.id}
@@ -1254,7 +1382,7 @@ export default function TransactionManager({
         {paginationControlsMobile}
       </div>
 
-      {!hasEntries && (
+      {!hasGroupedEntries && (
         <div className="rounded-2xl border border-white/10 bg-white/5 p-8 text-center text-sm text-(--dash-muted)">
           <ArchiveX className="mx-auto mb-3 h-10 w-10 text-white/60" />
           <p className="font-semibold text-white/90">Belum ada transaksi</p>
@@ -1451,7 +1579,7 @@ export default function TransactionManager({
                 ) : null}
               </div>
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
                 <div className="grid gap-2">
                   <Label htmlFor="jumlah">Jumlah (Rp)</Label>
                   <CurrencyInput
@@ -1461,6 +1589,37 @@ export default function TransactionManager({
                     onValueChange={handleEditJumlahChange}
                     className="bg-white border-slate-200 dark:bg-slate-900/60 dark:border-white/10"
                   />
+                </div>
+                <div className="grid gap-2">
+                  <Label>Sumber Biaya</Label>
+                  <Select
+                    value={(transactionToEdit.sumberBiaya as MealsPaymentSource | undefined) ?? "deposit"}
+                    onValueChange={(value) =>
+                      setTransactionToEdit((prev) => {
+                        if (!prev) return prev;
+                        const nextSource = value as MealsPaymentSource;
+                        return {
+                          ...prev,
+                          sumberBiaya: nextSource,
+                          klaimStatus:
+                            nextSource === "mandiri"
+                              ? normalizeKlaimStatus(prev.klaimStatus) === "Dibayar"
+                                ? "Belum diajukan"
+                                : normalizeKlaimStatus(prev.klaimStatus)
+                              : "Dibayar",
+                        };
+                      })
+                    }
+                  >
+                    <SelectTrigger className="w-full bg-white border-slate-200 dark:bg-slate-900/60 dark:border-white/10">
+                      <SelectValue placeholder="Pilih sumber biaya" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white text-slate-900 border-slate-200 dark:bg-slate-900 dark:text-slate-100 dark:border-white/10">
+                      <SelectItem value="deposit">Deposit / Kas</SelectItem>
+                      <SelectItem value="mandiri">Personal / Mandiri</SelectItem>
+                      <SelectItem value="kantor">Kantor</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="klaim">Klaim</Label>
@@ -1473,30 +1632,38 @@ export default function TransactionManager({
                     className="bg-white border-slate-200 dark:bg-slate-900/60 dark:border-white/10"
                   />
                 </div>
-                <div className="grid gap-2">
-                  <Label>Status Klaim</Label>
-                  <Select
-                    value={normalizeKlaimStatus(transactionToEdit.klaimStatus)}
-                    onValueChange={(value) =>
-                      setTransactionToEdit((prev) =>
-                        prev
-                          ? { ...prev, klaimStatus: value as KlaimStatus }
-                          : prev
-                      )
-                    }
-                  >
-                    <SelectTrigger className="w-full bg-white border-slate-200 dark:bg-slate-900/60 dark:border-white/10">
-                      <SelectValue placeholder="Pilih status klaim" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white text-slate-900 border-slate-200 dark:bg-slate-900 dark:text-slate-100 dark:border-white/10">
-                      {klaimStatusOptions.map((status) => (
-                        <SelectItem key={status} value={status}>
-                          {status}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+	                <div className="grid gap-2">
+	                  <Label>Status Klaim</Label>
+	                  {transactionToEditClaimable ? (
+	                    <Select
+	                      value={normalizeKlaimStatus(transactionToEdit.klaimStatus)}
+	                      onValueChange={(value) =>
+	                        setTransactionToEdit((prev) =>
+	                          prev
+	                            ? { ...prev, klaimStatus: value as KlaimStatus }
+	                            : prev
+	                        )
+	                      }
+	                    >
+	                      <SelectTrigger className="w-full bg-white border-slate-200 dark:bg-slate-900/60 dark:border-white/10">
+	                        <SelectValue placeholder="Pilih status klaim" />
+	                      </SelectTrigger>
+	                      <SelectContent className="bg-white text-slate-900 border-slate-200 dark:bg-slate-900 dark:text-slate-100 dark:border-white/10">
+	                        {KLAIM_STATUS_OPTIONS.map((status) => (
+	                          <SelectItem key={status} value={status}>
+	                            {status}
+	                          </SelectItem>
+	                        ))}
+	                      </SelectContent>
+	                    </Select>
+	                  ) : (
+	                    <Input
+	                      value="Tidak perlu klaim"
+	                      readOnly
+	                      className="bg-white border-slate-200 text-slate-500 dark:bg-slate-900/60 dark:border-white/10 dark:text-slate-400"
+	                    />
+	                  )}
+	                </div>
               </div>
             </div>
           )}

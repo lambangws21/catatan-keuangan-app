@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, FormEvent, ChangeEvent, useEffect } from "react";
+import { useState, FormEvent, ChangeEvent, useEffect, type ReactNode } from "react";
 import { storage } from "@/lib/firebase/client";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Camera, Loader2, ScanText, Trash2 } from "lucide-react";
@@ -27,12 +27,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CurrencyInput } from "@/components/CurencyInput";
+import {
+  KLAIM_STATUS_OPTIONS,
+  normalizeStoredKlaimStatus,
+  type KlaimStatus,
+  type MealsPaymentSource,
+} from "@/lib/transactions";
 
 interface ExpenseFormProps {
   onTransactionAdded: () => Promise<void>;
+  trigger?: ReactNode;
 }
-
-type KlaimStatus = "Belum diajukan" | "Diajukan" | "Dibayar";
 
 type SelectedPhoto = {
   id: string;
@@ -41,12 +46,6 @@ type SelectedPhoto = {
   width: number;
   height: number;
 };
-
-const klaimStatusOptions: KlaimStatus[] = [
-  "Belum diajukan",
-  "Diajukan",
-  "Dibayar",
-];
 
 const formatFileSize = (sizeInBytes: number) => {
   if (sizeInBytes < 1024 * 1024) {
@@ -201,14 +200,15 @@ const loadImageDimensions = (previewUrl: string) =>
 
 const buildPhotoId = (file: File) => `${file.name}:${file.size}:${file.lastModified}`;
 
-export default function ExpenseForm({ onTransactionAdded }: ExpenseFormProps) {
+export default function ExpenseForm({ onTransactionAdded, trigger }: ExpenseFormProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [tanggal, setTanggal] = useState(new Date().toISOString().split("T")[0]);
   const [jenisBiaya, setJenisBiaya] = useState("Transportasi");
   const [customJenisBiaya, setCustomJenisBiaya] = useState("");
   const [keterangan, setKeterangan] = useState("");
   const [klaim, setKlaim] = useState("");
-  const [klaimStatus, setKlaimStatus] = useState<KlaimStatus>("Belum diajukan");
+  const [sumberBiaya, setSumberBiaya] = useState<MealsPaymentSource>("deposit");
+  const [klaimStatus, setKlaimStatus] = useState<KlaimStatus>("Dibayar");
   const [selectedPhotos, setSelectedPhotos] = useState<SelectedPhoto[]>([]);
   const [jumlah, setJumlah] = useState<number | undefined>(undefined);
 
@@ -219,6 +219,14 @@ export default function ExpenseForm({ onTransactionAdded }: ExpenseFormProps) {
   const [ocrPreview, setOcrPreview] = useState("");
   const DRAFT_KEY = "draft:expense:v1";
   const [draftReady, setDraftReady] = useState(false);
+
+  useEffect(() => {
+    if (sumberBiaya === "mandiri") {
+      setKlaimStatus((prev) => (prev === "Dibayar" ? "Belum diajukan" : prev));
+      return;
+    }
+    setKlaimStatus("Dibayar");
+  }, [sumberBiaya]);
 
   useEffect(() => {
     return () => {
@@ -296,7 +304,8 @@ export default function ExpenseForm({ onTransactionAdded }: ExpenseFormProps) {
     setKeterangan("");
     setJumlah(undefined);
     setKlaim("");
-    setKlaimStatus("Belum diajukan");
+    setSumberBiaya("deposit");
+    setKlaimStatus("Dibayar");
     clearPhotos();
     setOcrPreview("");
     setOcrProgress(0);
@@ -327,23 +336,31 @@ export default function ExpenseForm({ onTransactionAdded }: ExpenseFormProps) {
         setDraftReady(true);
         return;
       }
-      const parsed = JSON.parse(raw) as {
-        tanggal?: string;
-        jenisBiaya?: string;
-        customJenisBiaya?: string;
-        keterangan?: string;
-        klaim?: string;
-        klaimStatus?: KlaimStatus;
-        jumlah?: number;
-      };
+	    const parsed = JSON.parse(raw) as {
+	        tanggal?: string;
+	        jenisBiaya?: string;
+	        customJenisBiaya?: string;
+	        keterangan?: string;
+	        klaim?: string;
+	        sumberBiaya?: MealsPaymentSource;
+	        klaimStatus?: KlaimStatus;
+	        jumlah?: number;
+	      };
       if (typeof parsed.tanggal === "string") setTanggal(parsed.tanggal);
       if (typeof parsed.jenisBiaya === "string") setJenisBiaya(parsed.jenisBiaya);
-      if (typeof parsed.customJenisBiaya === "string") setCustomJenisBiaya(parsed.customJenisBiaya);
-      if (typeof parsed.keterangan === "string") setKeterangan(parsed.keterangan);
-      if (typeof parsed.klaim === "string") setKlaim(parsed.klaim);
-      if (typeof parsed.klaimStatus === "string" && klaimStatusOptions.includes(parsed.klaimStatus)) {
-        setKlaimStatus(parsed.klaimStatus);
-      }
+	      if (typeof parsed.customJenisBiaya === "string") setCustomJenisBiaya(parsed.customJenisBiaya);
+	      if (typeof parsed.keterangan === "string") setKeterangan(parsed.keterangan);
+	      if (typeof parsed.klaim === "string") setKlaim(parsed.klaim);
+	      if (
+	        parsed.sumberBiaya === "deposit" ||
+	        parsed.sumberBiaya === "mandiri" ||
+	        parsed.sumberBiaya === "kantor"
+	      ) {
+	        setSumberBiaya(parsed.sumberBiaya);
+	      }
+	      if (typeof parsed.klaimStatus === "string" && KLAIM_STATUS_OPTIONS.includes(parsed.klaimStatus)) {
+	        setKlaimStatus(parsed.klaimStatus);
+	      }
       if (typeof parsed.jumlah === "number") setJumlah(parsed.jumlah);
     } catch {
       // ignore
@@ -364,10 +381,11 @@ export default function ExpenseForm({ onTransactionAdded }: ExpenseFormProps) {
             tanggal,
             jenisBiaya,
             customJenisBiaya,
-            keterangan,
-            klaim,
-            klaimStatus,
-            jumlah,
+	            keterangan,
+	            klaim,
+	            sumberBiaya,
+	            klaimStatus,
+	            jumlah,
           })
         );
       } catch {
@@ -376,7 +394,7 @@ export default function ExpenseForm({ onTransactionAdded }: ExpenseFormProps) {
     }, 250);
 
     return () => window.clearTimeout(t);
-  }, [DRAFT_KEY, draftReady, isOpen, tanggal, jenisBiaya, customJenisBiaya, keterangan, klaim, klaimStatus, jumlah]);
+  }, [DRAFT_KEY, draftReady, isOpen, tanggal, jenisBiaya, customJenisBiaya, keterangan, klaim, sumberBiaya, klaimStatus, jumlah]);
 
   const handleRunOcr = async () => {
     if (selectedPhotos.length === 0 || isOcrProcessing) return;
@@ -438,6 +456,11 @@ export default function ExpenseForm({ onTransactionAdded }: ExpenseFormProps) {
       setMessage("Mohon isi Jenis Biaya lainnya.");
       return;
     }
+    if (sumberBiaya === "mandiri" && !klaim.trim()) {
+      setIsSubmitting(false);
+      setMessage("Nama klaim wajib diisi untuk reimbursement personal/mandiri.");
+      return;
+    }
 
     try {
       const uploadedUrls =
@@ -464,11 +487,17 @@ export default function ExpenseForm({ onTransactionAdded }: ExpenseFormProps) {
         body: JSON.stringify({
           tanggal,
           jenisBiaya: finalJenisBiaya,
-          keterangan,
-          jumlah,
-          klaim,
-          klaimStatus,
-          fileUrls: uploadedUrls,
+	          keterangan,
+	          jumlah,
+	          klaim,
+	          sumberBiaya,
+	          klaimStatus: normalizeStoredKlaimStatus({
+	            jenisBiaya: finalJenisBiaya,
+	            sumberBiaya,
+	            klaim,
+	            klaimStatus,
+	          }),
+	          fileUrls: uploadedUrls,
           fileUrl: uploadedUrls[0] || "",
         }),
       });
@@ -499,9 +528,14 @@ export default function ExpenseForm({ onTransactionAdded }: ExpenseFormProps) {
       }}
     >
       <DialogTrigger asChild>
-        <Button className="bg-cyan-600 text-white hover:bg-cyan-700 dark:bg-cyan-500 dark:hover:bg-cyan-400">
-          Input Biaya Baru
-        </Button>
+        {trigger ?? (
+          <Button className="fixed bottom-[calc(env(safe-area-inset-bottom)+5.75rem)] right-4 z-40 h-14 rounded-full border border-white/30 bg-white/75 px-5 font-bold text-slate-900 shadow-[0_18px_55px_rgba(15,23,42,0.25)] shadow-cyan-500/20 backdrop-blur-2xl transition-all hover:-translate-y-0.5 hover:bg-white/90 hover:text-slate-950 hover:shadow-[0_22px_70px_rgba(6,182,212,0.28)] dark:border-white/15 dark:bg-slate-950/70 dark:text-white dark:shadow-cyan-950/40 dark:hover:bg-slate-900/85 lg:bottom-[calc(env(safe-area-inset-bottom)+1.25rem)] print:hidden">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-cyan-500 text-white shadow-inner shadow-white/20">
+              <Camera className="h-4 w-4" />
+            </span>
+            <span className="ml-2 hidden sm:inline">Input Biaya</span>
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="w-[calc(100vw-1rem)] max-w-none max-h-[calc(100dvh-1rem)] overflow-y-auto border-slate-200 bg-white text-slate-900 shadow-2xl dark:border-white/10 dark:bg-slate-950 dark:text-slate-100 sm:max-w-[760px]">
         <DialogHeader>
@@ -565,7 +599,7 @@ export default function ExpenseForm({ onTransactionAdded }: ExpenseFormProps) {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="grid gap-2">
               <Label htmlFor="jumlah">Jumlah (Rp)</Label>
               <CurrencyInput
@@ -578,30 +612,51 @@ export default function ExpenseForm({ onTransactionAdded }: ExpenseFormProps) {
               />
             </div>
             <div className="grid gap-2">
+              <Label>Sumber Biaya</Label>
+              <Select value={sumberBiaya} onValueChange={(value) => setSumberBiaya(value as MealsPaymentSource)}>
+                <SelectTrigger className="w-full bg-white border-slate-200 dark:bg-slate-900/60 dark:border-white/10">
+                  <SelectValue placeholder="Pilih sumber biaya" />
+                </SelectTrigger>
+                <SelectContent className="bg-white text-slate-900 border-slate-200 dark:bg-slate-900 dark:text-slate-100 dark:border-white/10">
+                  <SelectItem value="deposit">Deposit / Kas</SelectItem>
+                  <SelectItem value="mandiri">Personal / Mandiri</SelectItem>
+                  <SelectItem value="kantor">Kantor</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
               <Label htmlFor="klaim">Nama Klaim</Label>
               <Input
                 id="klaim"
                 value={klaim}
                 onChange={(e) => setKlaim(e.target.value)}
-                required
-                placeholder="Contoh: Proyek A"
+                required={sumberBiaya === "mandiri"}
+                placeholder={sumberBiaya === "mandiri" ? "Contoh: Proyek A" : "Opsional untuk deposit"}
                 className="bg-white border-slate-200 dark:bg-slate-900/60 dark:border-white/10"
               />
             </div>
             <div className="grid gap-2">
               <Label>Status Klaim</Label>
-              <Select value={klaimStatus} onValueChange={(value) => setKlaimStatus(value as KlaimStatus)}>
-                <SelectTrigger className="w-full bg-white border-slate-200 dark:bg-slate-900/60 dark:border-white/10">
-                  <SelectValue placeholder="Pilih status klaim" />
-                </SelectTrigger>
-                <SelectContent className="bg-white text-slate-900 border-slate-200 dark:bg-slate-900 dark:text-slate-100 dark:border-white/10">
-                  {klaimStatusOptions.map((option) => (
-                    <SelectItem key={option} value={option}>
-                      {option}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {sumberBiaya === "mandiri" ? (
+                <Select value={klaimStatus} onValueChange={(value) => setKlaimStatus(value as KlaimStatus)}>
+                  <SelectTrigger className="w-full bg-white border-slate-200 dark:bg-slate-900/60 dark:border-white/10">
+                    <SelectValue placeholder="Pilih status klaim" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white text-slate-900 border-slate-200 dark:bg-slate-900 dark:text-slate-100 dark:border-white/10">
+                    {KLAIM_STATUS_OPTIONS.map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {option}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  value="Tidak perlu klaim"
+                  readOnly
+                  className="bg-white border-slate-200 text-slate-500 dark:bg-slate-900/60 dark:border-white/10 dark:text-slate-400"
+                />
+              )}
             </div>
           </div>
 

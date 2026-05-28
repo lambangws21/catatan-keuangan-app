@@ -1,224 +1,3 @@
-// "use client";
-
-// import { useState, useEffect, useCallback, useMemo } from "react";
-// import { useAuth } from "@/components/AuthProvider";
-// import ExpenseForm from "@/components/ExepenseForm";
-// import FinancialDashboard from "@/components/FinalcialDashboard";
-// import TransactionManager from "@/components/transaction-manager";
-// import SaldoForm from "@/components/FormSaldo";
-// import ImageGallery from "@/components/ImagePreview";
-// import SaldoManager from "@/components/ManajerSaldo";
-// import {
-//   Select,
-//   SelectContent,
-//   SelectItem,
-//   SelectTrigger,
-//   SelectValue,
-// } from "@/components/ui/select";
-
-// interface Transaction {
-//   id: string;
-//   tanggal: string;
-//   jenisBiaya: string;
-//   keterangan: string;
-//   jumlah: number;
-//   klaim: "Ya" | "Tidak" | string;
-//   fileUrl?: string;
-// }
-
-// interface Saldo {
-//   id: string;
-//   tanggal: string;
-//   keterangan: string;
-//   jumlah: number;
-// }
-
-// export default function DashboardPage() {
-//   const { user } = useAuth();
-//   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
-//   const [allSaldoData, setAllSaldoData] = useState<Saldo[]>([]);
-//   const [isLoading, setIsLoading] = useState(true);
-
-//   const [selectedMonth, setSelectedMonth] = useState<number>(
-//     new Date().getMonth()
-//   );
-//   const [selectedYear, setSelectedYear] = useState<number>(
-//     new Date().getFullYear()
-//   );
-
-//   const fetchTransactions = useCallback(async () => {
-//     if (!user) return;
-//     try {
-//       const token = await user.getIdToken();
-//       const response = await fetch("/api/transactions", {
-//         headers: { Authorization: `Bearer ${token}` },
-//       });
-
-//       if (!response.ok) throw new Error("Gagal mengambil data transaksi.");
-//       const data = await response.json();
-//       setAllTransactions(data);
-//     } catch (error) {
-//       console.error(error);
-//       setAllTransactions([]);
-//     }
-//   }, [user]);
-
-//   const fetchSaldo = useCallback(async () => {
-//     if (!user) return;
-//     try {
-//       const token = await user.getIdToken();
-//       const response = await fetch("/api/saldo", {
-//         headers: { Authorization: `Bearer ${token}` },
-//       });
-
-//       if (!response.ok) throw new Error("Gagal mengambil data saldo.");
-//       const data = await response.json();
-//       setAllSaldoData(data);
-//     } catch (error) {
-//       console.error(error);
-//       setAllSaldoData([]);
-//     }
-//   }, [user]);
-
-//   useEffect(() => {
-//     const fetchAll = async () => {
-//       setIsLoading(true);
-//       if (user) {
-//         await Promise.all([fetchTransactions(), fetchSaldo()]);
-//       }
-//       setIsLoading(false);
-//     };
-
-//     fetchAll();
-//   }, [user, fetchTransactions, fetchSaldo]);
-
-//   const filteredTransactions = useMemo(() => {
-//     return allTransactions.filter((tx) => {
-//       const d = new Date(tx.tanggal);
-//       return (
-//         d.getMonth() === selectedMonth && d.getFullYear() === selectedYear
-//       );
-//     });
-//   }, [allTransactions, selectedMonth, selectedYear]);
-
-//   const filteredSaldoData = useMemo(() => {
-//     return allSaldoData.filter((s) => {
-//       const d = new Date(s.tanggal);
-//       return (
-//         d.getMonth() === selectedMonth && d.getFullYear() === selectedYear
-//       );
-//     });
-//   }, [allSaldoData, selectedMonth, selectedYear]);
-
-//   const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
-//   const months = [
-//     { value: 0, name: "Januari" },
-//     { value: 1, name: "Februari" },
-//     { value: 2, name: "Maret" },
-//     { value: 3, name: "April" },
-//     { value: 4, name: "Mei" },
-//     { value: 5, name: "Juni" },
-//     { value: 6, name: "Juli" },
-//     { value: 7, name: "Agustus" },
-//     { value: 8, name: "September" },
-//     { value: 9, name: "Oktober" },
-//     { value: 10, name: "November" },
-//     { value: 11, name: "Desember" },
-//   ];
-
-//   return (
-//     <div className="space-y-8 p-4 md:p-6 min-h-screen text-foreground bg-background">
-
-//       {/* Header */}
-//       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 pb-4 border-b border-border">
-//         <div>
-//           <h1 className="text-3xl font-bold">Dashboard Keuangan</h1>
-//           <p className="text-muted-foreground mt-1">
-//             Ringkasan aktivitas keuangan Anda.
-//           </p>
-//         </div>
-
-//         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-
-//           {/* Pilihan Bulan */}
-//           <div className="flex-1 md:flex-none">
-//             <Select
-//               value={String(selectedMonth)}
-//               onValueChange={(v) => setSelectedMonth(Number(v))}
-//             >
-//               <SelectTrigger className="w-full md:w-[140px] bg-card border-border">
-//                 <SelectValue placeholder="Bulan" />
-//               </SelectTrigger>
-//               <SelectContent className="bg-popover text-popover-foreground border-border">
-//                 {months.map((m) => (
-//                   <SelectItem key={m.value} value={String(m.value)}>
-//                     {m.name}
-//                   </SelectItem>
-//                 ))}
-//               </SelectContent>
-//             </Select>
-//           </div>
-
-//           {/* Pilihan Tahun */}
-//           <div className="flex-1 md:flex-none">
-//             <Select
-//               value={String(selectedYear)}
-//               onValueChange={(v) => setSelectedYear(Number(v))}
-//             >
-//               <SelectTrigger className="w-full md:w-[120px] bg-card border-border">
-//                 <SelectValue placeholder="Tahun" />
-//               </SelectTrigger>
-//               <SelectContent className="bg-popover text-popover-foreground border-border">
-//                 {years.map((y) => (
-//                   <SelectItem key={y} value={String(y)}>
-//                     {y}
-//                   </SelectItem>
-//                 ))}
-//               </SelectContent>
-//             </Select>
-//           </div>
-
-//           {/* Tombol tambah saldo + transaksi */}
-//           <div className="w-full md:w-auto flex gap-3">
-//             <div className="flex-1">
-//               <SaldoForm onSaldoAdded={fetchSaldo} />
-//             </div>
-//             <div className="flex-1">
-//               <ExpenseForm onTransactionAdded={fetchTransactions} />
-//             </div>
-//           </div>
-//         </div>
-//       </header>
-
-//       {/* Dashboard Utama */}
-//       <FinancialDashboard
-//         transactions={filteredTransactions}
-//         saldoData={filteredSaldoData}
-//         isLoading={isLoading}
-//       />
-
-//       <SaldoManager
-//         saldoData={filteredSaldoData}
-//         isLoading={isLoading}
-//         onDataChange={fetchSaldo}
-//       />
-
-//       <TransactionManager
-//         transactions={filteredTransactions}
-//         isLoading={isLoading}
-//         onDataChange={fetchTransactions}
-//       />
-
-//       <ImageGallery
-//         transactions={filteredTransactions}
-//         isLoading={isLoading}
-//       />
-//     </div>
-//   );
-// }
-
-
-// src/app/dashboard/page.tsx  (ganti isi dengan ini or integrate)
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -236,11 +15,11 @@ import { CalendarDays, Clock, Hospital, Stethoscope, Sun, Moon } from "lucide-re
 import { useTheme } from "next-themes";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MealsMeetingManager from "@/components/MealsMeetingManager";
+import FinanceFloatingActions from "@/components/FinanceFloatingActions";
 import { useVisitSchedules } from "@/hooks/use-visit-schedules";
 import { getVisitAlertsForNextDays } from "@/lib/visit-dokter-alerts";
-import { isCountedAsExpense } from "@/lib/transactions";
+import { isCountedAsExpense, isReimbursement } from "@/lib/transactions";
 
-/* types (same as before) */
 interface Transaction {
   id: string;
   tanggal: string;
@@ -331,6 +110,10 @@ export default function DashboardPage() {
     return filteredTransactions.filter((tx) => isCountedAsExpense(tx));
   }, [filteredTransactions]);
 
+  const reimbursementTransactions = useMemo(() => {
+    return filteredTransactions.filter((tx) => isReimbursement(tx));
+  }, [filteredTransactions]);
+
   const visitAlerts = useMemo(() => {
     return getVisitAlertsForNextDays(visitSchedules, 1);
   }, [visitSchedules]);
@@ -380,7 +163,7 @@ export default function DashboardPage() {
                 <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)">
                   Dashboard
                 </span>
-                <h1 className="text-2xl sm:text-4xl font-(--font-display) font-semibold tracking-tight">
+                <h1 className="text-2xl sm:text-4xl font-semibold tracking-tight">
                   Dashboard Keuangan
                 </h1>
                 <p className="text-sm text-(--dash-muted)">
@@ -519,7 +302,7 @@ export default function DashboardPage() {
               <p className="text-[10px] uppercase tracking-[0.4em] text-(--dash-muted)">
                 Visit Dokter
               </p>
-              <h2 className="mt-2 text-lg font-semibold font-(--font-display) text-(--dash-ink)">
+              <h2 className="mt-2 text-lg font-semibold text-(--dash-ink)">
                 Alert jadwal hari ini & besok
               </h2>
               <p className="mt-1 text-sm text-(--dash-muted)">
@@ -599,9 +382,6 @@ export default function DashboardPage() {
               <TabsTrigger value="transaksi" className="min-w-[92px] text-xs">
                 Transaksi
               </TabsTrigger>
-              <TabsTrigger value="meals" className="min-w-[92px] text-xs">
-                Meals
-              </TabsTrigger>
               <TabsTrigger value="galeri" className="min-w-[92px] text-xs">
                 Galeri
               </TabsTrigger>
@@ -615,7 +395,7 @@ export default function DashboardPage() {
               <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-(--dash-surface-strong) p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h3 className="text-base font-semibold font-(--font-display) text-(--dash-ink)">
+                    <h3 className="text-base font-semibold text-(--dash-ink)">
                       Ringkasan
                     </h3>
                     <p className="text-xs text-(--dash-muted)">
@@ -638,27 +418,29 @@ export default function DashboardPage() {
               </div>
             </TabsContent>
 
-            <TabsContent value="saldo">
+            <TabsContent value="saldo" className="space-y-4">
               <SaldoManager
                 saldoData={filteredSaldoData}
                 isLoading={isLoading}
                 onDataChange={fetchSaldo}
+                floatingActionOffset="stacked"
+                showCreateAction={false}
+              />
+              <MealsMeetingManager
+                transactions={filteredTransactions}
+                isLoading={isLoading}
+                onDataChange={fetchTransactions}
               />
             </TabsContent>
 
             <TabsContent value="transaksi">
               <TransactionManager
                 transactions={expenseTransactions}
+                saldoData={filteredSaldoData}
+                reimbursements={reimbursementTransactions}
                 isLoading={isLoading}
                 onDataChange={fetchTransactions}
-              />
-            </TabsContent>
-
-            <TabsContent value="meals">
-              <MealsMeetingManager
-                transactions={filteredTransactions}
-                isLoading={isLoading}
-                onDataChange={fetchTransactions}
+                showCreateAction={false}
               />
             </TabsContent>
 
@@ -684,7 +466,7 @@ export default function DashboardPage() {
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-white/10 bg-(--dash-surface-strong) p-4">
                 <div>
-                  <h3 className="text-lg font-semibold font-(--font-display) text-(--dash-ink)">
+                  <h3 className="text-lg font-semibold text-(--dash-ink)">
                     Ringkasan Bulanan
                   </h3>
                   <p className="text-sm text-(--dash-muted)">
@@ -707,31 +489,40 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
-            <div className="min-w-0">
+          <div className="grid gap-6 lg:grid-cols-[minmax(360px,0.78fr)_minmax(0,1.55fr)] lg:items-start xl:grid-cols-[minmax(390px,0.72fr)_minmax(0,1.7fr)]">
+            <div className="min-w-0 space-y-6">
               <SaldoManager
                 saldoData={filteredSaldoData}
                 isLoading={isLoading}
                 onDataChange={fetchSaldo}
+                floatingActionOffset="stacked"
+                showCreateAction={false}
+              />
+              <MealsMeetingManager
+                transactions={filteredTransactions}
+                isLoading={isLoading}
+                onDataChange={fetchTransactions}
               />
             </div>
             <div className="min-w-0">
               <TransactionManager
                 transactions={expenseTransactions}
+                saldoData={filteredSaldoData}
+                reimbursements={reimbursementTransactions}
                 isLoading={isLoading}
                 onDataChange={fetchTransactions}
+                showCreateAction={false}
               />
             </div>
           </div>
 
-          <MealsMeetingManager
-            transactions={filteredTransactions}
-            isLoading={isLoading}
-            onDataChange={fetchTransactions}
-          />
-
           <ImageGallery transactions={filteredTransactions} isLoading={isLoading} />
         </div>
+
+        <FinanceFloatingActions
+          onSaldoAdded={fetchSaldo}
+          onTransactionAdded={fetchTransactions}
+        />
       </div>
     </div>
   );

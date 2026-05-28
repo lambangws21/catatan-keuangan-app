@@ -20,7 +20,7 @@ import Spinner from '@/components/Spinner';
 // ======================
 // ✅ TYPE
 // ======================
-export interface Operation {
+interface Operation {
   id: string;
   date: string;
   dokter: string;

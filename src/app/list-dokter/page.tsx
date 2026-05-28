@@ -7,7 +7,7 @@ import DoctorForm from "@/components/visit-dokter/form-input-dokter";
 import NurseLister from "@/components/nurse-list/nurse-lister";
 
 // Tipe data untuk dokter
-export interface Doctor {
+interface Doctor {
   id: string;
   namaDokter: string;
   rumahSakit: string[];

@@ -1,17 +1,6 @@
 import { NextResponse } from "next/server";
 import admin from "@/lib/firebase/admin";
-
-const KLAIM_STATUS = ["Belum diajukan", "Diajukan", "Dibayar"] as const;
-type KlaimStatus = (typeof KLAIM_STATUS)[number];
-
-const normalizeKlaimStatus = (value: unknown): KlaimStatus => {
-  if (typeof value !== "string") return "Belum diajukan";
-  const normalized = value.trim();
-  if (KLAIM_STATUS.includes(normalized as KlaimStatus)) {
-    return normalized as KlaimStatus;
-  }
-  return "Belum diajukan";
-};
+import { normalizeKlaimStatus, normalizeStoredKlaimStatus } from "@/lib/transactions";
 
 const normalizeFileUrls = (fileUrls: unknown, fileUrl?: unknown) => {
   const urls = Array.isArray(fileUrls)
@@ -87,7 +76,12 @@ export async function PUT(
     const id = await getId(context);
     const rawBody = await request.json();
     const normalizedFileUrls = normalizeFileUrls(rawBody.fileUrls, rawBody.fileUrl);
-    const normalizedKlaimStatus = normalizeKlaimStatus(rawBody.klaimStatus);
+    const normalizedKlaimStatus = normalizeStoredKlaimStatus({
+      jenisBiaya: rawBody.jenisBiaya,
+      sumberBiaya: rawBody.sumberBiaya,
+      klaim: rawBody.klaim,
+      klaimStatus: rawBody.klaimStatus,
+    });
 
     // auto-convert jumlah ke number
     const body = {
