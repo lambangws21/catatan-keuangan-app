@@ -28,6 +28,8 @@ import {
 } from "@/components/ui/select";
 import { CurrencyInput } from "@/components/CurencyInput";
 import {
+  DEFAULT_KLAIM_NAME,
+  DEFAULT_KLAIM_STATUS,
   KLAIM_STATUS_OPTIONS,
   normalizeStoredKlaimStatus,
   type KlaimStatus,
@@ -206,9 +208,9 @@ export default function ExpenseForm({ onTransactionAdded, trigger }: ExpenseForm
   const [jenisBiaya, setJenisBiaya] = useState("Transportasi");
   const [customJenisBiaya, setCustomJenisBiaya] = useState("");
   const [keterangan, setKeterangan] = useState("");
-  const [klaim, setKlaim] = useState("");
+  const [klaim, setKlaim] = useState(DEFAULT_KLAIM_NAME);
   const [sumberBiaya, setSumberBiaya] = useState<MealsPaymentSource>("deposit");
-  const [klaimStatus, setKlaimStatus] = useState<KlaimStatus>("Dibayar");
+  const [klaimStatus, setKlaimStatus] = useState<KlaimStatus>(DEFAULT_KLAIM_STATUS);
   const [selectedPhotos, setSelectedPhotos] = useState<SelectedPhoto[]>([]);
   const [jumlah, setJumlah] = useState<number | undefined>(undefined);
 
@@ -217,15 +219,13 @@ export default function ExpenseForm({ onTransactionAdded, trigger }: ExpenseForm
   const [isOcrProcessing, setIsOcrProcessing] = useState(false);
   const [ocrProgress, setOcrProgress] = useState(0);
   const [ocrPreview, setOcrPreview] = useState("");
-  const DRAFT_KEY = "draft:expense:v1";
+  const DRAFT_KEY = "draft:expense:v2";
   const [draftReady, setDraftReady] = useState(false);
 
   useEffect(() => {
-    if (sumberBiaya === "mandiri") {
-      setKlaimStatus((prev) => (prev === "Dibayar" ? "Belum diajukan" : prev));
-      return;
+    if (sumberBiaya !== "mandiri") {
+      setKlaimStatus(DEFAULT_KLAIM_STATUS);
     }
-    setKlaimStatus("Dibayar");
   }, [sumberBiaya]);
 
   useEffect(() => {
@@ -303,9 +303,9 @@ export default function ExpenseForm({ onTransactionAdded, trigger }: ExpenseForm
     setCustomJenisBiaya("");
     setKeterangan("");
     setJumlah(undefined);
-    setKlaim("");
+    setKlaim(DEFAULT_KLAIM_NAME);
     setSumberBiaya("deposit");
-    setKlaimStatus("Dibayar");
+    setKlaimStatus(DEFAULT_KLAIM_STATUS);
     clearPhotos();
     setOcrPreview("");
     setOcrProgress(0);
@@ -631,7 +631,7 @@ export default function ExpenseForm({ onTransactionAdded, trigger }: ExpenseForm
                 value={klaim}
                 onChange={(e) => setKlaim(e.target.value)}
                 required={sumberBiaya === "mandiri"}
-                placeholder={sumberBiaya === "mandiri" ? "Contoh: Proyek A" : "Opsional untuk deposit"}
+                placeholder="Contoh: Lambang"
                 className="bg-white border-slate-200 dark:bg-slate-900/60 dark:border-white/10"
               />
             </div>

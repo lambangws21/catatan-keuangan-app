@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import {
@@ -53,9 +53,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  DEFAULT_KLAIM_NAME,
+  DEFAULT_KLAIM_STATUS,
   KLAIM_STATUS_OPTIONS,
   MEALS_TYPE,
   normalizeMealsPaymentSource,
+  normalizeKlaimStatus,
   normalizeStoredKlaimStatus,
   type KlaimStatus,
   type MealsPaymentSource,
@@ -165,9 +168,9 @@ export default function MealsMeetingManager({
 
   const [tanggal, setTanggal] = useState(new Date().toISOString().split("T")[0]);
   const [jumlah, setJumlah] = useState<number | undefined>(350_000);
-  const [klaim, setKlaim] = useState("Lambang");
+  const [klaim, setKlaim] = useState(DEFAULT_KLAIM_NAME);
   const [sumberBiaya, setSumberBiaya] = useState<MealsPaymentSource>("deposit");
-  const [klaimStatus, setKlaimStatus] = useState<KlaimStatus>("Dibayar");
+  const [klaimStatus, setKlaimStatus] = useState<KlaimStatus>(DEFAULT_KLAIM_STATUS);
   const [keterangan, setKeterangan] = useState("");
   const [dokterOperasi, setDokterOperasi] = useState("");
   const [tindakanOperasi, setTindakanOperasi] = useState("");
@@ -185,19 +188,17 @@ export default function MealsMeetingManager({
   }, [previewUrl]);
 
   useEffect(() => {
-    if (sumberBiaya === "mandiri") {
-      setKlaimStatus((prev) => (prev === "Dibayar" ? "Belum diajukan" : prev));
-      return;
+    if (sumberBiaya !== "mandiri") {
+      setKlaimStatus(DEFAULT_KLAIM_STATUS);
     }
-    setKlaimStatus("Dibayar");
   }, [sumberBiaya]);
 
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     setTanggal(new Date().toISOString().split("T")[0]);
     setJumlah(350_000);
-    setKlaim("Lambang");
+    setKlaim(DEFAULT_KLAIM_NAME);
     setSumberBiaya("deposit");
-    setKlaimStatus("Dibayar");
+    setKlaimStatus(DEFAULT_KLAIM_STATUS);
     setKeterangan("");
     setDokterOperasi("");
     setTindakanOperasi("");
@@ -206,13 +207,20 @@ export default function MealsMeetingManager({
     setBerkas(null);
     if (previewUrl?.startsWith("blob:")) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
-  };
+  }, [previewUrl]);
 
-  const openCreate = () => {
+  const openCreate = useCallback(() => {
     setEditing(null);
     resetForm();
     setIsDialogOpen(true);
-  };
+  }, [resetForm]);
+
+  useEffect(() => {
+    window.addEventListener("meals-meeting:open-create", openCreate);
+    return () => {
+      window.removeEventListener("meals-meeting:open-create", openCreate);
+    };
+  }, [openCreate]);
 
   const openEdit = (tx: Transaction) => {
     setEditing(tx);
@@ -220,7 +228,7 @@ export default function MealsMeetingManager({
     setJumlah(Number(tx.jumlah));
     setKlaim(tx.klaim || "");
     setSumberBiaya(normalizeMealsPaymentSource(tx.sumberBiaya) ?? "deposit");
-    setKlaimStatus(tx.klaimStatus ?? "Belum diajukan");
+    setKlaimStatus(normalizeKlaimStatus(tx.klaimStatus));
     const meta = extractMeta(tx.keterangan || "");
     setKeterangan(meta.note);
     setDokterOperasi(meta.dokterOperasi);

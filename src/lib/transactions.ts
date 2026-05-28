@@ -1,8 +1,10 @@
 export const MEALS_TYPE = "Meals Metting";
+export const DEFAULT_KLAIM_NAME = "Lambang";
 
 export type MealsPaymentSource = "deposit" | "mandiri" | "kantor";
-export type KlaimStatus = "Belum diajukan" | "Diajukan" | "Dibayar";
+export type KlaimStatus = "Belum diajukan" | "Diajukan" | "Terklaim";
 export type KlaimDisplayStatus = KlaimStatus | "Tidak perlu klaim";
+export const DEFAULT_KLAIM_STATUS: KlaimStatus = "Terklaim";
 
 export type TransactionLike = {
   jenisBiaya?: string | null;
@@ -33,23 +35,26 @@ export type GroupReimbursementSummary = Record<
 export const KLAIM_STATUS_OPTIONS: KlaimStatus[] = [
   "Belum diajukan",
   "Diajukan",
-  "Dibayar",
+  "Terklaim",
 ];
 
 export const KLAIM_FILTER_STATUS_OPTIONS: KlaimDisplayStatus[] = [
   "Belum diajukan",
   "Diajukan",
-  "Dibayar",
+  "Terklaim",
   "Tidak perlu klaim",
 ];
 
 export function normalizeKlaimStatus(value?: string | null): KlaimStatus {
-  if (!value) return "Belum diajukan";
+  if (!value) return DEFAULT_KLAIM_STATUS;
   const normalized = value.trim();
+  if (normalized.toLowerCase() === "dibayar" || normalized.toLowerCase() === "terklaim") {
+    return DEFAULT_KLAIM_STATUS;
+  }
   if (KLAIM_STATUS_OPTIONS.includes(normalized as KlaimStatus)) {
     return normalized as KlaimStatus;
   }
-  return "Belum diajukan";
+  return DEFAULT_KLAIM_STATUS;
 }
 
 export function normalizeMealsPaymentSource(
@@ -86,11 +91,11 @@ export function isReimbursement(tx: TransactionLike): boolean {
 }
 
 export function isPendingReimbursement(tx: TransactionLike): boolean {
-  return isReimbursement(tx) && normalizeKlaimStatus(tx.klaimStatus) !== "Dibayar";
+  return isReimbursement(tx) && normalizeKlaimStatus(tx.klaimStatus) !== DEFAULT_KLAIM_STATUS;
 }
 
 export function isPaidReimbursement(tx: TransactionLike): boolean {
-  return isReimbursement(tx) && normalizeKlaimStatus(tx.klaimStatus) === "Dibayar";
+  return isReimbursement(tx) && normalizeKlaimStatus(tx.klaimStatus) === DEFAULT_KLAIM_STATUS;
 }
 
 export function getKlaimDisplayStatus(tx: TransactionLike): KlaimDisplayStatus {
@@ -99,7 +104,7 @@ export function getKlaimDisplayStatus(tx: TransactionLike): KlaimDisplayStatus {
 }
 
 export function normalizeStoredKlaimStatus(tx: TransactionLike): KlaimStatus {
-  if (!isReimbursement(tx)) return "Dibayar";
+  if (!isReimbursement(tx)) return DEFAULT_KLAIM_STATUS;
   return normalizeKlaimStatus(tx.klaimStatus);
 }
 

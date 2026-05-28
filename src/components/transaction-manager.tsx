@@ -44,6 +44,7 @@ import { useTableUiConfig } from "@/hooks/use-table-ui-config";
 import { CurrencyInput } from "@/components/CurencyInput";
 import { detectCompanyGroup, companyGroupLabel, type CompanyGroup } from "@/lib/company-groups";
 import {
+  DEFAULT_KLAIM_STATUS,
   KLAIM_FILTER_STATUS_OPTIONS,
   KLAIM_STATUS_OPTIONS,
   canMarkKlaimPaid,
@@ -397,7 +398,7 @@ export default function TransactionManager({
   ) => {
     const allowed =
       (nextStatus === "Diajukan" && canSubmitKlaim(tx)) ||
-      (nextStatus === "Dibayar" && canMarkKlaimPaid(tx));
+      (nextStatus === DEFAULT_KLAIM_STATUS && canMarkKlaimPaid(tx));
 
     if (!allowed) return;
 
@@ -979,31 +980,35 @@ export default function TransactionManager({
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
-          {groupedTables.filter((item) => item.group !== "OTHER").map((item) => (
+        <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
+          {groupedTables.map((item) => {
+            const tone =
+              item.group === "ZB"
+                ? {
+                    border: "border-sky-400/30",
+                    header: "bg-sky-500/10",
+                    title: "font-black text-sky-100",
+                  }
+                : item.group === "NM"
+                  ? {
+                      border: "border-violet-400/30",
+                      header: "bg-violet-500/10",
+                      title: "font-black italic text-violet-100",
+                    }
+                  : {
+                      border: "border-slate-400/25",
+                      header: "bg-slate-500/10",
+                      title: "font-black text-slate-100",
+                    };
+
+            return (
             <div
               key={item.group}
-              className={`overflow-hidden rounded-2xl border bg-slate-950/45 shadow-[0_14px_40px_rgba(2,6,23,0.28)] ${
-                item.group === "ZB"
-                  ? "border-sky-400/30"
-                  : "border-violet-400/30"
-              }`}
+              className={`overflow-hidden rounded-2xl border bg-slate-950/45 shadow-[0_14px_40px_rgba(2,6,23,0.28)] ${tone.border}`}
             >
-              <div
-                className={`p-3 sm:p-4 ${
-                  item.group === "ZB"
-                    ? "bg-sky-500/10"
-                    : "bg-violet-500/10"
-                }`}
-              >
+              <div className={`p-3 sm:p-4 ${tone.header}`}>
                 <div className="flex items-start justify-between gap-2">
-                  <p
-                    className={`text-[10px] uppercase tracking-[0.2em] sm:text-[11px] ${
-                      item.group === "ZB"
-                        ? "font-black text-sky-100"
-                        : "font-black italic text-violet-100"
-                    }`}
-                  >
+                  <p className={`text-[10px] uppercase tracking-[0.2em] sm:text-[11px] ${tone.title}`}>
                     {companyGroupLabel(item.group)}
                   </p>
                   <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[9px] text-white/70 sm:text-[10px]">
@@ -1039,7 +1044,8 @@ export default function TransactionManager({
                 </div>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       </section>
 
@@ -1217,13 +1223,13 @@ export default function TransactionManager({
                                 size="sm"
                                 variant="outline"
                                 disabled={quickStatusUpdatingId === tx.id}
-                                onClick={() => handleQuickKlaimStatusChange(tx, "Dibayar")}
+                                onClick={() => handleQuickKlaimStatusChange(tx, DEFAULT_KLAIM_STATUS)}
                                 className="h-8 rounded-full border-emerald-300/40 bg-emerald-400/10 px-3 text-[10px] font-semibold text-emerald-100 hover:bg-emerald-400/20"
                               >
-                                {quickStatusUpdatingId === tx.id ? "..." : "Bayar"}
+                                {quickStatusUpdatingId === tx.id ? "..." : "Terklaim"}
                               </Button>
                             </TooltipTrigger>
-                            <TooltipContent>Ubah status menjadi Dibayar</TooltipContent>
+                            <TooltipContent>Ubah status menjadi Terklaim</TooltipContent>
                           </Tooltip>
                         )}
                         <Tooltip>
@@ -1360,10 +1366,10 @@ export default function TransactionManager({
                       variant="outline"
                       size="sm"
                       disabled={quickStatusUpdatingId === tx.id}
-                      onClick={() => handleQuickKlaimStatusChange(tx, "Dibayar")}
+                      onClick={() => handleQuickKlaimStatusChange(tx, DEFAULT_KLAIM_STATUS)}
                       className="h-8 rounded-full border-emerald-300/40 bg-emerald-400/10 px-3 text-[10px] font-semibold text-emerald-100 hover:bg-emerald-400/20"
                     >
-                      Bayar
+                      Terklaim
                     </Button>
                   )}
                   <Button
@@ -1603,10 +1609,8 @@ export default function TransactionManager({
                           sumberBiaya: nextSource,
                           klaimStatus:
                             nextSource === "mandiri"
-                              ? normalizeKlaimStatus(prev.klaimStatus) === "Dibayar"
-                                ? "Belum diajukan"
-                                : normalizeKlaimStatus(prev.klaimStatus)
-                              : "Dibayar",
+                              ? normalizeKlaimStatus(prev.klaimStatus)
+                              : DEFAULT_KLAIM_STATUS,
                         };
                       })
                     }

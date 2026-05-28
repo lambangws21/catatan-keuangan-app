@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Loader2, Wallet } from "lucide-react";
 
@@ -26,18 +26,22 @@ const shouldShowLoaderForAnchor = (event: MouseEvent, anchor: HTMLAnchorElement)
 export default function PageTransitionLoader() {
   const pathname = usePathname();
   const [isVisible, setIsVisible] = useState(false);
+  const showTimer = useRef<number | null>(null);
   const hideTimer = useRef<number | null>(null);
   const fallbackTimer = useRef<number | null>(null);
 
-  const showLoader = () => {
+  const showLoader = useCallback(() => {
+    if (showTimer.current) window.clearTimeout(showTimer.current);
     if (hideTimer.current) window.clearTimeout(hideTimer.current);
     if (fallbackTimer.current) window.clearTimeout(fallbackTimer.current);
 
-    setIsVisible(true);
-    fallbackTimer.current = window.setTimeout(() => {
-      setIsVisible(false);
-    }, 3500);
-  };
+    showTimer.current = window.setTimeout(() => {
+      setIsVisible(true);
+      fallbackTimer.current = window.setTimeout(() => {
+        setIsVisible(false);
+      }, 3500);
+    }, 0);
+  }, []);
 
   useEffect(() => {
     const handleClick = (event: MouseEvent) => {
@@ -80,12 +84,14 @@ export default function PageTransitionLoader() {
       window.removeEventListener("popstate", showLoader);
       window.history.pushState = originalPushState;
       window.history.replaceState = originalReplaceState;
+      if (showTimer.current) window.clearTimeout(showTimer.current);
       if (hideTimer.current) window.clearTimeout(hideTimer.current);
       if (fallbackTimer.current) window.clearTimeout(fallbackTimer.current);
     };
-  }, []);
+  }, [showLoader]);
 
   useEffect(() => {
+    if (showTimer.current) window.clearTimeout(showTimer.current);
     if (hideTimer.current) window.clearTimeout(hideTimer.current);
     hideTimer.current = window.setTimeout(() => {
       setIsVisible(false);

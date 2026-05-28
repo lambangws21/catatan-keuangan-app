@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Camera, Landmark, Plus } from "lucide-react";
+import { Camera, Handshake, Landmark, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SaldoForm from "@/components/FormSaldo";
 import ExpenseForm from "@/components/ExepenseForm";
@@ -17,6 +17,11 @@ export default function FinanceFloatingActions({
   onTransactionAdded,
 }: FinanceFloatingActionsProps) {
   const [isOpen, setIsOpen] = useState(false);
+
+  const openMealsMeeting = () => {
+    setIsOpen(false);
+    window.dispatchEvent(new CustomEvent("meals-meeting:open-create"));
+  };
 
   const optionClass =
     "h-12 rounded-2xl border border-white/25 bg-white/80 px-4 text-sm font-bold text-slate-900 shadow-[0_16px_45px_rgba(15,23,42,0.22)] backdrop-blur-2xl hover:-translate-y-0.5 hover:bg-white dark:border-white/15 dark:bg-slate-950/80 dark:text-white dark:hover:bg-slate-900";
@@ -62,6 +67,16 @@ export default function FinanceFloatingActions({
             </Button>
           }
         />
+        <Button
+          type="button"
+          onClick={openMealsMeeting}
+          className={optionClass}
+        >
+          <span className="mr-3 flex h-8 w-8 items-center justify-center rounded-full bg-amber-500 text-white shadow-inner shadow-white/20">
+            <Handshake className="h-4 w-4" />
+          </span>
+          Meals Metting
+        </Button>
       </div>
 
       <Button
