@@ -27,12 +27,26 @@ type PdfJsDocument = {
   getPage: (pageNumber: number) => Promise<PdfJsPage>;
 };
 
+type PdfJsViewport = {
+  width: number;
+  height: number;
+  convertToViewportPoint?: (x: number, y: number) => [number, number];
+};
+
+type PdfTextItem = {
+  str: string;
+  transform: number[];
+  width?: number;
+  height?: number;
+};
+
 type PdfJsPage = {
-  getViewport: (params: { scale: number }) => { width: number; height: number };
+  getViewport: (params: { scale: number }) => PdfJsViewport;
+  getTextContent: () => Promise<{ items: PdfTextItem[] }>;
   render: (params: {
     canvas: HTMLCanvasElement;
     canvasContext: CanvasRenderingContext2D;
-    viewport: { width: number; height: number };
+    viewport: PdfJsViewport;
   }) => { promise: Promise<void> };
 };
 
@@ -54,6 +68,11 @@ const DEFAULT_COLOR = "#14b8a6";
 const DEFAULT_REPLACEMENT_COLOR = "#111827";
 const DEFAULT_BACKGROUND_COLOR = "#ffffff";
 const PREVIEW_SCALE = 1.6;
+
+const createId = () =>
+  typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
 const hexToRgb = (hex: string) => {
   const normalized = hex.replace("#", "");
@@ -96,6 +115,7 @@ export default function PdfEditor() {
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [isRendering, setIsRendering] = useState(false);
+  const [isExtractingText, setIsExtractingText] = useState(false);
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
   const [previewWidth, setPreviewWidth] = useState(0);
   const [overlays, setOverlays] = useState<TextOverlay[]>([]);
@@ -224,10 +244,7 @@ export default function PdfEditor() {
       return;
     }
 
-    const id =
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : `${Date.now()}`;
+    const id = createId();
 
     const item: TextOverlay = {
       id,
@@ -253,10 +270,7 @@ export default function PdfEditor() {
       return;
     }
 
-    const id =
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : `${Date.now()}`;
+    const id = createId();
 
     const item: TextOverlay = {
       id,
@@ -274,6 +288,85 @@ export default function PdfEditor() {
 
     setOverlays((prev) => [...prev, item]);
     setSelectedId(id);
+  };
+
+  const extractEditableTextFromPage = async () => {
+    if (!pdfDocument) {
+      toast.error("Upload PDF dulu.");
+      return;
+    }
+
+    setIsExtractingText(true);
+    try {
+      const page = await pdfDocument.getPage(currentPage);
+      const viewport = page.getViewport({ scale: 1 });
+      const textContent = await page.getTextContent();
+
+      const extracted = textContent.items.flatMap((item, index) => {
+        const text = item.str?.trim();
+        const transform = item.transform;
+
+        if (!text || !Array.isArray(transform) || transform.length < 6) {
+          return [];
+        }
+
+        const [, , , rawFontSize, pdfX, pdfY] = transform;
+        const [viewportX, viewportY] = viewport.convertToViewportPoint
+          ? viewport.convertToViewportPoint(pdfX, pdfY)
+          : [pdfX, viewport.height - pdfY];
+        const fontSize = Math.max(
+          7,
+          Math.min(64, Math.round(Math.abs(rawFontSize) || item.height || 12))
+        );
+        const boxWidth = Math.max(
+          18,
+          Math.ceil(item.width || text.length * fontSize * 0.56)
+        );
+        const boxHeight = Math.max(
+          fontSize + 8,
+          Math.ceil((item.height || fontSize) * 1.35)
+        );
+        const y = Math.min(
+          Math.max(0, viewportY - fontSize - 3),
+          Math.max(0, viewport.height - boxHeight)
+        );
+
+        return [
+          {
+            id: `${createId()}-${index}`,
+            page: currentPage,
+            text,
+            x: Math.min(Math.max(0, viewportX), Math.max(0, viewport.width - 12)),
+            y,
+            fontSize,
+            color: DEFAULT_REPLACEMENT_COLOR,
+            boxWidth,
+            boxHeight,
+            coverBackground: true,
+            backgroundColor: DEFAULT_BACKGROUND_COLOR,
+          },
+        ];
+      });
+
+      if (!extracted.length) {
+        toast.error("Tidak ada teks yang bisa dibaca di halaman ini.");
+        return;
+      }
+
+      setOverlays((prev) => [
+        ...prev.filter(
+          (item) => !(item.page === currentPage && item.coverBackground)
+        ),
+        ...extracted,
+      ]);
+      setSelectedId(extracted[0]?.id ?? null);
+      toast.success(`${extracted.length} teks halaman ini siap diedit.`);
+    } catch (error) {
+      console.error(error);
+      toast.error("Gagal membaca teks dari PDF.");
+    } finally {
+      setIsExtractingText(false);
+    }
   };
 
   const deleteSelected = () => {
@@ -387,10 +480,23 @@ export default function PdfEditor() {
               Edit PDF Ringan
             </h1>
             <p className="mt-1 max-w-2xl text-sm leading-6 text-(--dash-muted)">
-              Tambahkan teks, tutup teks lama dengan kotak penutup, ubah warna dan ukuran, lalu export menjadi PDF baru.
+              Jadikan teks PDF sebagai layer editable, ubah isi dan posisi seperti canvas editor, lalu export menjadi PDF baru.
             </p>
           </div>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 lg:flex lg:flex-wrap">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:flex lg:flex-wrap">
+            <Button
+              type="button"
+              onClick={extractEditableTextFromPage}
+              disabled={!pdfDocument || isExtractingText}
+              className="h-11 bg-emerald-400 text-slate-950 hover:bg-emerald-300"
+            >
+              {isExtractingText ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Type className="h-4 w-4" />
+              )}
+              Edit Semua Teks
+            </Button>
             <Button
               type="button"
               onClick={addTextOverlay}
@@ -472,7 +578,7 @@ export default function PdfEditor() {
           </div>
 
           <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-xs leading-5 text-(--dash-muted)">
-            Tombol Edit Teks menutup area teks lama dengan kotak warna, lalu menaruh teks baru di atasnya.
+            Edit Semua Teks membaca teks halaman aktif dan mengubahnya menjadi layer yang bisa diedit satu per satu.
           </div>
         </aside>
 
@@ -725,22 +831,35 @@ export default function PdfEditor() {
             </div>
           ) : (
             <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm leading-6 text-(--dash-muted)">
-              Pilih teks di canvas atau klik <span className="font-semibold text-white">Tambah Teks</span>.
+              Pilih teks di canvas, klik <span className="font-semibold text-white">Edit Semua Teks</span>, atau tambahkan teks baru.
             </div>
           )}
 
           <div className="rounded-xl border border-cyan-300/20 bg-cyan-300/10 p-3 text-xs leading-5 text-cyan-50/80">
-            Tips: untuk edit teks PDF, klik Edit Teks, geser kotak ke atas teks lama, sesuaikan ukuran area, lalu ganti isi teksnya.
+            Tips: klik Edit Semua Teks untuk membuat teks halaman aktif editable otomatis. PDF hasil scan/gambar tidak punya teks yang bisa diekstrak.
           </div>
         </aside>
       </div>
 
-      <div className="fixed inset-x-3 bottom-3 z-40 grid grid-cols-3 gap-2 rounded-2xl border border-white/10 bg-slate-950/90 p-2 shadow-[0_18px_50px_rgba(0,0,0,0.45)] backdrop-blur md:hidden">
+      <div className="fixed inset-x-3 bottom-3 z-40 grid grid-cols-4 gap-2 rounded-2xl border border-white/10 bg-slate-950/90 p-2 shadow-[0_18px_50px_rgba(0,0,0,0.45)] backdrop-blur md:hidden">
+        <Button
+          type="button"
+          onClick={extractEditableTextFromPage}
+          disabled={!pdfDocument || isExtractingText}
+          className="h-12 bg-emerald-400 px-2 text-xs text-slate-950 hover:bg-emerald-300"
+        >
+          {isExtractingText ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Type className="h-4 w-4" />
+          )}
+          Semua
+        </Button>
         <Button
           type="button"
           onClick={addTextOverlay}
           disabled={!pdfDocument}
-          className="h-12 bg-cyan-500 text-slate-950 hover:bg-cyan-300"
+          className="h-12 px-2 text-xs bg-cyan-500 text-slate-950 hover:bg-cyan-300"
         >
           <Plus className="h-4 w-4" />
           Teks
@@ -750,7 +869,7 @@ export default function PdfEditor() {
           onClick={addReplacementText}
           disabled={!pdfDocument}
           variant="secondary"
-          className="h-12 border border-amber-300/20 bg-amber-300/15 text-amber-50 hover:bg-amber-300/20"
+          className="h-12 px-2 text-xs border border-amber-300/20 bg-amber-300/15 text-amber-50 hover:bg-amber-300/20"
         >
           <Eraser className="h-4 w-4" />
           Edit
@@ -760,7 +879,7 @@ export default function PdfEditor() {
           onClick={exportPdf}
           disabled={!pdfDocument || overlays.length === 0}
           variant="secondary"
-          className="h-12 border border-white/10 bg-white/10 text-white hover:bg-white/15"
+          className="h-12 px-2 text-xs border border-white/10 bg-white/10 text-white hover:bg-white/15"
         >
           <Download className="h-4 w-4" />
           Export
