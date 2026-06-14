@@ -74,6 +74,7 @@ const downloadBytes = (bytes: Uint8Array, filename: string) => {
 export default function PdfEditor() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
+  const previewShellRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{
     id: string;
     offsetX: number;
@@ -88,6 +89,7 @@ export default function PdfEditor() {
   const [isLoading, setIsLoading] = useState(false);
   const [isRendering, setIsRendering] = useState(false);
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
+  const [previewWidth, setPreviewWidth] = useState(0);
   const [overlays, setOverlays] = useState<TextOverlay[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -98,6 +100,17 @@ export default function PdfEditor() {
   const selectedOverlay = useMemo(
     () => overlays.find((item) => item.id === selectedId) ?? null,
     [overlays, selectedId]
+  );
+  const previewScale = useMemo(() => {
+    if (!canvasSize.width || !previewWidth) return 1;
+    return Math.min(1, Math.max(0.46, previewWidth / canvasSize.width));
+  }, [canvasSize.width, previewWidth]);
+  const previewSize = useMemo(
+    () => ({
+      width: canvasSize.width * previewScale,
+      height: canvasSize.height * previewScale,
+    }),
+    [canvasSize.height, canvasSize.width, previewScale]
   );
 
   const renderPage = useCallback(async () => {
@@ -133,6 +146,27 @@ export default function PdfEditor() {
   useEffect(() => {
     renderPage();
   }, [renderPage]);
+
+  useEffect(() => {
+    const shell = previewShellRef.current;
+    if (!shell) return;
+
+    const updateWidth = () => {
+      const rect = shell.getBoundingClientRect();
+      setPreviewWidth(Math.max(0, rect.width - 16));
+    };
+
+    updateWidth();
+
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", updateWidth);
+      return () => window.removeEventListener("resize", updateWidth);
+    }
+
+    const observer = new ResizeObserver(updateWidth);
+    observer.observe(shell);
+    return () => observer.disconnect();
+  }, []);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -215,8 +249,8 @@ export default function PdfEditor() {
     setSelectedId(item.id);
     dragRef.current = {
       id: item.id,
-      offsetX: event.clientX - rect.left,
-      offsetY: event.clientY - rect.top,
+      offsetX: (event.clientX - rect.left) / previewScale,
+      offsetY: (event.clientY - rect.top) / previewScale,
     };
     event.currentTarget.setPointerCapture(event.pointerId);
   };
@@ -225,8 +259,10 @@ export default function PdfEditor() {
     if (!dragRef.current || !stageRef.current) return;
 
     const rect = stageRef.current.getBoundingClientRect();
-    const nextX = event.clientX - rect.left - dragRef.current.offsetX;
-    const nextY = event.clientY - rect.top - dragRef.current.offsetY;
+    const nextX =
+      (event.clientX - rect.left) / previewScale - dragRef.current.offsetX;
+    const nextY =
+      (event.clientY - rect.top) / previewScale - dragRef.current.offsetY;
 
     updateOverlay(dragRef.current.id, {
       x: Math.min(Math.max(0, nextX), Math.max(0, canvasSize.width - 16)),
@@ -284,7 +320,7 @@ export default function PdfEditor() {
   };
 
   return (
-    <div className="space-y-5 text-(--dash-ink)">
+    <div className="space-y-4 pb-20 text-(--dash-ink) md:space-y-5 md:pb-0">
       <header className="rounded-2xl border border-white/10 bg-(--dash-surface) p-4 shadow-[0_16px_40px_rgba(2,6,23,0.35)] sm:p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0">
@@ -299,12 +335,12 @@ export default function PdfEditor() {
               Tambahkan teks overlay, ubah warna dan ukuran, drag posisi teks, lalu export menjadi PDF baru.
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:flex lg:flex-wrap">
             <Button
               type="button"
               onClick={addTextOverlay}
               disabled={!pdfDocument}
-              className="bg-cyan-500 text-slate-950 hover:bg-cyan-300"
+              className="h-11 bg-cyan-500 text-slate-950 hover:bg-cyan-300"
             >
               <Plus className="h-4 w-4" />
               Tambah Teks
@@ -314,7 +350,7 @@ export default function PdfEditor() {
               onClick={exportPdf}
               disabled={!pdfDocument || overlays.length === 0}
               variant="secondary"
-              className="border border-white/10 bg-white/10 text-white hover:bg-white/15"
+              className="h-11 border border-white/10 bg-white/10 text-white hover:bg-white/15"
             >
               <Download className="h-4 w-4" />
               Export PDF
@@ -323,7 +359,7 @@ export default function PdfEditor() {
         </div>
       </header>
 
-      <div className="grid gap-5 xl:grid-cols-[320px_minmax(0,1fr)_320px]">
+      <div className="grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)_320px] xl:gap-5">
         <aside className="space-y-4 rounded-2xl border border-white/10 bg-(--dash-surface) p-4">
           <div className="space-y-2">
             <Label htmlFor="pdf-upload" className="text-sm text-white">
@@ -334,7 +370,7 @@ export default function PdfEditor() {
               type="file"
               accept="application/pdf"
               onChange={handleFileChange}
-              className="border-white/10 bg-white/5 text-sm text-white file:rounded-md file:border-0 file:bg-cyan-500 file:px-3 file:text-slate-950"
+              className="h-11 border-white/10 bg-white/5 text-sm text-white file:mr-3 file:h-9 file:rounded-md file:border-0 file:bg-cyan-500 file:px-3 file:text-slate-950"
             />
             <p className="break-words text-xs text-(--dash-muted)">
               {fileName || "Belum ada file dipilih."}
@@ -347,7 +383,7 @@ export default function PdfEditor() {
               variant="outline"
               disabled={currentPage <= 1}
               onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-              className="border-white/10 bg-white/5 text-white hover:bg-white/10"
+              className="h-11 border-white/10 bg-white/5 text-white hover:bg-white/10"
             >
               Prev
             </Button>
@@ -356,7 +392,7 @@ export default function PdfEditor() {
               variant="outline"
               disabled={currentPage >= pageCount}
               onClick={() => setCurrentPage((prev) => Math.min(pageCount, prev + 1))}
-              className="border-white/10 bg-white/5 text-white hover:bg-white/10"
+              className="h-11 border-white/10 bg-white/5 text-white hover:bg-white/10"
             >
               Next
             </Button>
@@ -376,7 +412,10 @@ export default function PdfEditor() {
         </aside>
 
         <section className="min-w-0 rounded-2xl border border-white/10 bg-slate-950/80 p-3 shadow-[0_18px_55px_rgba(2,6,23,0.42)] sm:p-4">
-          <div className="relative flex min-h-[520px] items-center justify-center overflow-auto rounded-xl bg-black/30 p-4">
+          <div
+            ref={previewShellRef}
+            className="relative flex min-h-[60vh] items-center justify-center overflow-auto rounded-xl bg-black/30 p-2 sm:min-h-[520px] sm:p-4"
+          >
             {isLoading || isRendering ? (
               <div className="absolute inset-0 z-20 flex items-center justify-center bg-slate-950/70 backdrop-blur-sm">
                 <Loader2 className="h-8 w-8 animate-spin text-cyan-300" />
@@ -385,45 +424,55 @@ export default function PdfEditor() {
 
             {pdfDocument ? (
               <div
-                ref={stageRef}
-                className="relative shrink-0 overflow-hidden rounded-md bg-white shadow-2xl"
+                className="relative shrink-0"
                 style={{
-                  width: canvasSize.width || undefined,
-                  height: canvasSize.height || undefined,
+                  width: previewSize.width || undefined,
+                  height: previewSize.height || undefined,
                 }}
-                onPointerMove={handlePointerMove}
-                onPointerUp={handlePointerUp}
-                onPointerCancel={handlePointerUp}
               >
-                <canvas ref={canvasRef} className="block" />
-                {pageOverlays.map((item) => (
-                  <div
-                    key={item.id}
-                    role="button"
-                    tabIndex={0}
-                    onPointerDown={(event) => handlePointerDown(event, item)}
-                    onClick={() => setSelectedId(item.id)}
-                    className={cn(
-                      "absolute cursor-move select-none rounded-md border px-2 py-1 shadow-lg",
-                      selectedId === item.id
-                        ? "border-cyan-400 bg-cyan-400/10"
-                        : "border-transparent bg-transparent hover:border-cyan-300/70"
-                    )}
-                    style={{
-                      left: item.x,
-                      top: item.y,
-                      color: item.color,
-                      fontSize: item.fontSize,
-                      lineHeight: 1.15,
-                      maxWidth: Math.max(120, canvasSize.width - item.x - 24),
-                    }}
-                  >
-                    <span className="inline-flex items-start gap-1 whitespace-pre-wrap break-words">
-                      <Grip className="mt-1 h-3 w-3 shrink-0 opacity-50" />
-                      {item.text}
-                    </span>
-                  </div>
-                ))}
+                <div
+                  ref={stageRef}
+                  className="relative shrink-0 overflow-hidden rounded-md bg-white shadow-2xl"
+                  style={{
+                    width: canvasSize.width || undefined,
+                    height: canvasSize.height || undefined,
+                    transform: `scale(${previewScale})`,
+                    transformOrigin: "top left",
+                  }}
+                  onPointerMove={handlePointerMove}
+                  onPointerUp={handlePointerUp}
+                  onPointerCancel={handlePointerUp}
+                >
+                  <canvas ref={canvasRef} className="block" />
+                  {pageOverlays.map((item) => (
+                    <div
+                      key={item.id}
+                      role="button"
+                      tabIndex={0}
+                      onPointerDown={(event) => handlePointerDown(event, item)}
+                      onClick={() => setSelectedId(item.id)}
+                      className={cn(
+                        "absolute touch-none cursor-move select-none rounded-md border px-2 py-1 shadow-lg",
+                        selectedId === item.id
+                          ? "border-cyan-400 bg-cyan-400/10"
+                          : "border-transparent bg-transparent hover:border-cyan-300/70"
+                      )}
+                      style={{
+                        left: item.x,
+                        top: item.y,
+                        color: item.color,
+                        fontSize: item.fontSize,
+                        lineHeight: 1.15,
+                        maxWidth: Math.max(120, canvasSize.width - item.x - 24),
+                      }}
+                    >
+                      <span className="inline-flex items-start gap-1 whitespace-pre-wrap break-words">
+                        <Grip className="mt-1 h-3 w-3 shrink-0 opacity-50" />
+                        {item.text}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
             ) : (
               <div className="flex min-h-[420px] w-full flex-col items-center justify-center rounded-xl border border-dashed border-white/15 bg-white/5 p-8 text-center">
@@ -471,7 +520,7 @@ export default function PdfEditor() {
                   onChange={(event) =>
                     updateOverlay(selectedOverlay.id, { text: event.target.value })
                   }
-                  className="min-h-[120px] border-white/10 bg-white/5 text-white placeholder:text-white/40"
+                  className="min-h-[120px] border-white/10 bg-white/5 text-base text-white placeholder:text-white/40 sm:text-sm"
                 />
               </div>
 
@@ -488,7 +537,7 @@ export default function PdfEditor() {
                         fontSize: Number(event.target.value),
                       })
                     }
-                    className="border-white/10 bg-white/5 text-white"
+                    className="h-11 border-white/10 bg-white/5 text-base text-white sm:text-sm"
                   />
                 </div>
                 <div className="space-y-2">
@@ -502,7 +551,7 @@ export default function PdfEditor() {
                     onChange={(event) =>
                       updateOverlay(selectedOverlay.id, { color: event.target.value })
                     }
-                    className="h-9 border-white/10 bg-white/5 p-1"
+                    className="h-11 border-white/10 bg-white/5 p-1"
                   />
                 </div>
               </div>
@@ -518,7 +567,7 @@ export default function PdfEditor() {
                         x: Number(event.target.value),
                       })
                     }
-                    className="border-white/10 bg-white/5 text-white"
+                    className="h-11 border-white/10 bg-white/5 text-base text-white sm:text-sm"
                   />
                 </div>
                 <div className="space-y-2">
@@ -531,7 +580,7 @@ export default function PdfEditor() {
                         y: Number(event.target.value),
                       })
                     }
-                    className="border-white/10 bg-white/5 text-white"
+                    className="h-11 border-white/10 bg-white/5 text-base text-white sm:text-sm"
                   />
                 </div>
               </div>
@@ -546,6 +595,28 @@ export default function PdfEditor() {
             Tips: drag teks langsung di atas halaman PDF. Export akan mempertahankan PDF asli dan menambahkan teks overlay.
           </div>
         </aside>
+      </div>
+
+      <div className="fixed inset-x-3 bottom-3 z-40 grid grid-cols-2 gap-2 rounded-2xl border border-white/10 bg-slate-950/90 p-2 shadow-[0_18px_50px_rgba(0,0,0,0.45)] backdrop-blur md:hidden">
+        <Button
+          type="button"
+          onClick={addTextOverlay}
+          disabled={!pdfDocument}
+          className="h-12 bg-cyan-500 text-slate-950 hover:bg-cyan-300"
+        >
+          <Plus className="h-4 w-4" />
+          Teks
+        </Button>
+        <Button
+          type="button"
+          onClick={exportPdf}
+          disabled={!pdfDocument || overlays.length === 0}
+          variant="secondary"
+          className="h-12 border border-white/10 bg-white/10 text-white hover:bg-white/15"
+        >
+          <Download className="h-4 w-4" />
+          Export
+        </Button>
       </div>
     </div>
   );
