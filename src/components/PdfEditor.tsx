@@ -5,6 +5,7 @@ import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { toast } from "sonner";
 import {
   Download,
+  Eraser,
   FileText,
   Grip,
   Loader2,
@@ -17,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
@@ -42,9 +44,15 @@ type TextOverlay = {
   y: number;
   fontSize: number;
   color: string;
+  boxWidth: number;
+  boxHeight: number;
+  coverBackground: boolean;
+  backgroundColor: string;
 };
 
 const DEFAULT_COLOR = "#14b8a6";
+const DEFAULT_REPLACEMENT_COLOR = "#111827";
+const DEFAULT_BACKGROUND_COLOR = "#ffffff";
 const PREVIEW_SCALE = 1.6;
 
 const hexToRgb = (hex: string) => {
@@ -229,6 +237,39 @@ export default function PdfEditor() {
       y: Math.max(24, canvasSize.height * 0.12),
       fontSize: 18,
       color: DEFAULT_COLOR,
+      boxWidth: 220,
+      boxHeight: 48,
+      coverBackground: false,
+      backgroundColor: DEFAULT_BACKGROUND_COLOR,
+    };
+
+    setOverlays((prev) => [...prev, item]);
+    setSelectedId(id);
+  };
+
+  const addReplacementText = () => {
+    if (!pdfDocument) {
+      toast.error("Upload PDF dulu.");
+      return;
+    }
+
+    const id =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `${Date.now()}`;
+
+    const item: TextOverlay = {
+      id,
+      page: currentPage,
+      text: "Teks pengganti",
+      x: Math.max(24, canvasSize.width * 0.12),
+      y: Math.max(24, canvasSize.height * 0.12),
+      fontSize: 16,
+      color: DEFAULT_REPLACEMENT_COLOR,
+      boxWidth: 260,
+      boxHeight: 54,
+      coverBackground: true,
+      backgroundColor: DEFAULT_BACKGROUND_COLOR,
     };
 
     setOverlays((prev) => [...prev, item]);
@@ -295,16 +336,30 @@ export default function PdfEditor() {
         const displayWidth = canvasSize.width || width;
         const displayHeight = canvasSize.height || height;
         const color = hexToRgb(item.color);
+        const backgroundColor = hexToRgb(item.backgroundColor);
         const pdfX = (item.x / displayWidth) * width;
-        const pdfY = height - (item.y / displayHeight) * height - item.fontSize;
+        const pdfWidth = (item.boxWidth / displayWidth) * width;
+        const pdfHeight = (item.boxHeight / displayHeight) * height;
+        const pdfTop = height - (item.y / displayHeight) * height;
+        const pdfY = pdfTop - item.fontSize - 6;
+
+        if (item.coverBackground) {
+          page.drawRectangle({
+            x: pdfX,
+            y: Math.max(0, pdfTop - pdfHeight),
+            width: Math.max(8, pdfWidth),
+            height: Math.max(8, pdfHeight),
+            color: rgb(backgroundColor.r, backgroundColor.g, backgroundColor.b),
+          });
+        }
 
         page.drawText(item.text, {
-          x: pdfX,
+          x: pdfX + 4,
           y: Math.max(0, pdfY),
           size: item.fontSize,
           font,
           color: rgb(color.r, color.g, color.b),
-          maxWidth: width - pdfX - 24,
+          maxWidth: Math.max(24, pdfWidth - 8),
           lineHeight: item.fontSize * 1.2,
         });
       });
@@ -332,10 +387,10 @@ export default function PdfEditor() {
               Edit PDF Ringan
             </h1>
             <p className="mt-1 max-w-2xl text-sm leading-6 text-(--dash-muted)">
-              Tambahkan teks overlay, ubah warna dan ukuran, drag posisi teks, lalu export menjadi PDF baru.
+              Tambahkan teks, tutup teks lama dengan kotak penutup, ubah warna dan ukuran, lalu export menjadi PDF baru.
             </p>
           </div>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:flex lg:flex-wrap">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 lg:flex lg:flex-wrap">
             <Button
               type="button"
               onClick={addTextOverlay}
@@ -344,6 +399,16 @@ export default function PdfEditor() {
             >
               <Plus className="h-4 w-4" />
               Tambah Teks
+            </Button>
+            <Button
+              type="button"
+              onClick={addReplacementText}
+              disabled={!pdfDocument}
+              variant="secondary"
+              className="h-11 border border-amber-300/20 bg-amber-300/15 text-amber-50 hover:bg-amber-300/20"
+            >
+              <Eraser className="h-4 w-4" />
+              Edit Teks
             </Button>
             <Button
               type="button"
@@ -407,7 +472,7 @@ export default function PdfEditor() {
           </div>
 
           <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-xs leading-5 text-(--dash-muted)">
-            Model edit ini menambahkan teks baru di atas PDF asli. Teks bawaan PDF tidak diubah langsung.
+            Tombol Edit Teks menutup area teks lama dengan kotak warna, lalu menaruh teks baru di atasnya.
           </div>
         </aside>
 
@@ -463,7 +528,12 @@ export default function PdfEditor() {
                         color: item.color,
                         fontSize: item.fontSize,
                         lineHeight: 1.15,
+                        width: item.boxWidth,
+                        minHeight: item.boxHeight,
                         maxWidth: Math.max(120, canvasSize.width - item.x - 24),
+                        backgroundColor: item.coverBackground
+                          ? item.backgroundColor
+                          : "transparent",
                       }}
                     >
                       <span className="inline-flex items-start gap-1 whitespace-pre-wrap break-words">
@@ -524,6 +594,29 @@ export default function PdfEditor() {
                 />
               </div>
 
+              <div className="rounded-xl border border-amber-300/20 bg-amber-300/10 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <Label className="text-sm text-white">Tutup teks lama</Label>
+                    <p className="mt-1 text-xs leading-5 text-(--dash-muted)">
+                      Aktifkan untuk mengganti teks PDF dengan teks baru.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={selectedOverlay.coverBackground}
+                    onCheckedChange={(checked) =>
+                      updateOverlay(selectedOverlay.id, {
+                        coverBackground: checked,
+                        color: checked
+                          ? DEFAULT_REPLACEMENT_COLOR
+                          : selectedOverlay.color,
+                      })
+                    }
+                    className="data-[state=checked]:bg-amber-400"
+                  />
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label className="text-sm text-white">Ukuran</Label>
@@ -552,6 +645,51 @@ export default function PdfEditor() {
                       updateOverlay(selectedOverlay.id, { color: event.target.value })
                     }
                     className="h-11 border-white/10 bg-white/5 p-1"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm text-white">Warna penutup</Label>
+                  <Input
+                    type="color"
+                    value={selectedOverlay.backgroundColor}
+                    disabled={!selectedOverlay.coverBackground}
+                    onChange={(event) =>
+                      updateOverlay(selectedOverlay.id, {
+                        backgroundColor: event.target.value,
+                      })
+                    }
+                    className="h-11 border-white/10 bg-white/5 p-1 disabled:opacity-50"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label className="text-sm text-white">Lebar area</Label>
+                  <Input
+                    type="number"
+                    min={24}
+                    value={Math.round(selectedOverlay.boxWidth)}
+                    onChange={(event) =>
+                      updateOverlay(selectedOverlay.id, {
+                        boxWidth: Number(event.target.value),
+                      })
+                    }
+                    className="h-11 border-white/10 bg-white/5 text-base text-white sm:text-sm"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm text-white">Tinggi area</Label>
+                  <Input
+                    type="number"
+                    min={18}
+                    value={Math.round(selectedOverlay.boxHeight)}
+                    onChange={(event) =>
+                      updateOverlay(selectedOverlay.id, {
+                        boxHeight: Number(event.target.value),
+                      })
+                    }
+                    className="h-11 border-white/10 bg-white/5 text-base text-white sm:text-sm"
                   />
                 </div>
               </div>
@@ -592,12 +730,12 @@ export default function PdfEditor() {
           )}
 
           <div className="rounded-xl border border-cyan-300/20 bg-cyan-300/10 p-3 text-xs leading-5 text-cyan-50/80">
-            Tips: drag teks langsung di atas halaman PDF. Export akan mempertahankan PDF asli dan menambahkan teks overlay.
+            Tips: untuk edit teks PDF, klik Edit Teks, geser kotak ke atas teks lama, sesuaikan ukuran area, lalu ganti isi teksnya.
           </div>
         </aside>
       </div>
 
-      <div className="fixed inset-x-3 bottom-3 z-40 grid grid-cols-2 gap-2 rounded-2xl border border-white/10 bg-slate-950/90 p-2 shadow-[0_18px_50px_rgba(0,0,0,0.45)] backdrop-blur md:hidden">
+      <div className="fixed inset-x-3 bottom-3 z-40 grid grid-cols-3 gap-2 rounded-2xl border border-white/10 bg-slate-950/90 p-2 shadow-[0_18px_50px_rgba(0,0,0,0.45)] backdrop-blur md:hidden">
         <Button
           type="button"
           onClick={addTextOverlay}
@@ -606,6 +744,16 @@ export default function PdfEditor() {
         >
           <Plus className="h-4 w-4" />
           Teks
+        </Button>
+        <Button
+          type="button"
+          onClick={addReplacementText}
+          disabled={!pdfDocument}
+          variant="secondary"
+          className="h-12 border border-amber-300/20 bg-amber-300/15 text-amber-50 hover:bg-amber-300/20"
+        >
+          <Eraser className="h-4 w-4" />
+          Edit
         </Button>
         <Button
           type="button"
