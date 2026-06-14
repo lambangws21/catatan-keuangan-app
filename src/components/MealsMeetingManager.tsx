@@ -381,29 +381,29 @@ export default function MealsMeetingManager({
     doc.save(`Meals_Metting_${exportTag()}.pdf`);
   };
 
-  const card = "rounded-2xl border border-white/10 bg-(--dash-surface) shadow-[0_18px_50px_rgba(2,6,23,0.4)]";
+  const card = "rounded-2xl border border-white/10 bg-(--dash-surface) shadow-[0_14px_38px_rgba(2,6,23,0.34)]";
 
   return (
     <motion.section
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`${card} p-3 text-(--dash-ink) sm:p-4`}
+      className={`${card} min-w-0 overflow-hidden p-3 text-(--dash-ink) sm:p-4`}
     >
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
+      <div className="flex min-w-0 flex-col gap-3 2xl:flex-row 2xl:items-start 2xl:justify-between">
+        <div className="min-w-0">
           <p className="text-[9px] uppercase tracking-[0.32em] text-(--dash-muted)">
             Kategori Khusus
           </p>
-          <h2 className="mt-1 flex items-center gap-2 text-lg font-semibold sm:text-xl">
-            <Handshake className="h-4 w-4 text-amber-300" />
-            Meals Metting
+          <h2 className="mt-1 flex min-w-0 items-center gap-2 text-lg font-semibold sm:text-xl">
+            <Handshake className="h-4 w-4 shrink-0 text-amber-300" />
+            <span className="min-w-0 break-words">Meals Metting</span>
           </h2>
-          <p className="mt-1 text-[11px] text-(--dash-muted)">
+          <p className="mt-1 break-words text-[11px] text-(--dash-muted)">
             Simpan dan pantau pengeluaran kategori Meals Metting.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
           <Button
             onClick={handleExportExcel}
             variant="secondary"
@@ -645,43 +645,43 @@ export default function MealsMeetingManager({
       </div>
 
       {/* SUMMARY */}
-      <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+      <div className="mt-4 grid grid-cols-1 gap-2 xl:grid-cols-3">
+        <div className="min-w-0 rounded-2xl border border-white/10 bg-white/5 p-3">
           <p className="text-[9px] uppercase tracking-[0.24em] text-(--dash-muted)">
             Total Meals
           </p>
           <div className="mt-1.5 flex items-center justify-between gap-2">
             <div className="inline-flex items-center gap-2 text-[11px] text-(--dash-muted)">
               <Wallet className="h-3.5 w-3.5" />
-              <span>Jumlah</span>
+              <span className="min-w-0 truncate">Jumlah</span>
             </div>
             <p className="truncate text-sm font-semibold text-amber-300 tabular-nums sm:text-base">
               {formatCurrency(totalMeals)}
             </p>
           </div>
         </div>
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+        <div className="min-w-0 rounded-2xl border border-white/10 bg-white/5 p-3">
           <p className="text-[9px] uppercase tracking-[0.24em] text-(--dash-muted)">
             Entri
           </p>
           <div className="mt-1.5 flex items-center justify-between gap-2">
             <div className="inline-flex items-center gap-2 text-[11px] text-(--dash-muted)">
               <Handshake className="h-3.5 w-3.5" />
-              <span>Jumlah data</span>
+              <span className="min-w-0 truncate">Jumlah data</span>
             </div>
             <p className="text-base font-semibold tabular-nums">{meals.length}</p>
           </div>
         </div>
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+        <div className="min-w-0 rounded-2xl border border-white/10 bg-white/5 p-3">
           <p className="text-[9px] uppercase tracking-[0.24em] text-(--dash-muted)">
             Export
           </p>
           <div className="mt-1.5 flex items-center justify-between gap-2">
             <div className="inline-flex items-center gap-2 text-[11px] text-(--dash-muted)">
               <FileText className="h-3.5 w-3.5" />
-              <span>Nama file</span>
+              <span className="min-w-0 truncate">Nama file</span>
             </div>
-            <p className="text-xs font-semibold tabular-nums">{exportTag()}</p>
+            <p className="min-w-0 truncate text-xs font-semibold tabular-nums">{exportTag()}</p>
           </div>
         </div>
       </div>
@@ -699,7 +699,7 @@ export default function MealsMeetingManager({
         ) : (
           <>
             {/* Mobile cards */}
-            <div className="grid gap-3 md:hidden">
+            <div className="grid gap-3 xl:hidden">
               {meals.slice(0, 12).map((tx) => {
                 const meta = extractMeta(tx.keterangan || "");
                 return (
@@ -777,7 +777,7 @@ export default function MealsMeetingManager({
             </div>
 
             {/* Desktop table */}
-            <div className="hidden overflow-auto rounded-2xl border border-white/10 bg-white/5 md:block">
+            <div className="hidden overflow-auto rounded-2xl border border-white/10 bg-white/5 xl:block">
               <div className="max-h-[420px] overflow-auto">
                 <Table className="min-w-[860px] text-[11px]">
                   <TableHeader>

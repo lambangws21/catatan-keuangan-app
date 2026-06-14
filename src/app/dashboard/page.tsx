@@ -49,7 +49,7 @@ export default function DashboardPage() {
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
 
-  const [viewMode, setViewMode] = useState<"compact" | "expanded">("expanded");
+  const [viewMode, setViewMode] = useState<"compact" | "expanded">("compact");
 
   const fetchTransactions = useCallback(async () => {
     if (!user) return;
@@ -155,15 +155,15 @@ export default function DashboardPage() {
       <div className="pointer-events-none absolute -top-32 right-[-10%] h-72 w-72 rounded-full bg-[radial-gradient(circle_at_center,rgba(20,184,166,0.25),transparent_65%)] blur-3xl" />
       <div className="pointer-events-none absolute -bottom-40 left-[-15%] h-80 w-80 rounded-full bg-[radial-gradient(circle_at_center,rgba(245,158,11,0.22),transparent_70%)] blur-3xl" />
 
-      <div className="relative z-10 space-y-6 sm:space-y-8 font-(--font-body) text-(--dash-ink)">
-        <header className="dashboard-surface rounded-3xl border border-white/10 bg-(--dash-surface) p-4 sm:p-6 lg:p-8 backdrop-blur">
-          <div className="flex flex-col gap-6">
+      <div className="relative z-10 space-y-4 font-(--font-body) text-(--dash-ink) sm:space-y-5">
+        <header className="dashboard-surface rounded-2xl border border-white/10 bg-(--dash-surface) p-4 backdrop-blur sm:p-5">
+          <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-              <div className="space-y-2">
+              <div className="min-w-0 space-y-2">
                 <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)">
                   Dashboard
                 </span>
-                <h1 className="text-2xl sm:text-4xl font-semibold tracking-tight">
+                <h1 className="wrap-break-word text-2xl font-semibold tracking-tight sm:text-3xl">
                   Dashboard Keuangan
                 </h1>
                 <p className="text-sm text-(--dash-muted)">
@@ -296,7 +296,7 @@ export default function DashboardPage() {
         </section>
 
         {/* DETAIL VISIT (TABLET/DESKTOP) */}
-        <section className="hidden sm:block dashboard-surface rounded-3xl border border-white/10 bg-(--dash-surface-strong) p-4 sm:p-6">
+        <section className="hidden sm:block dashboard-surface rounded-2xl border border-white/10 bg-(--dash-surface-strong) p-4 sm:p-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
               <p className="text-[10px] uppercase tracking-[0.4em] text-(--dash-muted)">
@@ -451,21 +451,21 @@ export default function DashboardPage() {
         </div>
 
         {/* DESKTOP: full layout */}
-        <div className="hidden lg:block space-y-6">
+        <div className="hidden space-y-5 lg:block">
           <div
             className={
               viewMode === "compact"
-                ? "grid gap-6 lg:grid-cols-[1.2fr_0.8fr]"
-                : "grid gap-6"
+                ? "grid gap-5 2xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.72fr)]"
+                : "grid gap-5"
             }
           >
             <div className="min-w-0">
               <FinancialChart transactions={filteredTransactions} />
             </div>
 
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-white/10 bg-(--dash-surface-strong) p-4">
-                <div>
+            <div className="flex min-w-0 flex-col gap-3">
+              <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-(--dash-surface-strong) p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
                   <h3 className="text-lg font-semibold text-(--dash-ink)">
                     Ringkasan Bulanan
                   </h3>
@@ -489,8 +489,8 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-[minmax(360px,0.78fr)_minmax(0,1.55fr)] lg:items-start xl:grid-cols-[minmax(390px,0.72fr)_minmax(0,1.7fr)]">
-            <div className="min-w-0 space-y-6">
+          <div className="grid gap-5 2xl:grid-cols-[minmax(360px,0.65fr)_minmax(0,1.8fr)] 2xl:items-start">
+            <div className="min-w-0 space-y-5">
               <SaldoManager
                 saldoData={filteredSaldoData}
                 isLoading={isLoading}

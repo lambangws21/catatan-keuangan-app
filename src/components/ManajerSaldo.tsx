@@ -264,27 +264,27 @@ export default function SaldoManager({
     visible: { y: 0, opacity: 1 },
   };
 
-  const cardBackground = "border border-white/10 bg-(--dash-surface) shadow-[0_20px_60px_rgba(2,6,23,0.45)]";
+  const cardBackground = "border border-white/10 bg-(--dash-surface) shadow-[0_16px_40px_rgba(2,6,23,0.38)]";
 
   return (
     <motion.div
-      className={`space-y-3 rounded-2xl ${cardBackground} p-3 text-(--dash-ink) sm:p-4`}
+      className={`min-w-0 space-y-3 rounded-2xl ${cardBackground} p-3 text-(--dash-ink) sm:p-4`}
       variants={containerVariants}
       initial="hidden"
       animate="visible"
     >
       <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-        <div>
+        <div className="min-w-0">
           <p className="text-[9px] uppercase tracking-[0.32em] text-(--dash-muted)">
             Riwayat Saldo
           </p>
-          <h2 className="text-lg font-semibold text-white sm:text-xl">Sirkulasi Dana Terkini</h2>
+          <h2 className="break-words text-base font-semibold text-white sm:text-lg">Sirkulasi Dana Terkini</h2>
           <p className="text-[11px] text-(--dash-muted)">
             {totalEntries} entri dapat diekspor dengan cepat.
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex shrink-0 flex-wrap gap-2">
           {showCreateAction ? (
             <SaldoForm
               onSaldoAdded={onDataChange}
@@ -318,7 +318,7 @@ export default function SaldoManager({
           value={searchTerm}
           onChange={(event) => setSearchTerm(event.target.value)}
           placeholder="Cari tanggal, keterangan, jumlah, ZB, Zimmer Biomet, NM, Normed..."
-          className="h-9 border-slate-200 bg-white text-xs text-slate-900 placeholder:text-slate-400 dark:border-white/10 dark:bg-black/20 dark:text-slate-100 dark:placeholder:text-white/40"
+          className="h-9 min-w-0 border-slate-200 bg-white text-xs text-slate-900 placeholder:text-slate-400 dark:border-white/10 dark:bg-black/20 dark:text-slate-100 dark:placeholder:text-white/40"
         />
         <Select
           value={selectedCompanyGroup}
@@ -338,7 +338,7 @@ export default function SaldoManager({
       </div>
 
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-        <div className="rounded-xl border border-slate-200 bg-white/80 p-2.5 text-slate-900 shadow-inner dark:border-white/10 dark:bg-white/5 dark:text-slate-100">
+        <div className="min-w-0 rounded-xl border border-slate-200 bg-white/80 p-2.5 text-slate-900 shadow-inner dark:border-white/10 dark:bg-white/5 dark:text-slate-100">
           <div className="flex items-center gap-2">
             <Wallet className="h-3.5 w-3.5 text-emerald-300" />
             <p className="text-[8px] uppercase tracking-[0.22em] text-(--dash-muted)">
@@ -350,7 +350,7 @@ export default function SaldoManager({
             {hasEntries ? `${totalEntries} transaksi` : "Belum ada data"}
           </p>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white/80 p-2.5 text-slate-900 dark:border-white/10 dark:bg-white/5 dark:text-slate-100">
+        <div className="min-w-0 rounded-xl border border-slate-200 bg-white/80 p-2.5 text-slate-900 dark:border-white/10 dark:bg-white/5 dark:text-slate-100">
           <p className="text-[8px] uppercase tracking-[0.22em] text-(--dash-muted)">
             Entri terbaru
           </p>
@@ -361,9 +361,9 @@ export default function SaldoManager({
           ) : (
             <ul className="mt-2 space-y-1.5 text-[11px] text-slate-800 dark:text-white/90">
               {latestEntries.map((item) => (
-                <li key={item.id} className="flex items-center justify-between">
-                  <span className="font-medium">{item.tanggal}</span>
-                  <span className="text-(--dash-muted)">{formatCurrency(Number(item.jumlah))}</span>
+                <li key={item.id} className="flex min-w-0 items-center justify-between gap-2">
+                  <span className="shrink-0 font-medium">{item.tanggal}</span>
+                  <span className="min-w-0 truncate text-(--dash-muted)">{formatCurrency(Number(item.jumlah))}</span>
                 </li>
               ))}
             </ul>
@@ -375,10 +375,10 @@ export default function SaldoManager({
         {(["ZB", "NM", "OTHER"] as const).map((group) => (
           <div
             key={group}
-            className={`rounded-xl border p-2.5 ${saldoGroupStyles[group].card}`}
+            className={`min-w-0 rounded-xl border p-2.5 ${saldoGroupStyles[group].card}`}
           >
             <div className="flex items-center justify-between gap-2">
-              <p className={`text-[8px] uppercase tracking-[0.18em] ${saldoGroupStyles[group].title}`}>
+              <p className={`min-w-0 truncate text-[8px] uppercase tracking-[0.18em] ${saldoGroupStyles[group].title}`}>
                 {companyGroupLabel(group)}
               </p>
               <span className={`rounded-full border px-1.5 py-0.5 text-[8px] ${saldoGroupStyles[group].badge}`}>
@@ -403,7 +403,7 @@ export default function SaldoManager({
                   : undefined
               }
             >
-              <Table className="min-w-full text-[11px] text-white">
+              <Table className="min-w-[640px] text-[11px] text-white">
                 <TableHeader>
                   <TableRow className="bg-slate-100 text-left text-slate-700 dark:bg-slate-900 dark:text-white">
                     <TableHead className="p-2 text-xs">Tanggal</TableHead>
@@ -432,7 +432,7 @@ export default function SaldoManager({
                       <TableCell className="px-2 py-1.5 font-medium text-white">
                         <span className="inline-flex items-center gap-2">
                           <StickyNote className="h-3.5 w-3.5 text-emerald-200/70" />
-                          <span>{item.keterangan}</span>
+                          <span className="line-clamp-2 break-words">{item.keterangan}</span>
                         </span>
                       </TableCell>
                       <TableCell className="px-2 py-1.5">

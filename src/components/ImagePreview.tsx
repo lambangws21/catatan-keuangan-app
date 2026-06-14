@@ -60,13 +60,13 @@ export default function ImageGallery({ transactions, isLoading }: ImageGalleryPr
   }
 
   return (
-    <div className="premium-card space-y-6 overflow-hidden rounded-3xl border border-white/10 bg-linear-to-b from-slate-900/90 via-slate-950/80 to-slate-950 p-6 text-white shadow-[0_20px_60px_rgba(2,6,23,0.45)]">
-      <header className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-        <div>
+    <div className="premium-card min-w-0 space-y-4 overflow-hidden rounded-2xl border border-white/10 bg-linear-to-b from-slate-900/90 via-slate-950/80 to-slate-950 p-4 text-white shadow-[0_16px_44px_rgba(2,6,23,0.4)] sm:p-5">
+      <header className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
           <p className="text-[10px] uppercase tracking-[0.4em] text-(--dash-muted)">
             Galeri
           </p>
-          <h2 className="mt-1 flex items-center gap-2 text-2xl font-semibold text-white">
+          <h2 className="mt-1 flex min-w-0 items-center gap-2 break-words text-xl font-semibold text-white sm:text-2xl">
             <ImageIcon className="h-5 w-5 text-cyan-300" />
             Galeri Berkas
           </h2>
@@ -77,17 +77,17 @@ export default function ImageGallery({ transactions, isLoading }: ImageGalleryPr
       </header>
       
       {galleryItems.length === 0 ? (
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-10 text-center text-sm text-(--dash-muted)">
-          <ImageIcon className="mx-auto mb-3 h-10 w-10 text-white/60" />
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-center text-sm text-(--dash-muted) sm:p-8">
+          <ImageIcon className="mx-auto mb-3 h-9 w-9 text-white/60" />
           <p className="font-semibold text-white/90">Tidak ada berkas gambar</p>
-          <p>Tambahkan transaksi dengan berkas agar muncul di galeri.</p>
+          <p className="break-words">Tambahkan transaksi dengan berkas agar muncul di galeri.</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
           {galleryItems.map((item, index) => (
             <motion.div
               key={item.id}
-              className="relative aspect-square overflow-hidden rounded-2xl border border-white/10 bg-white/5 cursor-pointer group shadow-[0_10px_25px_rgba(2,6,23,0.45)]"
+              className="group relative aspect-square cursor-pointer overflow-hidden rounded-2xl border border-white/10 bg-white/5 shadow-[0_10px_25px_rgba(2,6,23,0.45)]"
               onClick={() => setSelectedItem(item)}
               whileHover={{ scale: 1.05 }}
               transition={{ type: "spring", stiffness: 300 }}
@@ -102,10 +102,10 @@ export default function ImageGallery({ transactions, isLoading }: ImageGalleryPr
               />
               <div className="absolute inset-0 bg-linear-to-t from-black/85 via-black/10 to-transparent opacity-100">
                 <div className="absolute bottom-0 left-0 right-0 p-3">
-                  <p className="text-white text-xs font-semibold line-clamp-2">
+                  <p className="line-clamp-2 break-words text-xs font-semibold text-white">
                     {item.keterangan}
                   </p>
-                  <p className="mt-1 text-[10px] text-white/70">
+                  <p className="mt-1 truncate text-[10px] text-white/70">
                     {item.tanggal} • {formatCurrency(Number(item.jumlah))}
                   </p>
                 </div>
@@ -144,7 +144,7 @@ export default function ImageGallery({ transactions, isLoading }: ImageGalleryPr
                 Detail
               </p>
               <h3 className="mt-2 text-lg font-bold text-cyan-700 dark:text-cyan-300">
-                {selectedItem?.keterangan}
+                <span className="break-words">{selectedItem?.keterangan}</span>
               </h3>
               <div className="mt-4 space-y-3 text-sm">
                 <div className="flex items-center gap-3">

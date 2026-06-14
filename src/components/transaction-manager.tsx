@@ -891,22 +891,22 @@ export default function TransactionManager({
 
   return (
     <motion.div
-      className="premium-card space-y-5 overflow-hidden rounded-3xl border border-white/10 bg-linear-to-b from-slate-900/90 via-slate-950/80 to-slate-950 p-4 sm:p-6 text-white shadow-[0_20px_60px_rgba(2,6,23,0.45)]"
+      className="premium-card min-w-0 space-y-4 overflow-hidden rounded-2xl border border-white/10 bg-linear-to-b from-slate-900/90 via-slate-950/80 to-slate-950 p-4 text-white shadow-[0_16px_44px_rgba(2,6,23,0.4)] sm:p-5"
       variants={containerVariants}
       initial="hidden"
       animate="visible"
     >
-      <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
+      <header className="flex min-w-0 flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="min-w-0">
           <p className="text-[10px] uppercase tracking-[0.4em] text-(--dash-muted)">
             Riwayat Transaksi
           </p>
-          <h2 className="text-lg font-semibold text-white sm:text-2xl">Catatan Pengeluaran</h2>
+          <h2 className="break-words text-lg font-semibold text-white sm:text-xl">Catatan Pengeluaran</h2>
           <p className="text-xs text-(--dash-muted) sm:text-sm">
             {filteredTransactions.length} pengeluaran + {filteredReimbursements.length} reimbursement siap direkap.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex shrink-0 flex-wrap gap-2">
           {showCreateAction ? <ExpenseForm onTransactionAdded={onDataChange} /> : null}
           <Button
             variant="outline"
@@ -938,7 +938,7 @@ export default function TransactionManager({
         </div>
       </header>
 
-      <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-2">
+      <div className="flex min-w-0 flex-wrap items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-2">
         <span className="text-[10px] uppercase tracking-[0.22em] text-(--dash-muted)">
           Filter Status Klaim
         </span>
@@ -948,7 +948,7 @@ export default function TransactionManager({
             setKlaimStatusFilter(value as "semua" | KlaimDisplayStatus)
           }
         >
-          <SelectTrigger className="h-9 w-[220px] border-white/10 bg-black/20 text-white">
+          <SelectTrigger className="h-9 w-full min-w-[180px] border-white/10 bg-black/20 text-white sm:w-[220px]">
             <SelectValue placeholder="Semua status klaim" />
           </SelectTrigger>
           <SelectContent className="border-white/10 bg-slate-900 text-white">
@@ -965,7 +965,7 @@ export default function TransactionManager({
         </span>
       </div>
 
-      <section className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-3 sm:p-4">
+      <section className="min-w-0 space-y-3 rounded-2xl border border-white/10 bg-white/5 p-3 sm:p-4">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-[9px] uppercase tracking-[0.22em] text-(--dash-muted) sm:text-[10px]">
@@ -1004,11 +1004,11 @@ export default function TransactionManager({
             return (
             <div
               key={item.group}
-              className={`overflow-hidden rounded-2xl border bg-slate-950/45 shadow-[0_14px_40px_rgba(2,6,23,0.28)] ${tone.border}`}
+              className={`min-w-0 overflow-hidden rounded-2xl border bg-slate-950/45 shadow-[0_12px_32px_rgba(2,6,23,0.24)] ${tone.border}`}
             >
               <div className={`p-3 sm:p-4 ${tone.header}`}>
                 <div className="flex items-start justify-between gap-2">
-                  <p className={`text-[10px] uppercase tracking-[0.2em] sm:text-[11px] ${tone.title}`}>
+                  <p className={`min-w-0 truncate text-[10px] uppercase tracking-[0.2em] sm:text-[11px] ${tone.title}`}>
                     {companyGroupLabel(item.group)}
                   </p>
                   <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[9px] text-white/70 sm:text-[10px]">
@@ -1016,7 +1016,7 @@ export default function TransactionManager({
                   </span>
                 </div>
 
-                <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                <div className="mt-3 grid grid-cols-1 gap-2">
                   <div className="rounded-xl border border-emerald-300/15 bg-emerald-400/10 p-3">
                     <p className="text-[9px] uppercase tracking-[0.16em] text-emerald-100/70">
                       Saldo
@@ -1050,7 +1050,7 @@ export default function TransactionManager({
       </section>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <div className="rounded-xl border border-white/10 bg-white/5 p-3 sm:p-4 shadow-inner">
+        <div className="min-w-0 rounded-xl border border-white/10 bg-white/5 p-3 shadow-inner sm:p-4">
           <div className="flex min-w-0 items-center gap-3">
             <Wallet className="h-4 w-4 text-cyan-300 sm:h-5 sm:w-5" />
             <p className="line-clamp-1 text-[8px] uppercase tracking-[0.18em] text-(--dash-muted) sm:text-[10px]">Total Pengeluaran</p>
@@ -1060,7 +1060,7 @@ export default function TransactionManager({
             {hasEntries ? `${filteredTransactions.length} transaksi` : "Tidak ada data"}
           </p>
         </div>
-        <div className="rounded-xl border border-white/10 bg-white/5 p-3 sm:p-4 shadow-inner">
+        <div className="min-w-0 rounded-xl border border-white/10 bg-white/5 p-3 shadow-inner sm:p-4">
           <div className="flex min-w-0 items-center gap-3">
             <Wallet className="h-4 w-4 text-amber-300 sm:h-5 sm:w-5" />
             <p className="line-clamp-1 text-[8px] uppercase tracking-[0.18em] text-(--dash-muted) sm:text-[10px]">Reimbursement Saldo</p>
@@ -1070,7 +1070,7 @@ export default function TransactionManager({
             ZB + NM dari kekurangan saldo terhadap pengeluaran
           </p>
         </div>
-        <div className="rounded-xl border border-white/10 bg-white/5 p-3 sm:p-4 relative overflow-hidden">
+        <div className="relative min-w-0 overflow-hidden rounded-xl border border-white/10 bg-white/5 p-3 sm:p-4">
           <div className="absolute inset-0 bg-linear-to-br from-cyan-500/10 via-transparent to-emerald-400/10" />
           <div className="relative z-10 space-y-2">
             <div className="flex items-center justify-between">
@@ -1111,7 +1111,7 @@ export default function TransactionManager({
           className="overflow-auto"
           style={{ maxHeight: `${tableUi.transactionDesktopMaxHeightPx}px` }}
         >
-          <Table className="min-w-full text-xs sm:text-sm">
+                <Table className="min-w-[980px] text-xs sm:text-sm">
             <TableHeader>
               <TableRow className="bg-slate-900 text-left text-white">
                 <TableHead className="py-2 sm:py-3">Tanggal</TableHead>
@@ -1132,24 +1132,24 @@ export default function TransactionManager({
                   <TableCell className="py-2 px-2 sm:py-3 sm:px-3">
                     <span className="inline-flex items-center gap-1.5 sm:gap-2">
                       <CalendarDays className="h-4 w-4 text-cyan-200/70" />
-                      <span>{tx.tanggal}</span>
+                      <span className="whitespace-nowrap">{tx.tanggal}</span>
                     </span>
                   </TableCell>
                   <TableCell className="py-2 px-2 sm:py-3 sm:px-3">
                     <span className="inline-flex items-center gap-2">
                       <StickyNote className="h-4 w-4 text-cyan-200/70" />
-                      <span className="line-clamp-2 whitespace-pre-line">{tx.keterangan}</span>
+                      <span className="line-clamp-2 max-w-[320px] whitespace-pre-line break-words">{tx.keterangan}</span>
                     </span>
                   </TableCell>
                   <TableCell className="py-2 px-2 sm:py-3 sm:px-3">
                     <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold text-(--dash-muted)">
                       <Tags className="mr-2 h-3.5 w-3.5 text-cyan-200/70" />
-                      {tx.jenisBiaya}
+                      <span className="max-w-[160px] truncate">{tx.jenisBiaya}</span>
                     </span>
                   </TableCell>
                   <TableCell className="py-2 px-2 sm:py-3 sm:px-3">
                     <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-semibold text-white/80">
-                      {companyGroupLabel(tx.companyGroup)}
+                      <span className="max-w-[130px] truncate">{companyGroupLabel(tx.companyGroup)}</span>
                     </span>
                   </TableCell>
                   <TableCell className="py-3 px-3 text-center font-mono text-white/80">

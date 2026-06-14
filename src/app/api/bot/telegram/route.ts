@@ -248,18 +248,20 @@ export async function POST(req: Request) {
       process.env.APP_BASE_URL ||
       (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
 
-    const r = await fetch(`${baseUrl}/api/expenses`, {
+    const r = await fetch(`${baseUrl}/api/transactions`, {
       method: "POST",
       headers: {
         "content-type": "application/json",
         "x-internal-token": process.env.INTERNAL_API_TOKEN!,
       },
       body: JSON.stringify({
-        amount: parsed.amount,
-        information: parsed.info,
-        source: "telegram",
-        chatId,
-        createdAt: new Date().toISOString(),
+        tanggal: new Date().toISOString().slice(0, 10),
+        jenisBiaya: "Telegram",
+        keterangan: parsed.info,
+        jumlah: parsed.amount,
+        klaim: "",
+        sumberBiaya: "telegram",
+        klaimStatus: "Terklaim",
       }),
     });
 

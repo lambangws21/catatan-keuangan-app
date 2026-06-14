@@ -90,7 +90,7 @@ export default function FinancialDashboard({ transactions, saldoData, isLoading,
 
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
       <AnimatePresence>
         {isLoading ? (
           <motion.div
@@ -119,12 +119,12 @@ export default function FinancialDashboard({ transactions, saldoData, isLoading,
             compact={compactMode}
             />
             
-            <div className="mt-8">
+            <div className="mt-4">
               {dataGrafikPengeluaran.length > 0 ? (
                   <ExpenseChart data={dataGrafikPengeluaran} />
               ) : (
-                  <div className="p-8 text-center bg-gray-800 rounded-lg">
-                      <p className="text-gray-400">Belum ada data pengeluaran bulan ini untuk ditampilkan di grafik.</p>
+                  <div className="rounded-2xl border border-white/10 bg-white/5 p-5 text-center">
+                      <p className="text-sm text-(--dash-muted)">Belum ada data pengeluaran bulan ini untuk ditampilkan di grafik.</p>
                   </div>
               )}
             </div>

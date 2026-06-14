@@ -69,11 +69,11 @@ export default function ExpenseChartPro({ data }: ChartProps) {
   const activeItem = data[activeIndex];
 
   return (
-    <div className="rounded-3xl border border-white/10 bg-(--dash-surface) p-5 sm:p-6 shadow-[0_20px_40px_rgba(2,6,23,0.45)] backdrop-blur space-y-6">
+    <div className="rounded-2xl border border-white/10 bg-(--dash-surface) p-4 shadow-[0_16px_36px_rgba(2,6,23,0.4)] backdrop-blur space-y-4 sm:p-5">
 
       {/* HEADER */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h3 className="text-xl sm:text-2xl font-semibold font-(--font-display) text-(--dash-ink) flex items-center gap-2">
+      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h3 className="flex min-w-0 items-center gap-2 text-lg font-semibold font-(--font-display) text-(--dash-ink) sm:text-xl">
           <Zap className="w-5 h-5" />
           Distribusi Pengeluaran
         </h3>
@@ -98,10 +98,10 @@ export default function ExpenseChartPro({ data }: ChartProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[0.9fr_1.1fr]">
 
         {/* PIE */}
-        <div ref={chartContainerRef} className="min-h-[280px] sm:min-h-80 w-full" style={{ height: 320 }}>
+        <div ref={chartContainerRef} className="h-[220px] w-full min-w-0 sm:h-[260px]">
           {isChartReady ? (
             <PieChart width={chartSize.width} height={chartSize.height}>
               <Pie
@@ -138,11 +138,11 @@ export default function ExpenseChartPro({ data }: ChartProps) {
             animate={{ opacity: 1, y: 0 }}
             className="rounded-2xl border border-white/10 bg-white/5 p-5"
           >
-            <h4 className="text-lg font-semibold text-(--dash-ink)">
+            <h4 className="break-words text-base font-semibold text-(--dash-ink)">
               {activeItem?.name}
             </h4>
 
-            <p className="text-2xl font-semibold text-(--dash-ink)">
+            <p className="truncate text-xl font-semibold text-(--dash-ink)">
               {formatCurrency(activeItem?.value || 0)}
             </p>
 
@@ -162,12 +162,12 @@ export default function ExpenseChartPro({ data }: ChartProps) {
           </motion.div>
 
           {/* LEGEND */}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {data.map((item, i) => (
               <button
                 key={i}
                 onClick={() => setActiveIndex(i)}
-                className={`flex items-center gap-2 text-xs sm:text-sm p-2 rounded-full border border-white/10 transition ${
+                className={`flex min-w-0 items-center gap-2 rounded-full border border-white/10 p-2 text-left text-xs transition sm:text-sm ${
                   activeIndex === i
                     ? "bg-white/20 text-(--dash-ink)"
                     : "bg-white/5 text-(--dash-muted) hover:bg-white/10"
@@ -177,7 +177,7 @@ export default function ExpenseChartPro({ data }: ChartProps) {
                   className="w-3 h-3 rounded-full"
                   style={{ background: COLORS[i % COLORS.length] }}
                 />
-                {item.name}
+                <span className="min-w-0 truncate">{item.name}</span>
               </button>
             ))}
           </div>

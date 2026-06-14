@@ -275,7 +275,7 @@ export default function ImageGallery() {
         dateStyle: "long",
         timeStyle: "short",
       }).format(new Date()),
-    [filterDate, monthFilter, printTemplate, search, selectedIds.length]
+    []
   );
 
   const totalPages = Math.ceil(filteredImages.length / itemsPerPage);

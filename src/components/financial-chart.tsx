@@ -131,46 +131,46 @@ export default function FinancialChartTitan({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-3xl border border-white/10 bg-(--dash-surface) p-5 sm:p-7 shadow-[0_20px_40px_rgba(2,6,23,0.45)] backdrop-blur space-y-6 min-h-[520px] sm:min-h-[620px]"
+      className="rounded-2xl border border-white/10 bg-(--dash-surface) p-4 shadow-[0_16px_36px_rgba(2,6,23,0.4)] backdrop-blur space-y-4 sm:p-5"
     >
       {/* HEADER */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-2xl font-semibold font-(--font-display) text-(--dash-ink) flex items-center gap-2">
+      <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <h2 className="flex min-w-0 items-center gap-2 text-lg font-semibold font-(--font-display) text-(--dash-ink) sm:text-xl">
           <Brain /> Financial Graph
         </h2>
 
-        <div className="flex items-center gap-2 text-sm text-(--dash-muted)">
+        <div className="flex items-center gap-2 text-xs text-(--dash-muted) sm:text-sm">
           <TrendingUp size={18} />
           Analisis Tren Pengeluaran
         </div>
       </div>
 
       {/* KPI PANEL */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+        <div className="min-w-0 rounded-xl border border-white/10 bg-white/5 p-3">
           <p className="text-xs text-(--dash-muted)">Total Bulan Ini</p>
-          <h3 className="text-lg font-semibold text-(--dash-ink)">
+          <h3 className="truncate text-base font-semibold text-(--dash-ink)">
             Rp {new Intl.NumberFormat("id-ID").format(totalExpense)}
           </h3>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+        <div className="min-w-0 rounded-xl border border-white/10 bg-white/5 p-3">
           <p className="text-xs text-(--dash-muted)">Hari Tertinggi</p>
-          <h3 className="text-lg font-semibold text-amber-300">
+          <h3 className="truncate text-base font-semibold text-amber-300">
             Tanggal {highestPoint.day}
           </h3>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+        <div className="min-w-0 rounded-xl border border-white/10 bg-white/5 p-3">
           <p className="text-xs text-(--dash-muted)">Pengeluaran Maks</p>
-          <h3 className="text-lg font-semibold text-emerald-300">
+          <h3 className="truncate text-base font-semibold text-emerald-300">
             Rp {new Intl.NumberFormat("id-ID").format(highestPoint.value)}
           </h3>
         </div>
       </div>
 
       {/* MAIN GRAPH */}
-      <div ref={chartContainerRef} className="h-[300px] sm:h-[380px] w-full min-w-0">
+      <div ref={chartContainerRef} className="h-[220px] w-full min-w-0 sm:h-[280px] xl:h-[320px]">
         {isChartReady ? (
           <LineChart
             width={chartSize.width}

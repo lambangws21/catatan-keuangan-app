@@ -47,16 +47,16 @@ function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <div className="min-h-screen w-full bg-black text-white">
+      <div className="min-h-screen w-full overflow-x-hidden bg-black text-white">
         <Sidebar isCollapsed={isSidebarCollapsed} toggleSidebar={toggleSidebar} />
         <div
           className={cn(
-            "flex flex-col transition-all duration-300 ease-in-out",
+            "flex min-w-0 flex-col overflow-x-hidden transition-all duration-300 ease-in-out",
             isSidebarCollapsed ? "lg:pl-20" : "lg:pl-64"
           )}
         >
           <Navbar />
-          <main className="flex-1 p-4 md:p-8">{children}</main>
+          <main className="min-w-0 flex-1 overflow-x-hidden p-3 sm:p-4 md:p-6 xl:p-8">{children}</main>
         </div>
       </div>
     </ThemeProvider>
@@ -76,7 +76,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Catatan Keuangan" />
       </head>
-      <body className="bg-black">
+      <body className="overflow-x-hidden bg-black">
           <AuthProvider>
             <PWARegister />
             <PWAInstallPrompt />

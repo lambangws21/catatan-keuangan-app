@@ -223,12 +223,12 @@ export default function Navbar() {
 
   return (
     <motion.header 
-      className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-gray-700 bg-gray-800/80 backdrop-blur-lg px-4 md:px-6"
+      className="sticky top-0 z-30 flex h-16 min-w-0 items-center justify-between gap-3 border-b border-gray-700 bg-gray-800/80 px-3 backdrop-blur-lg sm:px-4 md:px-6"
       initial={{ y: -100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
-      <div className="flex items-center gap-4">
+      <div className="flex min-w-0 items-center gap-3">
         <div className="lg:hidden">
           <Sheet>
             <SheetTrigger asChild>
@@ -256,23 +256,23 @@ export default function Navbar() {
             </SheetContent>
           </Sheet>
         </div>
-        <h2 className="hidden md:block text-lg font-semibold text-white">{pageTitle}</h2>
+        <h2 className="hidden min-w-0 truncate text-base font-semibold text-white md:block lg:text-lg">{pageTitle}</h2>
       </div>
 
-      <div className="flex items-center gap-2 md:gap-4">
-        <div className="relative hidden sm:block">
+      <div className="flex min-w-0 shrink-0 items-center gap-2 md:gap-3">
+        <div className="relative hidden xl:block">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
-          <Input type="search" placeholder="Cari..." className="pl-8 w-[150px] md:w-[200px] lg:w-[300px]" />
+          <Input type="search" placeholder="Cari..." className="w-[220px] pl-8 2xl:w-[300px]" />
         </div>
         <DropdownMenu open={isThemeOpen} onOpenChange={setThemeOpen}>
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
               size="sm"
-              className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 text-xs font-semibold text-white/90"
+              className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-2 text-xs font-semibold text-white/90 lg:px-3"
             >
               <Palette className="h-4 w-4 text-cyan-300" />
-              {themeLabel}
+              <span className="hidden lg:inline">{themeLabel}</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
@@ -443,7 +443,7 @@ export default function Navbar() {
             </AnimatePresence>
         </DropdownMenu>
         
-        <div className="hidden md:block text-right">
+        <div className="hidden text-right 2xl:block">
             <p className="text-sm font-medium text-white truncate max-w-[150px]">{user?.email}</p>
             <p className="text-xs text-gray-400">{currentDate}</p>
         </div>

@@ -171,15 +171,15 @@ export default function SummaryCards({
         <button
           type="button"
           onClick={() => setNumberMode((prev) => (prev === "compact" ? "full" : "compact"))}
-          className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[11px] font-medium text-(--dash-ink) hover:bg-white/15"
+          className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[10px] font-medium text-(--dash-ink) hover:bg-white/15"
         >
           Angka: {numberMode === "compact" ? "Ringkas" : "Penuh"}
         </button>
       </div>
       <motion.div
         className={`grid grid-cols-1 ${
-          summaryData.length >= 4 ? "md:grid-cols-2 xl:grid-cols-4" : "md:grid-cols-3"
-        } ${compact ? "gap-3" : "gap-5"} items-stretch`}
+          summaryData.length >= 4 ? "sm:grid-cols-2 xl:grid-cols-4" : "sm:grid-cols-3"
+        } ${compact ? "gap-2" : "gap-3"} items-stretch`}
         variants={containerVariants}
         initial="hidden"
         animate="visible"
@@ -189,15 +189,15 @@ export default function SummaryCards({
           return (
             <motion.div
               key={index}
-              className={`relative overflow-hidden rounded-2xl border border-white/10 bg-(--dash-surface) ${compact ? "p-4 shadow-[0_12px_24px_rgba(2,6,23,0.35)]" : "p-5 shadow-[0_16px_30px_rgba(2,6,23,0.45)]"}`}
+              className={`relative min-w-0 overflow-hidden rounded-2xl border border-white/10 bg-(--dash-surface) ${compact ? "p-3 shadow-[0_10px_22px_rgba(2,6,23,0.3)]" : "p-4 shadow-[0_14px_28px_rgba(2,6,23,0.4)]"}`}
               variants={itemVariants}
             >
               <div className={`absolute inset-0 bg-linear-to-br ${tone.glow}`} />
 
-              <div className="relative z-10 flex min-w-0 flex-col gap-4">
+              <div className="relative z-10 flex min-w-0 flex-col gap-3">
                 <div className="flex min-w-0 items-center justify-between gap-2">
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${tone.badge}`}>
-                    <item.icon className={`h-5 w-5 ${tone.accent}`} />
+                  <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${tone.badge}`}>
+                    <item.icon className={`h-4 w-4 ${tone.accent}`} />
                   </div>
                   {item.count !== null && (
                     <span className="max-w-[60%] truncate rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] text-(--dash-muted)">
@@ -212,10 +212,10 @@ export default function SummaryCards({
                   </p>
                   <AnimatedNumber
                     value={item.value}
-                    className={`mt-2 block w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap font-semibold leading-tight tracking-tight tabular-nums ${tone.accent} ${
+                    className={`mt-1.5 block w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap font-semibold leading-tight tracking-tight tabular-nums ${tone.accent} ${
                       compact
-                        ? "text-[clamp(1.1rem,2.4vw,1.75rem)]"
-                        : "text-[clamp(1.2rem,2.9vw,2.1rem)]"
+                        ? "text-[clamp(1rem,1.7vw,1.45rem)]"
+                        : "text-[clamp(1.1rem,2.2vw,1.75rem)]"
                     }`}
                     formatter={item.formatter}
                   />
