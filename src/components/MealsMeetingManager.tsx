@@ -16,6 +16,7 @@ import {
   Users,
   Wallet,
   X,
+  Plus,
 } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -90,6 +91,7 @@ const formatCurrency = (value: number) =>
   }).format(value);
 
 const exportTag = () => new Date().toISOString().split("T")[0];
+const DISPLAY_NAME = "Meals Meeting";
 
 const stripMetaLines = (text: string) =>
   String(text || "")
@@ -161,6 +163,24 @@ export default function MealsMeetingManager({
     () => meals.reduce((sum, t) => sum + Number(t.jumlah), 0),
     [meals]
   );
+
+  const sortedMeals = useMemo(
+    () => meals.slice().sort((a, b) => b.tanggal.localeCompare(a.tanggal)),
+    [meals]
+  );
+
+  const latestMeal = sortedMeals[0] ?? null;
+
+  const sourceSummary = useMemo(() => {
+    return meals.reduce(
+      (acc, tx) => {
+        const source = normalizeMealsPaymentSource(tx.sumberBiaya) ?? "deposit";
+        acc[source] += Number(tx.jumlah || 0);
+        return acc;
+      },
+      { deposit: 0, mandiri: 0, kantor: 0 } as Record<MealsPaymentSource, number>
+    );
+  }, [meals]);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -301,15 +321,15 @@ export default function MealsMeetingManager({
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error("Gagal menyimpan Meals Metting");
+      if (!res.ok) throw new Error(`Gagal menyimpan ${DISPLAY_NAME}`);
       await onDataChange();
 
       if (editing) {
-        toast.success("Meals Metting berhasil diperbarui");
+        toast.success(`${DISPLAY_NAME} berhasil diperbarui`);
         setIsDialogOpen(false);
         setEditing(null);
       } else {
-        toast.success("Meals Metting berhasil disimpan");
+        toast.success(`${DISPLAY_NAME} berhasil disimpan`);
         resetForm();
       }
     } catch (err) {
@@ -320,7 +340,7 @@ export default function MealsMeetingManager({
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm("Hapus data Meals Metting ini?")) return;
+    if (!window.confirm(`Hapus data ${DISPLAY_NAME} ini?`)) return;
     try {
       const res = await fetch(`/api/transactions/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Gagal menghapus data");
@@ -350,7 +370,7 @@ export default function MealsMeetingManager({
     });
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Meals Metting");
+    XLSX.utils.book_append_sheet(workbook, worksheet, DISPLAY_NAME);
     worksheet["!cols"] = [
       { wch: 12 },
       { wch: 18 },
@@ -359,13 +379,13 @@ export default function MealsMeetingManager({
       { wch: 40 },
       { wch: 14 },
     ];
-    XLSX.writeFile(workbook, `Meals_Metting_${exportTag()}.xlsx`);
+    XLSX.writeFile(workbook, `Meals_Meeting_${exportTag()}.xlsx`);
   };
 
   const handleExportPdf = () => {
     if (!meals.length) return toast.error("Data kosong");
     const doc = new jsPDF();
-    doc.text(`Laporan Meals Metting (${exportTag()})`, 14, 16);
+    doc.text(`Laporan ${DISPLAY_NAME} (${exportTag()})`, 14, 16);
     const sorted = meals.slice().sort((a, b) => a.tanggal.localeCompare(b.tanggal));
     autoTable(doc, {
       head: [["Tanggal", "Klaim", "Keterangan", "Jumlah"]],
@@ -378,7 +398,7 @@ export default function MealsMeetingManager({
       startY: 22,
       headStyles: { fillColor: [38, 145, 158] },
     });
-    doc.save(`Meals_Metting_${exportTag()}.pdf`);
+    doc.save(`Meals_Meeting_${exportTag()}.pdf`);
   };
 
   const card = "dash-panel rounded-2xl";
@@ -387,28 +407,29 @@ export default function MealsMeetingManager({
     <motion.section
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`${card} min-w-0 overflow-hidden p-3 text-(--dash-ink) sm:p-4`}
+      className={`${card} min-w-0 overflow-hidden p-4 text-(--dash-ink) sm:p-5`}
     >
-      <div className="flex min-w-0 flex-col gap-3 2xl:flex-row 2xl:items-start 2xl:justify-between">
+      <div className="flex min-w-0 flex-col gap-4 2xl:flex-row 2xl:items-start 2xl:justify-between">
         <div className="min-w-0">
           <p className="dash-kicker">
             Kategori Khusus
           </p>
-          <h2 className="mt-1 flex min-w-0 items-center gap-2 text-lg font-semibold sm:text-xl">
-            <Handshake className="h-4 w-4 shrink-0 text-amber-300" />
-            <span className="min-w-0 break-words">Meals Metting</span>
+          <h2 className="mt-1 flex min-w-0 items-center gap-2 text-lg font-semibold text-white sm:text-xl">
+            <Handshake className="h-5 w-5 shrink-0 text-amber-300" />
+            <span className="min-w-0 break-words">{DISPLAY_NAME}</span>
           </h2>
-          <p className="mt-1 break-words text-[11px] text-(--dash-muted)">
-            Simpan dan pantau pengeluaran kategori Meals Metting.
+          <p className="mt-1 max-w-xl break-words text-xs leading-5 text-(--dash-muted)">
+            Catat biaya meeting, sumber biaya, bukti, dokter operasi, tindakan, lokasi, dan peserta.
           </p>
         </div>
 
-        <div className="flex shrink-0 flex-wrap items-center gap-2">
+        <div className="grid shrink-0 grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:items-center">
           <Button
             onClick={handleExportExcel}
             variant="secondary"
             size="sm"
-            className="h-8 border border-white/10 bg-white/10 text-xs text-(--dash-ink) hover:bg-white/15"
+            disabled={!meals.length}
+            className="h-9 border border-white/10 bg-white/10 text-xs text-(--dash-ink) hover:bg-white/15"
           >
             <FileDown className="mr-1.5 h-3.5 w-3.5" />
             Excel
@@ -417,7 +438,8 @@ export default function MealsMeetingManager({
             onClick={handleExportPdf}
             variant="secondary"
             size="sm"
-            className="h-8 border border-white/10 bg-white/10 text-xs text-(--dash-ink) hover:bg-white/15"
+            disabled={!meals.length}
+            className="h-9 border border-white/10 bg-white/10 text-xs text-(--dash-ink) hover:bg-white/15"
           >
             <FileText className="mr-1.5 h-3.5 w-3.5" />
             PDF
@@ -428,19 +450,24 @@ export default function MealsMeetingManager({
               <Button
                 onClick={openCreate}
                 size="sm"
-                className="h-8 bg-amber-500 text-xs text-slate-950 hover:bg-amber-400"
+                className="h-9 bg-amber-500 text-xs text-slate-950 hover:bg-amber-400"
               >
+                <Plus className="mr-1.5 h-3.5 w-3.5" />
                 Tambah
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[720px] border-white/10 bg-slate-950 text-(--dash-ink)">
+            <DialogContent className="max-h-[90vh] overflow-y-auto border-white/10 bg-slate-950 text-(--dash-ink) sm:max-w-[760px]">
               <DialogHeader>
                 <DialogTitle className="text-(--dash-ink)">
-                  {editing ? "Edit Meals Metting" : "Input Meals Metting"}
+                  {editing ? `Edit ${DISPLAY_NAME}` : `Input ${DISPLAY_NAME}`}
                 </DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="grid gap-4">
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                  <p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-(--dash-muted)">
+                    Detail Utama
+                  </p>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="grid gap-2">
                     <Label htmlFor="meals-tanggal">Tanggal</Label>
                     <Input
@@ -463,9 +490,14 @@ export default function MealsMeetingManager({
                       required
                     />
                   </div>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                  <p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-(--dash-muted)">
+                    Klaim & Sumber Biaya
+                  </p>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                   <div className="grid gap-2">
                     <Label htmlFor="meals-klaim">Nama Klaim</Label>
                     <Input
@@ -477,9 +509,9 @@ export default function MealsMeetingManager({
                       required
                     />
                   </div>
-	                  <div className="grid gap-2">
-	                    <Label>Sumber Biaya</Label>
-	                    <Select value={sumberBiaya} onValueChange={(v) => setSumberBiaya(v as MealsPaymentSource)}>
+                  <div className="grid gap-2">
+                    <Label>Sumber Biaya</Label>
+                    <Select value={sumberBiaya} onValueChange={(v) => setSumberBiaya(v as MealsPaymentSource)}>
                       <SelectTrigger className={formInputClass}>
                         <SelectValue placeholder="Pilih sumber biaya" />
                       </SelectTrigger>
@@ -488,30 +520,35 @@ export default function MealsMeetingManager({
                         <SelectItem value="mandiri">Mandiri</SelectItem>
                         <SelectItem value="kantor">Kantor</SelectItem>
                       </SelectContent>
-	                    </Select>
-	                  </div>
-	                  <div className="grid gap-2">
-	                    <Label>Status Klaim</Label>
-	                    {sumberBiaya === "mandiri" ? (
-	                      <Select value={klaimStatus} onValueChange={(v) => setKlaimStatus(v as KlaimStatus)}>
-	                        <SelectTrigger className={formInputClass}>
-	                          <SelectValue placeholder="Pilih status klaim" />
-	                        </SelectTrigger>
-	                        <SelectContent className="border-white/10 bg-slate-950 text-slate-100">
-	                          {KLAIM_STATUS_OPTIONS.map((status) => (
-	                            <SelectItem key={status} value={status}>
-	                              {status}
-	                            </SelectItem>
-	                          ))}
-	                        </SelectContent>
-	                      </Select>
-	                    ) : (
-	                      <Input value="Tidak perlu klaim" readOnly className={formInputClass} />
-	                    )}
-	                  </div>
-	                </div>
+                    </Select>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>Status Klaim</Label>
+                    {sumberBiaya === "mandiri" ? (
+                      <Select value={klaimStatus} onValueChange={(v) => setKlaimStatus(v as KlaimStatus)}>
+                        <SelectTrigger className={formInputClass}>
+                          <SelectValue placeholder="Pilih status klaim" />
+                        </SelectTrigger>
+                        <SelectContent className="border-white/10 bg-slate-950 text-slate-100">
+                          {KLAIM_STATUS_OPTIONS.map((status) => (
+                            <SelectItem key={status} value={status}>
+                              {status}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Input value="Tidak perlu klaim" readOnly className={formInputClass} />
+                    )}
+                  </div>
+                  </div>
+                </div>
 
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                  <p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-(--dash-muted)">
+                    Operasi & Lokasi
+                  </p>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="grid gap-2">
                     <Label htmlFor="meals-dokter-operasi">
                       Dokter Operasi {sumberBiaya === "deposit" ? "(wajib)" : "(opsional)"}
@@ -538,9 +575,6 @@ export default function MealsMeetingManager({
                       required={sumberBiaya === "deposit"}
                     />
                   </div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="grid gap-2">
                     <Label htmlFor="meals-peserta">Peserta (opsional)</Label>
                     <Input
@@ -561,9 +595,14 @@ export default function MealsMeetingManager({
                       className={formInputClass}
                     />
                   </div>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                  <p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-(--dash-muted)">
+                    Bukti & Catatan
+                  </p>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="grid gap-2">
                     <Label htmlFor="meals-file">Bukti (opsional)</Label>
                     <Input
@@ -581,9 +620,9 @@ export default function MealsMeetingManager({
                         : "Mandiri/Kantor: tidak masuk pengeluaran"}
                     </div>
                   </div>
-                </div>
+                  </div>
 
-                <div className="grid gap-2">
+                <div className="mt-4 grid gap-2">
                   <Label htmlFor="meals-keterangan">Keterangan</Label>
                   <Textarea
                     id="meals-keterangan"
@@ -593,6 +632,7 @@ export default function MealsMeetingManager({
                     className={`min-h-[110px] ${formInputClass}`}
                     required
                   />
+                </div>
                 </div>
 
                 {previewUrl ? (
@@ -645,7 +685,7 @@ export default function MealsMeetingManager({
       </div>
 
       {/* SUMMARY */}
-      <div className="mt-4 grid grid-cols-1 gap-2 xl:grid-cols-3">
+      <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
         <div className="dash-panel-soft min-w-0 rounded-xl p-3">
           <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-(--dash-muted)">
             Total Meals
@@ -674,14 +714,26 @@ export default function MealsMeetingManager({
         </div>
         <div className="dash-panel-soft min-w-0 rounded-xl p-3">
           <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-(--dash-muted)">
-            Export
+            Deposit
           </p>
           <div className="mt-1.5 flex items-center justify-between gap-2">
             <div className="inline-flex items-center gap-2 text-[11px] text-(--dash-muted)">
               <FileText className="h-3.5 w-3.5" />
-              <span className="min-w-0 truncate">Nama file</span>
+              <span className="min-w-0 truncate">Sumber biaya</span>
             </div>
-            <p className="min-w-0 truncate text-xs font-semibold tabular-nums">{exportTag()}</p>
+            <p className="dash-value min-w-0 truncate text-xs font-semibold text-emerald-200">{formatCurrency(sourceSummary.deposit)}</p>
+          </div>
+        </div>
+        <div className="dash-panel-soft min-w-0 rounded-xl p-3">
+          <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-(--dash-muted)">
+            Terbaru
+          </p>
+          <div className="mt-1.5 flex items-center justify-between gap-2">
+            <div className="inline-flex min-w-0 items-center gap-2 text-[11px] text-(--dash-muted)">
+              <CalendarDays className="h-3.5 w-3.5" />
+              <span className="min-w-0 truncate">{latestMeal?.klaim || "Belum ada"}</span>
+            </div>
+            <p className="min-w-0 shrink-0 truncate text-xs font-semibold tabular-nums">{latestMeal?.tanggal || "-"}</p>
           </div>
         </div>
       </div>
@@ -694,18 +746,20 @@ export default function MealsMeetingManager({
           </div>
         ) : meals.length === 0 ? (
           <div className="dash-panel-soft rounded-xl p-8 text-center text-sm text-(--dash-muted)">
-            Belum ada data Meals Metting.
+            <Handshake className="mx-auto mb-3 h-9 w-9 text-amber-300/80" />
+            <p className="font-semibold text-white">Belum ada data {DISPLAY_NAME}</p>
+            <p className="mt-1">Tambahkan data meeting untuk mulai membuat rekap.</p>
           </div>
         ) : (
           <>
             {/* Mobile cards */}
             <div className="grid gap-3 xl:hidden">
-              {meals.slice(0, 12).map((tx) => {
+              {sortedMeals.slice(0, 12).map((tx) => {
                 const meta = extractMeta(tx.keterangan || "");
                 return (
                   <div
                     key={tx.id}
-                    className="rounded-2xl border border-white/10 bg-white/5 p-3"
+                    className="rounded-xl border border-white/10 bg-white/[0.04] p-3"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
@@ -774,11 +828,16 @@ export default function MealsMeetingManager({
                   </div>
                 );
               })}
+              {sortedMeals.length > 12 ? (
+                <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3 text-center text-xs text-(--dash-muted)">
+                  Menampilkan 12 data terbaru dari {sortedMeals.length} data. Gunakan tampilan desktop untuk melihat tabel lengkap.
+                </div>
+              ) : null}
             </div>
 
             {/* Desktop table */}
-            <div className="hidden overflow-auto rounded-2xl border border-white/10 bg-white/5 xl:block">
-              <div className="max-h-[420px] overflow-auto">
+            <div className="hidden overflow-auto rounded-xl border border-white/10 bg-white/[0.04] xl:block">
+              <div className="max-h-[380px] overflow-auto">
                 <Table className="min-w-[860px] text-[11px]">
                   <TableHeader>
                     <TableRow className="bg-(--dash-surface-strong)">
@@ -809,7 +868,7 @@ export default function MealsMeetingManager({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {meals.map((tx) => {
+                    {sortedMeals.map((tx) => {
                       const meta = extractMeta(tx.keterangan || "");
                       return (
                         <TableRow key={tx.id} className="border-white/10 hover:bg-white/5">
