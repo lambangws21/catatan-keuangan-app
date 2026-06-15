@@ -328,7 +328,7 @@ export default function DashboardPage() {
                   <Link
                     key={v.id}
                     href="/visit-dokter"
-                    className="group rounded-xl border border-white/10 bg-white/[0.04] p-3 transition hover:border-cyan-500/40 hover:bg-cyan-500/10"
+                    className="group rounded-xl border border-white/10 bg-white/4 p-3 transition hover:border-cyan-500/40 hover:bg-cyan-500/10"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] font-semibold text-cyan-200/90">
@@ -360,7 +360,7 @@ export default function DashboardPage() {
               })}
             </div>
           ) : (
-            <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.04] p-3 text-sm text-(--dash-muted)">
+            <div className="mt-3 rounded-xl border border-white/10 bg-white/4 p-3 text-sm text-(--dash-muted)">
               Tidak ada jadwal visit terdekat (hari ini & besok).
             </div>
           )}
