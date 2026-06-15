@@ -119,15 +119,17 @@ export default function FinancialDashboard({ transactions, saldoData, isLoading,
             compact={compactMode}
             />
             
-            <div className="mt-4">
-              {dataGrafikPengeluaran.length > 0 ? (
-                  <ExpenseChart data={dataGrafikPengeluaran} />
-              ) : (
-                  <div className="rounded-2xl border border-white/10 bg-white/5 p-5 text-center">
-                      <p className="text-sm text-(--dash-muted)">Belum ada data pengeluaran bulan ini untuk ditampilkan di grafik.</p>
-                  </div>
-              )}
-            </div>
+            {!compactMode ? (
+              <div className="mt-4">
+                {dataGrafikPengeluaran.length > 0 ? (
+                    <ExpenseChart data={dataGrafikPengeluaran} />
+                ) : (
+                    <div className="rounded-2xl border border-white/10 bg-white/5 p-5 text-center">
+                        <p className="text-sm text-(--dash-muted)">Belum ada data pengeluaran bulan ini untuk ditampilkan di grafik.</p>
+                    </div>
+                )}
+              </div>
+            ) : null}
           </motion.div>
         )}
       </AnimatePresence>

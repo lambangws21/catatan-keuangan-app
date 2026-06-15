@@ -151,9 +151,8 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="relative isolate">
-      <div className="pointer-events-none absolute -top-32 right-[-10%] h-72 w-72 rounded-full bg-[radial-gradient(circle_at_center,rgba(20,184,166,0.25),transparent_65%)] blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-40 left-[-15%] h-80 w-80 rounded-full bg-[radial-gradient(circle_at_center,rgba(245,158,11,0.22),transparent_70%)] blur-3xl" />
+    <div className="relative isolate mx-auto w-full max-w-[1560px]">
+      <div className="pointer-events-none absolute -top-24 right-0 h-56 w-56 rounded-full bg-[radial-gradient(circle_at_center,rgba(20,184,166,0.16),transparent_65%)] blur-3xl" />
 
       <div className="relative z-10 space-y-4 font-(--font-body) text-(--dash-ink) sm:space-y-5">
         <header className="dashboard-surface rounded-2xl border border-white/10 bg-(--dash-surface) p-4 backdrop-blur sm:p-5">
@@ -192,10 +191,10 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-center">
-              <div className="flex flex-col sm:flex-row gap-3">
+            <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-end">
+              <div className="grid gap-3 sm:grid-cols-[180px_150px]">
                 <Select value={String(selectedMonth)} onValueChange={(v) => setSelectedMonth(Number(v))}>
-                  <SelectTrigger className="w-full sm:w-[180px] rounded-full border-white/10 bg-white/5 text-(--dash-ink) shadow-inner">
+                  <SelectTrigger className="w-full rounded-xl border-white/10 bg-white/5 text-(--dash-ink) shadow-inner">
                     <SelectValue placeholder="Bulan" />
                   </SelectTrigger>
                   <SelectContent className="rounded-2xl border-white/10 bg-slate-950 text-slate-100">
@@ -208,7 +207,7 @@ export default function DashboardPage() {
                 </Select>
 
                 <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
-                  <SelectTrigger className="w-full sm:w-[150px] rounded-full border-white/10 bg-white/5 text-(--dash-ink) shadow-inner">
+                  <SelectTrigger className="w-full rounded-xl border-white/10 bg-white/5 text-(--dash-ink) shadow-inner">
                     <SelectValue placeholder="Tahun" />
                   </SelectTrigger>
                   <SelectContent className="rounded-2xl border-white/10 bg-slate-950 text-slate-100">
@@ -220,7 +219,6 @@ export default function DashboardPage() {
                   </SelectContent>
                 </Select>
               </div>
-
             </div>
           </div>
         </header>
@@ -296,18 +294,15 @@ export default function DashboardPage() {
         </section>
 
         {/* DETAIL VISIT (TABLET/DESKTOP) */}
-        <section className="hidden sm:block dashboard-surface rounded-2xl border border-white/10 bg-(--dash-surface-strong) p-4 sm:p-5">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <section className="hidden sm:block dashboard-surface rounded-2xl border border-white/10 bg-(--dash-surface-strong) p-3 sm:p-4">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <div className="min-w-0">
-              <p className="text-[10px] uppercase tracking-[0.4em] text-(--dash-muted)">
+              <p className="text-[10px] uppercase tracking-[0.32em] text-(--dash-muted)">
                 Visit Dokter
               </p>
-              <h2 className="mt-2 text-lg font-semibold text-(--dash-ink)">
+              <h2 className="mt-1 text-base font-semibold text-(--dash-ink)">
                 Alert jadwal hari ini & besok
               </h2>
-              <p className="mt-1 text-sm text-(--dash-muted)">
-                Pantau jadwal terdekat tanpa buka halaman visit.
-              </p>
             </div>
 
             <Button
@@ -323,7 +318,7 @@ export default function DashboardPage() {
           </div>
 
           {visitAlerts.length ? (
-            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
               {visitAlerts.slice(0, 3).map((v) => {
                 const when = new Date(v.waktuVisit);
                 const dayLabel = v.dayOffset === 0 ? "Hari ini" : "Besok";
@@ -331,9 +326,9 @@ export default function DashboardPage() {
                   <Link
                     key={v.id}
                     href="/visit-dokter"
-                    className="group rounded-2xl border border-white/10 bg-white/5 p-4 transition hover:border-cyan-500/40 hover:bg-cyan-500/10"
+                    className="group rounded-xl border border-white/10 bg-white/5 p-3 transition hover:border-cyan-500/40 hover:bg-cyan-500/10"
                   >
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start justify-between gap-2">
                       <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] font-semibold text-cyan-200/90">
                         {dayLabel}
                       </span>
@@ -343,7 +338,7 @@ export default function DashboardPage() {
                       </span>
                     </div>
 
-                    <div className="mt-3 space-y-2">
+                    <div className="mt-2 space-y-1.5">
                       <p className="inline-flex items-center gap-2 text-sm font-semibold text-(--dash-ink)">
                         <Stethoscope className="h-4 w-4 text-(--dash-muted)" />
                         <span className="truncate">{v.namaDokter}</span>
@@ -363,7 +358,7 @@ export default function DashboardPage() {
               })}
             </div>
           ) : (
-            <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-(--dash-muted)">
+            <div className="mt-3 rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-(--dash-muted)">
               Tidak ada jadwal visit terdekat (hari ini & besok).
             </div>
           )}
@@ -455,7 +450,7 @@ export default function DashboardPage() {
           <div
             className={
               viewMode === "compact"
-                ? "grid gap-5 2xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.72fr)]"
+                ? "grid gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(340px,0.58fr)] xl:items-start"
                 : "grid gap-5"
             }
           >
@@ -489,7 +484,17 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="grid gap-5 2xl:grid-cols-[minmax(360px,0.65fr)_minmax(0,1.8fr)] 2xl:items-start">
+          <div className="grid gap-5 xl:grid-cols-[minmax(0,1.75fr)_minmax(340px,0.7fr)] xl:items-start">
+            <div className="min-w-0">
+              <TransactionManager
+                transactions={expenseTransactions}
+                saldoData={filteredSaldoData}
+                reimbursements={reimbursementTransactions}
+                isLoading={isLoading}
+                onDataChange={fetchTransactions}
+                showCreateAction={false}
+              />
+            </div>
             <div className="min-w-0 space-y-5">
               <SaldoManager
                 saldoData={filteredSaldoData}
@@ -502,16 +507,6 @@ export default function DashboardPage() {
                 transactions={filteredTransactions}
                 isLoading={isLoading}
                 onDataChange={fetchTransactions}
-              />
-            </div>
-            <div className="min-w-0">
-              <TransactionManager
-                transactions={expenseTransactions}
-                saldoData={filteredSaldoData}
-                reimbursements={reimbursementTransactions}
-                isLoading={isLoading}
-                onDataChange={fetchTransactions}
-                showCreateAction={false}
               />
             </div>
           </div>

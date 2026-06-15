@@ -965,7 +965,7 @@ export default function TransactionManager({
         </span>
       </div>
 
-      <section className="min-w-0 space-y-3 rounded-2xl border border-white/10 bg-white/5 p-3 sm:p-4">
+      <section className="min-w-0 space-y-3 rounded-xl border border-white/10 bg-white/5 p-3 sm:p-4">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-[9px] uppercase tracking-[0.22em] text-(--dash-muted) sm:text-[10px]">
@@ -980,7 +980,7 @@ export default function TransactionManager({
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 2xl:grid-cols-3">
           {groupedTables.map((item) => {
             const tone =
               item.group === "ZB"
@@ -1004,10 +1004,10 @@ export default function TransactionManager({
             return (
             <div
               key={item.group}
-              className={`min-w-0 overflow-hidden rounded-2xl border bg-slate-950/45 shadow-[0_12px_32px_rgba(2,6,23,0.24)] ${tone.border}`}
+              className={`min-w-0 overflow-hidden rounded-xl border bg-slate-950/45 shadow-[0_12px_32px_rgba(2,6,23,0.18)] ${tone.border}`}
             >
-              <div className={`p-3 sm:p-4 ${tone.header}`}>
-                <div className="flex items-start justify-between gap-2">
+              <div className={`p-3 ${tone.header}`}>
+                <div className="flex items-center justify-between gap-2">
                   <p className={`min-w-0 truncate text-[10px] uppercase tracking-[0.2em] sm:text-[11px] ${tone.title}`}>
                     {companyGroupLabel(item.group)}
                   </p>
@@ -1016,28 +1016,28 @@ export default function TransactionManager({
                   </span>
                 </div>
 
-                <div className="mt-3 grid grid-cols-1 gap-2">
-                  <div className="rounded-xl border border-emerald-300/15 bg-emerald-400/10 p-3">
-                    <p className="text-[9px] uppercase tracking-[0.16em] text-emerald-100/70">
+                <div className="mt-3 grid grid-cols-3 gap-2">
+                  <div className="min-w-0 rounded-lg border border-emerald-300/15 bg-emerald-400/10 p-2">
+                    <p className="truncate text-[8px] uppercase tracking-[0.12em] text-emerald-100/70">
                       Saldo
                     </p>
-                    <p className="mt-1 truncate text-base font-semibold leading-tight text-emerald-100 sm:text-lg">
+                    <p className="mt-1 truncate text-sm font-semibold leading-tight text-emerald-100">
                       {displayCurrency(item.saldoTotal)}
                     </p>
                   </div>
-                  <div className="rounded-xl border border-cyan-300/15 bg-cyan-400/10 p-3">
-                    <p className="text-[9px] uppercase tracking-[0.16em] text-cyan-100/70">
+                  <div className="min-w-0 rounded-lg border border-cyan-300/15 bg-cyan-400/10 p-2">
+                    <p className="truncate text-[8px] uppercase tracking-[0.12em] text-cyan-100/70">
                       Pengeluaran
                     </p>
-                    <p className="mt-1 truncate text-base font-semibold leading-tight text-cyan-100 sm:text-lg">
+                    <p className="mt-1 truncate text-sm font-semibold leading-tight text-cyan-100">
                       {displayCurrency(item.expenseTotal)}
                     </p>
                   </div>
-                  <div className="rounded-xl border border-amber-300/15 bg-amber-400/10 p-3">
-                    <p className="text-[9px] uppercase tracking-[0.16em] text-amber-100/70">
+                  <div className="min-w-0 rounded-lg border border-amber-300/15 bg-amber-400/10 p-2">
+                    <p className="truncate text-[8px] uppercase tracking-[0.12em] text-amber-100/70">
                       Reimburse
                     </p>
-                    <p className="mt-1 truncate text-base font-semibold leading-tight text-amber-100 sm:text-lg">
+                    <p className="mt-1 truncate text-sm font-semibold leading-tight text-amber-100">
                       {displayCurrency(item.balanceReimbursementTotal)}
                     </p>
                   </div>
