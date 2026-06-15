@@ -381,7 +381,7 @@ export default function MealsMeetingManager({
     doc.save(`Meals_Metting_${exportTag()}.pdf`);
   };
 
-  const card = "rounded-2xl border border-white/10 bg-(--dash-surface) shadow-[0_14px_38px_rgba(2,6,23,0.34)]";
+  const card = "dash-panel rounded-2xl";
 
   return (
     <motion.section
@@ -391,7 +391,7 @@ export default function MealsMeetingManager({
     >
       <div className="flex min-w-0 flex-col gap-3 2xl:flex-row 2xl:items-start 2xl:justify-between">
         <div className="min-w-0">
-          <p className="text-[9px] uppercase tracking-[0.32em] text-(--dash-muted)">
+          <p className="dash-kicker">
             Kategori Khusus
           </p>
           <h2 className="mt-1 flex min-w-0 items-center gap-2 text-lg font-semibold sm:text-xl">
@@ -646,8 +646,8 @@ export default function MealsMeetingManager({
 
       {/* SUMMARY */}
       <div className="mt-4 grid grid-cols-1 gap-2 xl:grid-cols-3">
-        <div className="min-w-0 rounded-2xl border border-white/10 bg-white/5 p-3">
-          <p className="text-[9px] uppercase tracking-[0.24em] text-(--dash-muted)">
+        <div className="dash-panel-soft min-w-0 rounded-xl p-3">
+          <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-(--dash-muted)">
             Total Meals
           </p>
           <div className="mt-1.5 flex items-center justify-between gap-2">
@@ -655,13 +655,13 @@ export default function MealsMeetingManager({
               <Wallet className="h-3.5 w-3.5" />
               <span className="min-w-0 truncate">Jumlah</span>
             </div>
-            <p className="truncate text-sm font-semibold text-amber-300 tabular-nums sm:text-base">
+            <p className="dash-value truncate text-sm font-semibold text-amber-200 sm:text-base">
               {formatCurrency(totalMeals)}
             </p>
           </div>
         </div>
-        <div className="min-w-0 rounded-2xl border border-white/10 bg-white/5 p-3">
-          <p className="text-[9px] uppercase tracking-[0.24em] text-(--dash-muted)">
+        <div className="dash-panel-soft min-w-0 rounded-xl p-3">
+          <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-(--dash-muted)">
             Entri
           </p>
           <div className="mt-1.5 flex items-center justify-between gap-2">
@@ -672,8 +672,8 @@ export default function MealsMeetingManager({
             <p className="text-base font-semibold tabular-nums">{meals.length}</p>
           </div>
         </div>
-        <div className="min-w-0 rounded-2xl border border-white/10 bg-white/5 p-3">
-          <p className="text-[9px] uppercase tracking-[0.24em] text-(--dash-muted)">
+        <div className="dash-panel-soft min-w-0 rounded-xl p-3">
+          <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-(--dash-muted)">
             Export
           </p>
           <div className="mt-1.5 flex items-center justify-between gap-2">
@@ -689,11 +689,11 @@ export default function MealsMeetingManager({
       {/* CONTENT */}
       <div className="mt-4">
         {isLoading ? (
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-sm text-(--dash-muted)">
+          <div className="dash-panel-soft rounded-xl p-6 text-sm text-(--dash-muted)">
             Memuat...
           </div>
         ) : meals.length === 0 ? (
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-8 text-center text-sm text-(--dash-muted)">
+          <div className="dash-panel-soft rounded-xl p-8 text-center text-sm text-(--dash-muted)">
             Belum ada data Meals Metting.
           </div>
         ) : (

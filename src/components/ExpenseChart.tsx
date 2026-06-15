@@ -69,19 +69,22 @@ export default function ExpenseChartPro({ data }: ChartProps) {
   const activeItem = data[activeIndex];
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-(--dash-surface) p-4 shadow-[0_16px_36px_rgba(2,6,23,0.4)] backdrop-blur space-y-4 sm:p-5">
+    <div className="dash-panel space-y-4 rounded-2xl p-4 backdrop-blur sm:p-5">
 
       {/* HEADER */}
       <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h3 className="flex min-w-0 items-center gap-2 text-lg font-semibold font-(--font-display) text-(--dash-ink) sm:text-xl">
-          <Zap className="w-5 h-5" />
-          Distribusi Pengeluaran
-        </h3>
+        <div>
+          <p className="dash-kicker">Kategori</p>
+          <h3 className="mt-1 flex min-w-0 items-center gap-2 text-lg font-semibold font-(--font-display) text-white sm:text-xl">
+            <Zap className="h-5 w-5 text-amber-300" />
+            Distribusi Pengeluaran
+          </h3>
+        </div>
 
         <div className="flex flex-col sm:flex-row sm:items-center gap-3">
           <button
             onClick={() => setIsPlaying(!isPlaying)}
-            className="inline-flex items-center justify-center rounded-full bg-(--dash-accent) p-2 text-slate-950 transition hover:scale-105"
+            className="inline-flex items-center justify-center rounded-xl bg-(--dash-accent) p-2 text-slate-950 transition hover:scale-105"
           >
             {isPlaying ? <Pause size={16} /> : <Play size={16} />}
           </button>
@@ -136,13 +139,13 @@ export default function ExpenseChartPro({ data }: ChartProps) {
             key={activeItem?.name}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="rounded-2xl border border-white/10 bg-white/5 p-5"
+            className="dash-panel-soft rounded-2xl p-5"
           >
             <h4 className="break-words text-base font-semibold text-(--dash-ink)">
               {activeItem?.name}
             </h4>
 
-            <p className="truncate text-xl font-semibold text-(--dash-ink)">
+            <p className="dash-value truncate text-xl font-semibold text-white">
               {formatCurrency(activeItem?.value || 0)}
             </p>
 
@@ -167,7 +170,7 @@ export default function ExpenseChartPro({ data }: ChartProps) {
               <button
                 key={i}
                 onClick={() => setActiveIndex(i)}
-                className={`flex min-w-0 items-center gap-2 rounded-full border border-white/10 p-2 text-left text-xs transition sm:text-sm ${
+              className={`flex min-w-0 items-center gap-2 rounded-xl border border-white/10 p-2 text-left text-xs transition sm:text-sm ${
                   activeIndex === i
                     ? "bg-white/20 text-(--dash-ink)"
                     : "bg-white/5 text-(--dash-muted) hover:bg-white/10"

@@ -144,34 +144,42 @@ export default function SummaryCards({
 
   const toneStyles = {
     income: {
-      accent: "text-emerald-300",
-      badge: "bg-emerald-400/10",
-      glow: "from-emerald-500/20 via-transparent to-transparent",
+      accent: "text-emerald-200",
+      badge: "bg-emerald-400/10 border-emerald-300/20",
+      glow: "from-emerald-400/18 via-transparent to-transparent",
+      line: "bg-emerald-300",
     },
     expense: {
-      accent: "text-rose-300",
-      badge: "bg-rose-400/10",
-      glow: "from-rose-500/20 via-transparent to-transparent",
+      accent: "text-rose-200",
+      badge: "bg-rose-400/10 border-rose-300/20",
+      glow: "from-rose-400/18 via-transparent to-transparent",
+      line: "bg-rose-300",
     },
     balance: {
-      accent: "text-sky-300",
-      badge: "bg-sky-400/10",
-      glow: "from-sky-500/20 via-transparent to-transparent",
+      accent: "text-sky-200",
+      badge: "bg-sky-400/10 border-sky-300/20",
+      glow: "from-sky-400/18 via-transparent to-transparent",
+      line: "bg-sky-300",
     },
     reimbursement: {
-      accent: "text-amber-300",
-      badge: "bg-amber-400/10",
-      glow: "from-amber-500/20 via-transparent to-transparent",
+      accent: "text-amber-200",
+      badge: "bg-amber-400/10 border-amber-300/20",
+      glow: "from-amber-400/18 via-transparent to-transparent",
+      line: "bg-amber-300",
     },
   } as const;
 
   return (
     <div className="space-y-3">
-      <div className="flex justify-end">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="dash-kicker">Ringkasan</p>
+          <p className="text-xs text-(--dash-muted)">Angka utama periode terpilih</p>
+        </div>
         <button
           type="button"
           onClick={() => setNumberMode((prev) => (prev === "compact" ? "full" : "compact"))}
-          className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[10px] font-medium text-(--dash-ink) hover:bg-white/15"
+          className="rounded-xl border border-white/10 bg-white/10 px-3 py-1.5 text-[10px] font-medium text-(--dash-ink) hover:bg-white/15"
         >
           Angka: {numberMode === "compact" ? "Ringkas" : "Penuh"}
         </button>
@@ -189,14 +197,15 @@ export default function SummaryCards({
           return (
             <motion.div
               key={index}
-              className={`relative min-w-0 overflow-hidden rounded-2xl border border-white/10 bg-(--dash-surface) ${compact ? "p-3 shadow-[0_10px_22px_rgba(2,6,23,0.3)]" : "p-4 shadow-[0_14px_28px_rgba(2,6,23,0.4)]"}`}
+              className={`dash-panel relative min-w-0 overflow-hidden rounded-2xl ${compact ? "p-3" : "p-4"}`}
               variants={itemVariants}
             >
               <div className={`absolute inset-0 bg-linear-to-br ${tone.glow}`} />
+              <div className={`absolute inset-x-0 top-0 h-1 ${tone.line}`} />
 
               <div className="relative z-10 flex min-w-0 flex-col gap-3">
                 <div className="flex min-w-0 items-center justify-between gap-2">
-                  <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${tone.badge}`}>
+                  <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border ${tone.badge}`}>
                     <item.icon className={`h-4 w-4 ${tone.accent}`} />
                   </div>
                   {item.count !== null && (
@@ -207,12 +216,12 @@ export default function SummaryCards({
                 </div>
 
                 <div className="min-w-0">
-                  <p className="line-clamp-1 text-[10px] uppercase tracking-[0.25em] text-(--dash-muted)">
+                  <p className="line-clamp-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-(--dash-muted)">
                     {item.title}
                   </p>
                   <AnimatedNumber
                     value={item.value}
-                    className={`mt-1.5 block w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap font-semibold leading-tight tracking-tight tabular-nums ${tone.accent} ${
+                    className={`dash-value mt-1.5 block w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap font-semibold leading-tight ${tone.accent} ${
                       compact
                         ? "text-[clamp(1rem,1.7vw,1.45rem)]"
                         : "text-[clamp(1.1rem,2.2vw,1.75rem)]"

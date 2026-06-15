@@ -60,10 +60,10 @@ export default function ImageGallery({ transactions, isLoading }: ImageGalleryPr
   }
 
   return (
-    <div className="premium-card min-w-0 space-y-4 overflow-hidden rounded-2xl border border-white/10 bg-linear-to-b from-slate-900/90 via-slate-950/80 to-slate-950 p-4 text-white shadow-[0_16px_44px_rgba(2,6,23,0.4)] sm:p-5">
+    <div className="dash-panel min-w-0 space-y-4 overflow-hidden rounded-2xl p-4 text-white sm:p-5">
       <header className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
-          <p className="text-[10px] uppercase tracking-[0.4em] text-(--dash-muted)">
+          <p className="dash-kicker">
             Galeri
           </p>
           <h2 className="mt-1 flex min-w-0 items-center gap-2 break-words text-xl font-semibold text-white sm:text-2xl">
@@ -77,7 +77,7 @@ export default function ImageGallery({ transactions, isLoading }: ImageGalleryPr
       </header>
       
       {galleryItems.length === 0 ? (
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-center text-sm text-(--dash-muted) sm:p-8">
+        <div className="dash-panel-soft rounded-xl p-6 text-center text-sm text-(--dash-muted) sm:p-8">
           <ImageIcon className="mx-auto mb-3 h-9 w-9 text-white/60" />
           <p className="font-semibold text-white/90">Tidak ada berkas gambar</p>
           <p className="break-words">Tambahkan transaksi dengan berkas agar muncul di galeri.</p>
@@ -87,7 +87,7 @@ export default function ImageGallery({ transactions, isLoading }: ImageGalleryPr
           {galleryItems.map((item, index) => (
             <motion.div
               key={item.id}
-              className="group relative aspect-square cursor-pointer overflow-hidden rounded-2xl border border-white/10 bg-white/5 shadow-[0_10px_25px_rgba(2,6,23,0.45)]"
+              className="group relative aspect-square cursor-pointer overflow-hidden rounded-xl border border-white/10 bg-white/5 shadow-[0_10px_25px_rgba(2,6,23,0.32)]"
               onClick={() => setSelectedItem(item)}
               whileHover={{ scale: 1.05 }}
               transition={{ type: "spring", stiffness: 300 }}

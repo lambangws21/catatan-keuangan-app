@@ -11,7 +11,7 @@ import FinancialChart from "@/components/financial-chart";
 import FinancialReportPDF from "@/components/financial-report";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { CalendarDays, Clock, Hospital, Stethoscope, Sun, Moon } from "lucide-react";
+import { CalendarDays, Clock, Hospital, Stethoscope, Sun, Moon, WalletCards } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MealsMeetingManager from "@/components/MealsMeetingManager";
@@ -155,18 +155,20 @@ export default function DashboardPage() {
       <div className="pointer-events-none absolute -top-24 right-0 h-56 w-56 rounded-full bg-[radial-gradient(circle_at_center,rgba(20,184,166,0.16),transparent_65%)] blur-3xl" />
 
       <div className="relative z-10 space-y-4 font-(--font-body) text-(--dash-ink) sm:space-y-5">
-        <header className="dashboard-surface rounded-2xl border border-white/10 bg-(--dash-surface) p-4 backdrop-blur sm:p-5">
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <header className="dash-panel overflow-hidden rounded-2xl p-4 backdrop-blur sm:p-5">
+          <div className="relative flex flex-col gap-4">
+            <div className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-cyan-400/10 blur-3xl" />
+            <div className="relative flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div className="min-w-0 space-y-2">
-                <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-(--dash-muted)">
+                <span className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-cyan-100">
+                  <WalletCards className="h-3.5 w-3.5" />
                   Dashboard
                 </span>
-                <h1 className="wrap-break-word text-2xl font-semibold tracking-tight sm:text-3xl">
+                <h1 className="wrap-break-word text-2xl font-semibold tracking-tight text-white sm:text-3xl">
                   Dashboard Keuangan
                 </h1>
-                <p className="text-sm text-(--dash-muted)">
-                  Ringkasan aktivitas keuangan yang rapi, responsif, dan mudah dipantau.
+                <p className="max-w-2xl text-sm leading-6 text-(--dash-muted)">
+                  Ringkasan saldo, pengeluaran, reimbursement, dan jadwal penting dalam satu tampilan.
                 </p>
               </div>
 
@@ -175,7 +177,7 @@ export default function DashboardPage() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setViewMode((v) => (v === "compact" ? "expanded" : "compact"))}
-                  className="hidden sm:inline-flex rounded-full border border-white/10 bg-white/5 text-(--dash-ink) hover:bg-white/10"
+                  className="hidden sm:inline-flex rounded-xl border border-white/10 bg-white/5 text-(--dash-ink) hover:bg-white/10"
                 >
                   {viewMode === "compact" ? "Mode Detail" : "Mode Ringkas"}
                 </Button>
@@ -183,7 +185,7 @@ export default function DashboardPage() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                  className="rounded-full border border-white/10 bg-white/5 text-(--dash-ink) hover:bg-white/10"
+                  className="rounded-xl border border-white/10 bg-white/5 text-(--dash-ink) hover:bg-white/10"
                 >
                   {theme === "dark" ? <Sun /> : <Moon />}
                   <span className="hidden sm:inline text-xs font-medium">Tema</span>
@@ -191,7 +193,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-end">
+            <div className="relative grid gap-3 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-end">
               <div className="grid gap-3 sm:grid-cols-[180px_150px]">
                 <Select value={String(selectedMonth)} onValueChange={(v) => setSelectedMonth(Number(v))}>
                   <SelectTrigger className="w-full rounded-xl border-white/10 bg-white/5 text-(--dash-ink) shadow-inner">
@@ -294,7 +296,7 @@ export default function DashboardPage() {
         </section>
 
         {/* DETAIL VISIT (TABLET/DESKTOP) */}
-        <section className="hidden sm:block dashboard-surface rounded-2xl border border-white/10 bg-(--dash-surface-strong) p-3 sm:p-4">
+        <section className="hidden sm:block dash-panel rounded-2xl p-3 sm:p-4">
           <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <div className="min-w-0">
               <p className="text-[10px] uppercase tracking-[0.32em] text-(--dash-muted)">
@@ -326,7 +328,7 @@ export default function DashboardPage() {
                   <Link
                     key={v.id}
                     href="/visit-dokter"
-                    className="group rounded-xl border border-white/10 bg-white/5 p-3 transition hover:border-cyan-500/40 hover:bg-cyan-500/10"
+                    className="group rounded-xl border border-white/10 bg-white/[0.04] p-3 transition hover:border-cyan-500/40 hover:bg-cyan-500/10"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] font-semibold text-cyan-200/90">
@@ -358,7 +360,7 @@ export default function DashboardPage() {
               })}
             </div>
           ) : (
-            <div className="mt-3 rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-(--dash-muted)">
+            <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.04] p-3 text-sm text-(--dash-muted)">
               Tidak ada jadwal visit terdekat (hari ini & besok).
             </div>
           )}
@@ -459,7 +461,7 @@ export default function DashboardPage() {
             </div>
 
             <div className="flex min-w-0 flex-col gap-3">
-              <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-(--dash-surface-strong) p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="dash-panel rounded-2xl p-4 sm:flex sm:items-center sm:justify-between">
                 <div className="min-w-0">
                   <h3 className="text-lg font-semibold text-(--dash-ink)">
                     Ringkasan Bulanan

@@ -264,7 +264,7 @@ export default function SaldoManager({
     visible: { y: 0, opacity: 1 },
   };
 
-  const cardBackground = "border border-white/10 bg-(--dash-surface) shadow-[0_16px_40px_rgba(2,6,23,0.38)]";
+  const cardBackground = "dash-panel";
 
   return (
     <motion.div
@@ -275,10 +275,10 @@ export default function SaldoManager({
     >
       <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <div className="min-w-0">
-          <p className="text-[9px] uppercase tracking-[0.32em] text-(--dash-muted)">
+          <p className="dash-kicker">
             Riwayat Saldo
           </p>
-          <h2 className="break-words text-base font-semibold text-white sm:text-lg">Sirkulasi Dana Terkini</h2>
+          <h2 className="mt-1 break-words text-base font-semibold text-white sm:text-lg">Sirkulasi Dana Terkini</h2>
           <p className="text-[11px] text-(--dash-muted)">
             {totalEntries} entri dapat diekspor dengan cepat.
           </p>
@@ -312,7 +312,7 @@ export default function SaldoManager({
         </div>
       </div>
 
-      <div className="grid gap-2 rounded-xl border border-slate-200 bg-white/70 p-2 text-slate-900 dark:border-white/10 dark:bg-white/5 dark:text-slate-100 md:grid-cols-[minmax(0,1fr)_150px]">
+      <div className="dash-panel-soft grid gap-2 rounded-xl p-2 text-slate-100 md:grid-cols-[minmax(0,1fr)_150px]">
         <Input
           type="search"
           value={searchTerm}
@@ -338,19 +338,19 @@ export default function SaldoManager({
       </div>
 
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-        <div className="min-w-0 rounded-xl border border-slate-200 bg-white/80 p-2.5 text-slate-900 shadow-inner dark:border-white/10 dark:bg-white/5 dark:text-slate-100">
+        <div className="dash-panel-soft min-w-0 rounded-xl p-2.5 text-slate-100">
           <div className="flex items-center gap-2">
             <Wallet className="h-3.5 w-3.5 text-emerald-300" />
             <p className="text-[8px] uppercase tracking-[0.22em] text-(--dash-muted)">
               Total Saldo
             </p>
           </div>
-          <p className="mt-1.5 truncate text-xl font-semibold text-slate-950 dark:text-white sm:text-2xl">{formatCurrency(totalSaldo)}</p>
+          <p className="dash-value mt-1.5 truncate text-xl font-semibold text-white sm:text-2xl">{formatCurrency(totalSaldo)}</p>
           <p className="mt-1 text-[10px] text-(--dash-muted)">
             {hasEntries ? `${totalEntries} transaksi` : "Belum ada data"}
           </p>
         </div>
-        <div className="min-w-0 rounded-xl border border-slate-200 bg-white/80 p-2.5 text-slate-900 dark:border-white/10 dark:bg-white/5 dark:text-slate-100">
+        <div className="dash-panel-soft min-w-0 rounded-xl p-2.5 text-slate-100">
           <p className="text-[8px] uppercase tracking-[0.22em] text-(--dash-muted)">
             Entri terbaru
           </p>

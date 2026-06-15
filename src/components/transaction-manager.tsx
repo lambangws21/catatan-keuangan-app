@@ -891,17 +891,17 @@ export default function TransactionManager({
 
   return (
     <motion.div
-      className="premium-card min-w-0 space-y-4 overflow-hidden rounded-2xl border border-white/10 bg-linear-to-b from-slate-900/90 via-slate-950/80 to-slate-950 p-4 text-white shadow-[0_16px_44px_rgba(2,6,23,0.4)] sm:p-5"
+      className="dash-panel min-w-0 space-y-4 overflow-hidden rounded-2xl p-4 text-white sm:p-5"
       variants={containerVariants}
       initial="hidden"
       animate="visible"
     >
       <header className="flex min-w-0 flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="min-w-0">
-          <p className="text-[10px] uppercase tracking-[0.4em] text-(--dash-muted)">
+          <p className="dash-kicker">
             Riwayat Transaksi
           </p>
-          <h2 className="break-words text-lg font-semibold text-white sm:text-xl">Catatan Pengeluaran</h2>
+          <h2 className="mt-1 break-words text-lg font-semibold text-white sm:text-xl">Catatan Pengeluaran</h2>
           <p className="text-xs text-(--dash-muted) sm:text-sm">
             {filteredTransactions.length} pengeluaran + {filteredReimbursements.length} reimbursement siap direkap.
           </p>
@@ -938,8 +938,8 @@ export default function TransactionManager({
         </div>
       </header>
 
-      <div className="flex min-w-0 flex-wrap items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-2">
-        <span className="text-[10px] uppercase tracking-[0.22em] text-(--dash-muted)">
+      <div className="dash-panel-soft flex min-w-0 flex-wrap items-center gap-3 rounded-xl px-3 py-2">
+        <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-(--dash-muted)">
           Filter Status Klaim
         </span>
         <Select
@@ -965,7 +965,7 @@ export default function TransactionManager({
         </span>
       </div>
 
-      <section className="min-w-0 space-y-3 rounded-xl border border-white/10 bg-white/5 p-3 sm:p-4">
+      <section className="dash-panel-soft min-w-0 space-y-3 rounded-xl p-3 sm:p-4">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-[9px] uppercase tracking-[0.22em] text-(--dash-muted) sm:text-[10px]">
