@@ -294,13 +294,13 @@ export default function TransactionManager({
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const raw = window.localStorage.getItem("transaction-manager:number-mode:v1");
+    const raw = window.localStorage.getItem("transaction-manager:number-mode:v2");
     if (raw === "compact" || raw === "full") setNumberMode(raw);
   }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    window.localStorage.setItem("transaction-manager:number-mode:v1", numberMode);
+    window.localStorage.setItem("transaction-manager:number-mode:v2", numberMode);
   }, [numberMode]);
 
   const paginatedTransactions = useMemo(() => {

@@ -87,7 +87,7 @@ export default function SummaryCards({
   reimbursementAmount = 0,
 }: SummaryProps) {
   const [numberMode, setNumberMode] = useState<"compact" | "full">("compact");
-  const numberModeStorageKey = "summary-cards:number-mode:v1";
+  const numberModeStorageKey = "summary-cards:number-mode:v2";
 
   useEffect(() => {
     if (typeof window === "undefined") return;
