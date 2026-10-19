@@ -344,7 +344,7 @@ export default function Navbar() {
                                       <Link
                                         key={v.id}
                                         href="/visit-dokter"
-                                        className="block rounded-2xl border border-gray-800 bg-gradient-to-r from-slate-900/70 to-slate-900 px-3 py-2 text-sm text-gray-100 transition hover:border-cyan-500/50 hover:bg-cyan-900/40"
+                                        className="block rounded-2xl border border-gray-800 bg-linear-to-r from-slate-900/70 to-slate-900 px-3 py-2 text-sm text-gray-100 transition hover:border-cyan-500/50 hover:bg-cyan-900/40"
                                       >
                                         <div className="flex items-start justify-between gap-3">
                                           <p className="font-semibold leading-snug">
@@ -369,7 +369,7 @@ export default function Navbar() {
                               </div>
                             </div>
 
-                            <div className="rounded-2xl border border-gray-800 bg-gradient-to-br from-slate-900/60 to-slate-800/80 px-4 py-3">
+                            <div className="rounded-2xl border border-gray-800 bg-linear-to-br from-slate-900/60 to-slate-800/80 px-4 py-3">
                                 <div className="flex items-center justify-between gap-3">
                                   <DropdownMenuLabel className="text-sm">Notifikasi</DropdownMenuLabel>
                                   {hasUnread && (
@@ -424,7 +424,7 @@ export default function Navbar() {
                                     <Link
                                       key={item.id}
                                       href={getActivityHref(item)}
-                                      className="block rounded-2xl border border-gray-800 bg-gradient-to-r from-slate-900/70 to-slate-900 px-3 py-2 text-sm text-gray-100 transition hover:border-cyan-500/50 hover:bg-cyan-900/40"
+                                      className="block rounded-2xl border border-gray-800 bg-linear-to-r from-slate-900/70 to-slate-900 px-3 py-2 text-sm text-gray-100 transition hover:border-cyan-500/50 hover:bg-cyan-900/40"
                                     >
                                       <p className="font-semibold">{item.label}</p>
                                       <p className="text-xs text-cyan-300">{timeAgo(item.changedAt)}</p>

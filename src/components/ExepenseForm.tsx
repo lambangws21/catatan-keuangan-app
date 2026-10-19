@@ -39,6 +39,7 @@ import {
 interface ExpenseFormProps {
   onTransactionAdded: () => Promise<void>;
   trigger?: ReactNode;
+  defaultDate?: string;
 }
 
 type SelectedPhoto = {
@@ -202,9 +203,9 @@ const loadImageDimensions = (previewUrl: string) =>
 
 const buildPhotoId = (file: File) => `${file.name}:${file.size}:${file.lastModified}`;
 
-export default function ExpenseForm({ onTransactionAdded, trigger }: ExpenseFormProps) {
+export default function ExpenseForm({ onTransactionAdded, trigger, defaultDate }: ExpenseFormProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [tanggal, setTanggal] = useState(new Date().toISOString().split("T")[0]);
+  const [tanggal, setTanggal] = useState(defaultDate ?? new Date().toISOString().split("T")[0]);
   const [jenisBiaya, setJenisBiaya] = useState("Transportasi");
   const [customJenisBiaya, setCustomJenisBiaya] = useState("");
   const [keterangan, setKeterangan] = useState("");
@@ -298,7 +299,7 @@ export default function ExpenseForm({ onTransactionAdded, trigger }: ExpenseForm
   };
 
   const resetForm = () => {
-    setTanggal(new Date().toISOString().split("T")[0]);
+    setTanggal(defaultDate ?? new Date().toISOString().split("T")[0]);
     setJenisBiaya("Transportasi");
     setCustomJenisBiaya("");
     setKeterangan("");
@@ -333,6 +334,7 @@ export default function ExpenseForm({ onTransactionAdded, trigger }: ExpenseForm
     try {
       const raw = localStorage.getItem(DRAFT_KEY);
       if (!raw) {
+        if (defaultDate) setTanggal(defaultDate);
         setDraftReady(true);
         return;
       }
@@ -347,6 +349,7 @@ export default function ExpenseForm({ onTransactionAdded, trigger }: ExpenseForm
 	        jumlah?: number;
 	      };
       if (typeof parsed.tanggal === "string") setTanggal(parsed.tanggal);
+      else if (defaultDate) setTanggal(defaultDate);
       if (typeof parsed.jenisBiaya === "string") setJenisBiaya(parsed.jenisBiaya);
 	      if (typeof parsed.customJenisBiaya === "string") setCustomJenisBiaya(parsed.customJenisBiaya);
 	      if (typeof parsed.keterangan === "string") setKeterangan(parsed.keterangan);
@@ -367,7 +370,7 @@ export default function ExpenseForm({ onTransactionAdded, trigger }: ExpenseForm
     } finally {
       setDraftReady(true);
     }
-  }, [DRAFT_KEY, draftReady, isOpen]);
+  }, [DRAFT_KEY, draftReady, isOpen, defaultDate]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -461,6 +464,11 @@ export default function ExpenseForm({ onTransactionAdded, trigger }: ExpenseForm
       setMessage("Nama klaim wajib diisi untuk reimbursement personal/mandiri.");
       return;
     }
+    if (!jumlah || jumlah <= 0) {
+      setIsSubmitting(false);
+      setMessage("Jumlah harus diisi dan lebih dari 0.");
+      return;
+    }
 
     try {
       const uploadedUrls =
@@ -502,7 +510,10 @@ export default function ExpenseForm({ onTransactionAdded, trigger }: ExpenseForm
         }),
       });
 
-      if (!response.ok) throw new Error("Gagal menyimpan data");
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || `Gagal menyimpan data (${response.status})`);
+      }
 
       await onTransactionAdded();
       toast.success("Data berhasil disimpan!");
@@ -513,7 +524,9 @@ export default function ExpenseForm({ onTransactionAdded, trigger }: ExpenseForm
       setTimeout(() => setMessage(null), 1500);
     } catch (error) {
       console.error(error);
-      setMessage("Terjadi error saat menyimpan data.");
+      const msg = error instanceof Error ? error.message : "Terjadi error saat menyimpan data.";
+      setMessage(msg);
+      toast.error(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -734,7 +747,7 @@ export default function ExpenseForm({ onTransactionAdded, trigger }: ExpenseForm
                     key={photo.id}
                     className="rounded-lg border border-slate-200 bg-slate-50 p-2 dark:border-white/10 dark:bg-slate-900/40"
                   >
-                    <div className="relative aspect-[4/3] overflow-hidden rounded-md border border-slate-200 dark:border-white/10">
+                    <div className="relative aspect-4/3 overflow-hidden rounded-md border border-slate-200 dark:border-white/10">
                       <Image
                         src={photo.previewUrl}
                         alt={photo.file.name}

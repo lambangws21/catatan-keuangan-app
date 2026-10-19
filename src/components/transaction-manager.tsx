@@ -30,9 +30,11 @@ import {
   RotateCcw,
   ChevronsLeft,
   ChevronsRight,
+  Upload,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import Image from "next/image";
+import { toast } from "sonner";
 
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -225,6 +227,8 @@ export default function TransactionManager({
   const [previewOffset, setPreviewOffset] = useState({ x: 0, y: 0 });
   const [isPreviewDragging, setIsPreviewDragging] = useState(false);
   const [quickStatusUpdatingId, setQuickStatusUpdatingId] = useState<string | null>(null);
+  const [isImportingExcel, setIsImportingExcel] = useState(false);
+  const importExcelInputRef = useRef<HTMLInputElement | null>(null);
   const previewDragStartRef = useRef<{ x: number; y: number } | null>(null);
 
   const normalizedTransactions = useMemo<NormalizedTransaction[]>(
@@ -366,6 +370,43 @@ export default function TransactionManager({
     XLSX.writeFile(workbook, "Laporan Transaksi.xlsx");
   };
 
+  const handleImportExcel = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    setIsImportingExcel(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/transactions/import-excel", {
+        method: "POST",
+        body: formData,
+      });
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(result.error || "Gagal import Excel transaksi.");
+      }
+
+      const inserted = Number(result.inserted || 0);
+      const skipped = Number(result.skipped || 0);
+      const invalid = Array.isArray(result.errors) ? result.errors.length : 0;
+
+      await onDataChange();
+      toast.success(
+        `Import selesai: ${inserted} transaksi ditambahkan, ${skipped} duplikat dilewati${invalid ? `, ${invalid} baris invalid` : ""}.`
+      );
+    } catch (error) {
+      console.error(error);
+      const message = error instanceof Error ? error.message : "Gagal import Excel transaksi.";
+      toast.error(message);
+    } finally {
+      setIsImportingExcel(false);
+    }
+  };
+
   const handleExportPdf = () => {
     const doc = new jsPDF();
     doc.text("Laporan Riwayat Transaksi", 14, 16);
@@ -431,14 +472,18 @@ export default function TransactionManager({
     }
   };
 
-  const handleOpenEditModal = (tx: Transaction) => {
+  const prepareTransactionForEdit = (tx: Transaction): Transaction => {
     const fileUrls = getTransactionPhotoUrls(tx);
-    setTransactionToEdit({
+    return {
       ...tx,
       fileUrls,
       fileUrl: fileUrls[0] || "",
       klaimStatus: normalizeKlaimStatus(tx.klaimStatus),
-    });
+    };
+  };
+
+  const handleOpenEditModal = (tx: Transaction) => {
+    setTransactionToEdit(prepareTransactionForEdit(tx));
     setNewPhotoFiles([]);
     setIsEditModalOpen(true);
   };
@@ -499,8 +544,16 @@ export default function TransactionManager({
     });
   };
 
-  const handleUpdateTransaction = async () => {
+  const handleUpdateTransaction = async (continueToNext = false) => {
     if (!transactionToEdit) return;
+    const currentIndex = filteredTransactions.findIndex(
+      (tx) => tx.id === transactionToEdit.id
+    );
+    const nextTransaction =
+      continueToNext && currentIndex >= 0
+        ? filteredTransactions[currentIndex + 1]
+        : undefined;
+
     setIsSaving(true);
     try {
       const payload: Transaction = {
@@ -512,21 +565,24 @@ export default function TransactionManager({
 
       if (newPhotoFiles.length > 0) {
         setIsPhotoProcessing(true);
-        uploadedPhotoUrls = await Promise.all(
-          newPhotoFiles.map(async (photo, index) => {
-            const safeName = photo.file.name.replace(/\s+/g, "-");
-            const storageRef = ref(
-              storage,
-              `berkas/${transactionToEdit.id}_${Date.now()}_${index + 1}_${safeName}`
-            );
-            const metadata = photo.file.type
-              ? { contentType: photo.file.type }
-              : undefined;
-            const snapshot = await uploadBytes(storageRef, photo.file, metadata);
-            return getDownloadURL(snapshot.ref);
-          })
-        );
-        setIsPhotoProcessing(false);
+        try {
+          uploadedPhotoUrls = await Promise.all(
+            newPhotoFiles.map(async (photo, index) => {
+              const safeName = photo.file.name.replace(/\s+/g, "-");
+              const storageRef = ref(
+                storage,
+                `berkas/${transactionToEdit.id}_${Date.now()}_${index + 1}_${safeName}`
+              );
+              const metadata = photo.file.type
+                ? { contentType: photo.file.type }
+                : undefined;
+              const snapshot = await uploadBytes(storageRef, photo.file, metadata);
+              return getDownloadURL(snapshot.ref);
+            })
+          );
+        } finally {
+          setIsPhotoProcessing(false);
+        }
       }
 
       const mergedPhotoUrls = [...existingPhotoUrls, ...uploadedPhotoUrls];
@@ -534,13 +590,30 @@ export default function TransactionManager({
       payload.fileUrl = mergedPhotoUrls[0] || "";
       payload.klaimStatus = normalizeStoredKlaimStatus(payload);
 
-      await fetch(`/api/transactions/${transactionToEdit.id}`, {
+      const response = await fetch(`/api/transactions/${transactionToEdit.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      handleCloseEditModal();
+
+      if (!response.ok) {
+        throw new Error("Gagal memperbarui transaksi.");
+      }
+
       await onDataChange();
+
+      if (nextTransaction) {
+        clearNewPhotoFiles();
+        setTransactionToEdit(prepareTransactionForEdit(nextTransaction));
+        setIsEditModalOpen(true);
+        toast.success("Transaksi disimpan. Lanjut edit data berikutnya.");
+      } else {
+        handleCloseEditModal();
+        toast.success("Transaksi berhasil diperbarui.");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error(error instanceof Error ? error.message : "Gagal memperbarui transaksi.");
     } finally {
       setIsSaving(false);
       clearNewPhotoFiles();
@@ -880,6 +953,11 @@ export default function TransactionManager({
   const transactionToEditClaimable = transactionToEdit
     ? getKlaimDisplayStatus(transactionToEdit) !== "Tidak perlu klaim"
     : false;
+  const currentEditIndex = transactionToEdit
+    ? filteredTransactions.findIndex((tx) => tx.id === transactionToEdit.id)
+    : -1;
+  const hasNextEditableTransaction =
+    currentEditIndex >= 0 && currentEditIndex < filteredTransactions.length - 1;
 
   if (isLoading) {
     return (
@@ -896,51 +974,74 @@ export default function TransactionManager({
       initial="hidden"
       animate="visible"
     >
-      <header className="flex min-w-0 flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <header className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <p className="dash-kicker">
-            Riwayat Transaksi
-          </p>
-          <h2 className="mt-1 break-words text-lg font-semibold text-white sm:text-xl">Catatan Pengeluaran</h2>
-          <p className="text-xs text-(--dash-muted) sm:text-sm">
-            {filteredTransactions.length} pengeluaran + {filteredReimbursements.length} reimbursement siap direkap.
+          <p className="dash-kicker">Riwayat Transaksi</p>
+          <h2 className="mt-1 wrap-break-word text-lg font-semibold text-white sm:text-xl">Catatan Pengeluaran</h2>
+          <p className="mt-0.5 text-xs text-(--dash-muted)">
+            <span className="font-semibold text-cyan-300">{filteredTransactions.length}</span> pengeluaran &nbsp;·&nbsp;
+            <span className="font-semibold text-amber-300">{filteredReimbursements.length}</span> reimbursement
           </p>
         </div>
-        <div className="flex shrink-0 flex-wrap gap-2">
+        <div className="flex shrink-0 flex-wrap items-center gap-1.5">
           {showCreateAction ? <ExpenseForm onTransactionAdded={onDataChange} /> : null}
+          <input
+            ref={importExcelInputRef}
+            type="file"
+            accept=".xlsx,.xls"
+            className="hidden"
+            onChange={handleImportExcel}
+          />
+          <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-white/5 p-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              type="button"
+              onClick={() => importExcelInputRef.current?.click()}
+              disabled={isImportingExcel}
+              className="h-7 rounded-lg px-2.5 text-[11px] text-(--dash-muted) hover:bg-white/10 hover:text-(--dash-ink) disabled:opacity-40"
+            >
+              {isImportingExcel ? (
+                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Upload className="mr-1 h-3.5 w-3.5" />
+              )}
+              Import
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleExportExcel()}
+              disabled={!hasExportEntries}
+              className="h-7 rounded-lg px-2.5 text-[11px] text-(--dash-muted) hover:bg-white/10 hover:text-(--dash-ink) disabled:opacity-40"
+            >
+              <FileDown className="mr-1 h-3.5 w-3.5" /> Excel
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleExportPdf()}
+              disabled={!hasExportEntries}
+              className="h-7 rounded-lg px-2.5 text-[11px] text-(--dash-muted) hover:bg-white/10 hover:text-(--dash-ink) disabled:opacity-40"
+            >
+              <FileDown className="mr-1 h-3.5 w-3.5" /> PDF
+            </Button>
+          </div>
           <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleExportExcel()}
-            disabled={!hasExportEntries}
-            className="border-slate-200 bg-white/70 text-slate-800 hover:bg-white hover:border-slate-300 dark:border-white/20 dark:bg-white/5 dark:text-white/80 dark:hover:border-white/40"
-          >
-            <FileDown className="h-4 w-4 mr-2" /> Excel
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleExportPdf()}
-            disabled={!hasExportEntries}
-            className="border-slate-200 bg-white/70 text-slate-800 hover:bg-white hover:border-slate-300 dark:border-white/20 dark:bg-white/5 dark:text-white/80 dark:hover:border-white/40"
-          >
-            <FileDown className="h-4 w-4 mr-2" /> PDF
-          </Button>
-          <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             type="button"
             onClick={() => setNumberMode((prev) => (prev === "compact" ? "full" : "compact"))}
-            className="border-white/20 bg-white/5 text-(--dash-ink) hover:bg-white/10"
+            className="h-8 rounded-xl border border-white/10 bg-white/5 px-3 text-[11px] text-(--dash-muted) hover:bg-white/10 hover:text-(--dash-ink)"
           >
-            Angka: {numberMode === "compact" ? "Ringkas" : "Penuh"}
+            {numberMode === "compact" ? "Angka Ringkas" : "Angka Penuh"}
           </Button>
         </div>
       </header>
 
-      <div className="dash-panel-soft flex min-w-0 flex-wrap items-center gap-3 rounded-xl px-3 py-2">
-        <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-(--dash-muted)">
-          Filter Status Klaim
+      <div className="flex min-w-0 flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-white/3 px-3 py-2">
+        <span className="shrink-0 text-[10px] font-semibold uppercase tracking-widest text-(--dash-muted)">
+          Filter Klaim
         </span>
         <Select
           value={klaimStatusFilter}
@@ -948,8 +1049,8 @@ export default function TransactionManager({
             setKlaimStatusFilter(value as "semua" | KlaimDisplayStatus)
           }
         >
-          <SelectTrigger className="h-9 w-full min-w-[180px] border-white/10 bg-black/20 text-white sm:w-[220px]">
-            <SelectValue placeholder="Semua status klaim" />
+          <SelectTrigger className="h-8 w-full min-w-40 rounded-xl border-white/10 bg-black/20 text-xs text-white sm:w-[200px]">
+            <SelectValue placeholder="Semua status" />
           </SelectTrigger>
           <SelectContent className="border-white/10 bg-slate-900 text-white">
             <SelectItem value="semua">Semua status</SelectItem>
@@ -960,148 +1061,143 @@ export default function TransactionManager({
             ))}
           </SelectContent>
         </Select>
-        <span className="text-xs text-(--dash-muted)">
-          {filteredTransactions.length} pengeluaran, {filteredReimbursements.length} reimbursement
+        <span className="ml-auto text-[10px] tabular-nums text-(--dash-muted)">
+          {filteredTransactions.length}P · {filteredReimbursements.length}R
         </span>
       </div>
 
-      <section className="dash-panel-soft min-w-0 space-y-3 rounded-xl p-3 sm:p-4">
-        <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-[9px] uppercase tracking-[0.22em] text-(--dash-muted) sm:text-[10px]">
-              Rekap per Grup
-            </p>
-            <h3 className="text-sm font-semibold text-white sm:text-base">
-              Saldo, pengeluaran, dan reimbursement
-            </h3>
-          </div>
-          <p className="max-w-md text-[10px] leading-relaxed text-(--dash-muted) sm:text-[11px]">
-            Reimbursement dihitung saat pengeluaran grup lebih besar dari saldo grup.
+      <section className="min-w-0 space-y-2">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-(--dash-muted)">
+            Rekap per Grup
+          </p>
+          <p className="text-[10px] text-(--dash-muted)">
+            Reimburse = pengeluaran lebih besar dari saldo
           </p>
         </div>
-
-        <div className="grid grid-cols-1 gap-3 2xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
           {groupedTables.map((item) => {
-            const tone =
-              item.group === "ZB"
-                ? {
-                    border: "border-sky-400/30",
-                    header: "bg-sky-500/10",
-                    title: "font-black text-sky-100",
-                  }
-                : item.group === "NM"
-                  ? {
-                      border: "border-violet-400/30",
-                      header: "bg-violet-500/10",
-                      title: "font-black italic text-violet-100",
-                    }
-                  : {
-                      border: "border-slate-400/25",
-                      header: "bg-slate-500/10",
-                      title: "font-black text-slate-100",
-                    };
-
+            const isZB = item.group === "ZB";
+            const isNM = item.group === "NM";
             return (
-            <div
-              key={item.group}
-              className={`min-w-0 overflow-hidden rounded-xl border bg-slate-950/45 shadow-[0_12px_32px_rgba(2,6,23,0.18)] ${tone.border}`}
-            >
-              <div className={`p-3 ${tone.header}`}>
-                <div className="flex items-center justify-between gap-2">
-                  <p className={`min-w-0 truncate text-[10px] uppercase tracking-[0.2em] sm:text-[11px] ${tone.title}`}>
-                    {companyGroupLabel(item.group)}
-                  </p>
-                  <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[9px] text-white/70 sm:text-[10px]">
-                    {item.expenses.length} transaksi
-                  </span>
-                </div>
-
-                <div className="mt-3 grid grid-cols-3 gap-2">
-                  <div className="min-w-0 rounded-lg border border-emerald-300/15 bg-emerald-400/10 p-2">
-                    <p className="truncate text-[8px] uppercase tracking-[0.12em] text-emerald-100/70">
-                      Saldo
+              <div
+                key={item.group}
+                className={[
+                  "relative min-w-0 overflow-hidden rounded-2xl border p-3",
+                  isZB
+                    ? "border-sky-400/30 bg-sky-500/10"
+                    : isNM
+                      ? "border-violet-400/30 bg-violet-500/10"
+                      : "border-slate-500/25 bg-slate-700/20",
+                ].join(" ")}
+              >
+                <div
+                  className={[
+                    "absolute left-0 top-0 h-full w-1 rounded-l-2xl",
+                    isZB ? "bg-sky-400" : isNM ? "bg-violet-400" : "bg-slate-400",
+                  ].join(" ")}
+                />
+                <div className="pl-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <p
+                      className={[
+                        "min-w-0 truncate text-[11px] font-black uppercase tracking-widest",
+                        isNM ? "italic" : "",
+                        isZB ? "text-sky-200" : isNM ? "text-violet-200" : "text-slate-300",
+                      ].join(" ")}
+                    >
+                      {companyGroupLabel(item.group)}
                     </p>
-                    <p className="mt-1 truncate text-sm font-semibold leading-tight text-emerald-100">
-                      {displayCurrency(item.saldoTotal)}
-                    </p>
+                    <span className="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-[9px] text-(--dash-muted)">
+                      {item.expenses.length}tx
+                    </span>
                   </div>
-                  <div className="min-w-0 rounded-lg border border-cyan-300/15 bg-cyan-400/10 p-2">
-                    <p className="truncate text-[8px] uppercase tracking-[0.12em] text-cyan-100/70">
-                      Pengeluaran
-                    </p>
-                    <p className="mt-1 truncate text-sm font-semibold leading-tight text-cyan-100">
-                      {displayCurrency(item.expenseTotal)}
-                    </p>
-                  </div>
-                  <div className="min-w-0 rounded-lg border border-amber-300/15 bg-amber-400/10 p-2">
-                    <p className="truncate text-[8px] uppercase tracking-[0.12em] text-amber-100/70">
-                      Reimburse
-                    </p>
-                    <p className="mt-1 truncate text-sm font-semibold leading-tight text-amber-100">
-                      {displayCurrency(item.balanceReimbursementTotal)}
-                    </p>
+                  <div className={["mt-2.5 grid gap-1.5", item.balanceReimbursementTotal > 0 ? "grid-cols-3" : "grid-cols-2"].join(" ")}>
+                    <div className="min-w-0">
+                      <p className="text-[8px] uppercase tracking-widest text-(--dash-muted)">Saldo</p>
+                      <p className="mt-0.5 truncate text-[11px] font-semibold tabular-nums text-emerald-200">
+                        {displayCurrency(item.saldoTotal)}
+                      </p>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[8px] uppercase tracking-widest text-(--dash-muted)">Keluar</p>
+                      <p className="mt-0.5 truncate text-[11px] font-semibold tabular-nums text-cyan-200">
+                        {displayCurrency(item.expenseTotal)}
+                      </p>
+                    </div>
+                    {item.balanceReimbursementTotal > 0 && (
+                      <div className="min-w-0">
+                        <p className="text-[8px] uppercase tracking-widest text-amber-500">Kurang</p>
+                        <p className="mt-0.5 truncate text-[11px] font-semibold tabular-nums text-amber-300">
+                          {displayCurrency(item.balanceReimbursementTotal)}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
-            </div>
             );
           })}
         </div>
       </section>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <div className="min-w-0 rounded-xl border border-white/10 bg-white/5 p-3 shadow-inner sm:p-4">
-          <div className="flex min-w-0 items-center gap-3">
-            <Wallet className="h-4 w-4 text-cyan-300 sm:h-5 sm:w-5" />
-            <p className="line-clamp-1 text-[8px] uppercase tracking-[0.18em] text-(--dash-muted) sm:text-[10px]">Total Pengeluaran</p>
+      <div className={["grid grid-cols-1 gap-2", groupBalanceReimbursementTotal > 0 ? "sm:grid-cols-3" : "sm:grid-cols-2"].join(" ")}>
+        {/* Total Pengeluaran */}
+        <div className="min-w-0 rounded-2xl border border-cyan-400/25 bg-cyan-500/10 p-3">
+          <div className="flex items-center gap-2">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-cyan-500/20">
+              <Wallet className="h-3.5 w-3.5 text-cyan-300" />
+            </span>
+            <p className="text-[10px] uppercase tracking-widest text-(--dash-muted)">Total Pengeluaran</p>
           </div>
-          <p className="mt-2 overflow-hidden text-ellipsis whitespace-nowrap text-base font-semibold leading-tight tabular-nums text-white sm:text-xl">{displayCurrency(totalJumlah)}</p>
-          <p className="mt-1 text-[9px] text-(--dash-muted) sm:text-[11px]">
+          <p className="mt-2 truncate text-xl font-semibold tabular-nums text-white">
+            {displayCurrency(totalJumlah)}
+          </p>
+          <p className="mt-0.5 text-[10px] text-(--dash-muted)">
             {hasEntries ? `${filteredTransactions.length} transaksi` : "Tidak ada data"}
           </p>
         </div>
-        <div className="min-w-0 rounded-xl border border-white/10 bg-white/5 p-3 shadow-inner sm:p-4">
-          <div className="flex min-w-0 items-center gap-3">
-            <Wallet className="h-4 w-4 text-amber-300 sm:h-5 sm:w-5" />
-            <p className="line-clamp-1 text-[8px] uppercase tracking-[0.18em] text-(--dash-muted) sm:text-[10px]">Reimbursement Saldo</p>
-          </div>
-          <p className="mt-2 overflow-hidden text-ellipsis whitespace-nowrap text-base font-semibold leading-tight tabular-nums text-white sm:text-xl">{displayCurrency(groupBalanceReimbursementTotal)}</p>
-          <p className="mt-1 text-[9px] text-(--dash-muted) sm:text-[11px]">
-            ZB + NM dari kekurangan saldo terhadap pengeluaran
-          </p>
-        </div>
-        <div className="relative min-w-0 overflow-hidden rounded-xl border border-white/10 bg-white/5 p-3 sm:p-4">
-          <div className="absolute inset-0 bg-linear-to-br from-cyan-500/10 via-transparent to-emerald-400/10" />
-          <div className="relative z-10 space-y-2">
-            <div className="flex items-center justify-between">
-              <p className="text-[8px] uppercase tracking-[0.18em] text-(--dash-muted) sm:text-[10px]">Entri terbaru</p>
-              <span className="rounded-full bg-white/10 px-2 py-0.5 text-[9px] text-white/80 sm:text-[10px]">
-                {latestTransactions.length} entri
+
+        {/* Reimburse Saldo — hanya tampil jika ada selisih (pengeluaran grup > saldo grup) */}
+        {groupBalanceReimbursementTotal > 0 && (
+          <div className="min-w-0 rounded-2xl border border-amber-400/25 bg-amber-500/10 p-3">
+            <div className="flex items-center gap-2">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-amber-500/20">
+                <Wallet className="h-3.5 w-3.5 text-amber-300" />
               </span>
+              <p className="text-[10px] uppercase tracking-widest text-(--dash-muted)">Kekurangan Saldo</p>
             </div>
-            {latestTransactions.length === 0 ? (
-              <p className="mt-1 text-[11px] text-(--dash-muted) sm:text-sm">Tambahkan biaya untuk melihat ringkasan.</p>
-            ) : (
-              <ul className="mt-1 space-y-1.5 text-[11px] text-white/90 sm:space-y-2 sm:text-sm">
-                {latestTransactions.map((tx) => (
-                  <li
-                    key={tx.id}
-                    className="rounded-lg border border-white/5 bg-white/5 px-2.5 py-1.5 backdrop-blur-sm sm:px-3 sm:py-2"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-[9px] text-(--dash-muted) tabular-nums sm:text-[11px]">{tx.tanggal}</span>
-                      <div className="text-[9px] font-semibold text-emerald-200 tabular-nums truncate sm:text-[11px]">
-                        {displayCurrency(Number(tx.jumlah))}
-                      </div>
-                    </div>
-                    <p className="mt-0.5 truncate text-[9px] font-medium text-white/85 sm:mt-1 sm:text-[11px]">
-                      {tx.jenisBiaya}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <p className="mt-2 truncate text-xl font-semibold tabular-nums text-white">
+              {displayCurrency(groupBalanceReimbursementTotal)}
+            </p>
+            <p className="mt-0.5 text-[10px] text-(--dash-muted)">
+              Pengeluaran ZB/NM melebihi saldo yang masuk
+            </p>
           </div>
+        )}
+
+        {/* Entri Terbaru */}
+        <div className="min-w-0 rounded-2xl border border-white/10 bg-white/5 p-3">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <p className="text-[10px] uppercase tracking-widest text-(--dash-muted)">Entri Terbaru</p>
+            <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[9px] text-(--dash-muted)">
+              {latestTransactions.length}
+            </span>
+          </div>
+          {latestTransactions.length === 0 ? (
+            <p className="text-[11px] text-(--dash-muted)">Tambahkan biaya untuk melihat ringkasan.</p>
+          ) : (
+            <ul className="space-y-1">
+              {latestTransactions.map((tx) => (
+                <li key={tx.id} className="flex items-center justify-between gap-2 rounded-lg bg-white/5 px-2 py-1.5">
+                  <span className="min-w-0 truncate text-[10px] text-(--dash-muted)">{tx.jenisBiaya}</span>
+                  <span className="shrink-0 text-[10px] font-semibold tabular-nums text-emerald-200">
+                    {displayCurrency(Number(tx.jumlah))}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
 
@@ -1138,13 +1234,13 @@ export default function TransactionManager({
                   <TableCell className="py-2 px-2 sm:py-3 sm:px-3">
                     <span className="inline-flex items-center gap-2">
                       <StickyNote className="h-4 w-4 text-cyan-200/70" />
-                      <span className="line-clamp-2 max-w-[320px] whitespace-pre-line break-words">{tx.keterangan}</span>
+                      <span className="line-clamp-2 max-w-[320px] whitespace-pre-line wrap-break-word">{tx.keterangan}</span>
                     </span>
                   </TableCell>
                   <TableCell className="py-2 px-2 sm:py-3 sm:px-3">
                     <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold text-(--dash-muted)">
                       <Tags className="mr-2 h-3.5 w-3.5 text-cyan-200/70" />
-                      <span className="max-w-[160px] truncate">{tx.jenisBiaya}</span>
+                      <span className="max-w-40 truncate">{tx.jenisBiaya}</span>
                     </span>
                   </TableCell>
                   <TableCell className="py-2 px-2 sm:py-3 sm:px-3">
@@ -1406,7 +1502,7 @@ export default function TransactionManager({
           setIsEditModalOpen(true);
         }}
       >
-        <DialogContent className="sm:max-w-[700px] border-slate-200 bg-white text-slate-900 shadow-2xl dark:border-white/10 dark:bg-slate-950 dark:text-slate-100">
+        <DialogContent className="w-[calc(100vw-1rem)] max-w-none sm:max-w-[700px] border-slate-200 bg-white text-slate-900 shadow-2xl dark:border-white/10 dark:bg-slate-950 dark:text-slate-100">
           <DialogHeader>
             <DialogTitle className="text-cyan-700 dark:text-cyan-300">
               Edit Transaksi
@@ -1417,7 +1513,7 @@ export default function TransactionManager({
           </DialogHeader>
           {transactionToEdit && (
             <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="grid gap-2">
                   <Label htmlFor="tanggal">Tanggal</Label>
                   <Input
@@ -1676,7 +1772,14 @@ export default function TransactionManager({
               Batal
             </Button>
             <Button
-              onClick={handleUpdateTransaction}
+              variant="outline"
+              onClick={() => handleUpdateTransaction(true)}
+              disabled={isSaving || isPhotoProcessing || !hasNextEditableTransaction}
+            >
+              {isSaving ? "Menyimpan..." : "Simpan & Lanjut"}
+            </Button>
+            <Button
+              onClick={() => handleUpdateTransaction()}
               className="bg-cyan-600 text-white hover:bg-cyan-700 dark:bg-cyan-500 dark:hover:bg-cyan-400"
               disabled={isSaving || isPhotoProcessing}
             >

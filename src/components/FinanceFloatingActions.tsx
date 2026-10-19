@@ -10,11 +10,13 @@ import { cn } from "@/lib/utils";
 interface FinanceFloatingActionsProps {
   onSaldoAdded: () => Promise<void>;
   onTransactionAdded: () => Promise<void>;
+  defaultDate?: string;
 }
 
 export default function FinanceFloatingActions({
   onSaldoAdded,
   onTransactionAdded,
+  defaultDate,
 }: FinanceFloatingActionsProps) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -27,7 +29,7 @@ export default function FinanceFloatingActions({
     "h-12 rounded-2xl border border-white/25 bg-white/80 px-4 text-sm font-bold text-slate-900 shadow-[0_16px_45px_rgba(15,23,42,0.22)] backdrop-blur-2xl hover:-translate-y-0.5 hover:bg-white dark:border-white/15 dark:bg-slate-950/80 dark:text-white dark:hover:bg-slate-900";
 
   return (
-    <div className="fixed bottom-[calc(env(safe-area-inset-bottom)+5.75rem)] right-4 z-[70] flex flex-col items-end gap-3 print:hidden lg:bottom-[calc(env(safe-area-inset-bottom)+1.5rem)]">
+    <div className="fixed bottom-[calc(env(safe-area-inset-bottom)+5.75rem)] right-4 z-70 flex flex-col items-end gap-3 print:hidden lg:bottom-[calc(env(safe-area-inset-bottom)+1.5rem)]">
       <div
         className={cn(
           "flex flex-col items-end gap-2 transition-all duration-200",
@@ -38,6 +40,7 @@ export default function FinanceFloatingActions({
       >
         <SaldoForm
           onSaldoAdded={onSaldoAdded}
+          defaultDate={defaultDate}
           trigger={
             <Button
               type="button"
@@ -54,6 +57,7 @@ export default function FinanceFloatingActions({
         />
         <ExpenseForm
           onTransactionAdded={onTransactionAdded}
+          defaultDate={defaultDate}
           trigger={
             <Button
               type="button"

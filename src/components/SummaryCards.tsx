@@ -230,7 +230,7 @@ export default function SummaryCards({
                   />
                   {item.title === "Reimburse" ? (
                     <p className="mt-1 line-clamp-2 text-[10px] leading-snug text-white/70">
-                      Pengeluaran melebihi pemasukan, segera ajukan reimbusen.
+                      Pengeluaran grup melebihi saldo masuk — selisih perlu diajukan ke kantor.
                     </p>
                   ) : null}
                 </div>

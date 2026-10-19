@@ -309,7 +309,7 @@ export default function SchedulesPage() {
                 <p className="text-[10px] uppercase tracking-[0.4em] text-(--dash-muted)">
                   Visit Dokter
                 </p>
-                <h1 className="mt-2 text-2xl sm:text-3xl font-semibold font-(--font-display)">
+                <h1 className="mt-2 text-2xl sm:text-3xl font-semibold">
                   Manajemen Jadwal Visit
                 </h1>
                 <p className="mt-2 text-sm text-(--dash-muted)">
@@ -329,14 +329,14 @@ export default function SchedulesPage() {
                   <Button
                     asChild
                     variant="secondary"
-                    className="border border-white/10 bg-white/10 text-(--dash-ink) hover:bg-white/15 text-slate-50"
+                    className="border border-white/10 bg-white/10 text-(--dash-ink) hover:bg-white/15"
                   >
                     <a href="/api/visit-dokter/ics" target="_blank" rel="noreferrer">
                       <CalendarDays className="mr-2 h-4 w-4" />
                       Export ICS
                     </a>
                   </Button>
-	                <Button asChild variant="secondary" className="border border-white/10 bg-white/10 text-(--dash-ink) hover:bg-white/15 text-slate-50">
+	                <Button asChild variant="secondary" className="border border-white/10 bg-white/10 text-(--dash-ink) hover:bg-white/15">
 	                  <Link href="/list-dokter">
 	                    <ClipboardList className="mr-2 h-4 w-4" />
 	                    List Dokter

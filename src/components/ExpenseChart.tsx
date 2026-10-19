@@ -141,7 +141,7 @@ export default function ExpenseChartPro({ data }: ChartProps) {
             animate={{ opacity: 1, y: 0 }}
             className="dash-panel-soft rounded-2xl p-5"
           >
-            <h4 className="break-words text-base font-semibold text-(--dash-ink)">
+            <h4 className="wrap-break-word text-base font-semibold text-(--dash-ink)">
               {activeItem?.name}
             </h4>
 

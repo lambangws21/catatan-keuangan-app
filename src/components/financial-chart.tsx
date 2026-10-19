@@ -137,13 +137,13 @@ export default function FinancialChartTitan({
       <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="dash-kicker">Analitik</p>
-          <h2 className="mt-1 flex min-w-0 items-center gap-2 text-lg font-semibold font-(--font-display) text-white sm:text-xl">
+          <h2 className="mt-1 flex min-w-0 items-center gap-2 text-lg font-semibold text-white sm:text-xl">
             <Brain className="h-5 w-5 text-cyan-300" />
             Tren Pengeluaran
           </h2>
         </div>
 
-        <div className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-(--dash-muted) sm:text-sm">
+        <div className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/4 px-3 py-2 text-xs text-(--dash-muted) sm:text-sm">
           <TrendingUp size={18} />
           Bulanan
         </div>
@@ -174,7 +174,7 @@ export default function FinancialChartTitan({
       </div>
 
       {/* MAIN GRAPH */}
-      <div ref={chartContainerRef} className="h-[220px] w-full min-w-0 sm:h-[280px] xl:h-[320px]">
+      <div ref={chartContainerRef} className="h-[220px] w-full min-w-0 sm:h-[280px] xl:h-80">
         {isChartReady ? (
           <LineChart
             width={chartSize.width}

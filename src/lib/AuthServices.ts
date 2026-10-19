@@ -2,6 +2,7 @@ import {
   getAuth,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  sendPasswordResetEmail,
   signOut,
   updatePassword,
   deleteUser,
@@ -17,6 +18,32 @@ export const auth = getAuth();
 interface AuthResponse {
   user?: User | null; // 2. Gunakan tipe User yang spesifik, bukan 'any'
   error: string | null;
+}
+
+// Pesan error Firebase Auth aslinya berbahasa Inggris dan teknis (contoh:
+// "Firebase: Error (auth/invalid-credential)."). Peta ini menerjemahkannya
+// menjadi pesan yang bisa dipahami pengguna, sekaligus jadi tempat tunggal
+// untuk menambah kode error baru di masa depan.
+const AUTH_ERROR_MESSAGES: Record<string, string> = {
+  'auth/invalid-credential': 'Email atau password salah. Periksa kembali data Anda.',
+  'auth/wrong-password': 'Email atau password salah. Periksa kembali data Anda.',
+  'auth/user-not-found': 'Akun dengan email tersebut tidak ditemukan. Silakan daftar terlebih dahulu.',
+  'auth/invalid-email': 'Format email tidak valid.',
+  'auth/user-disabled': 'Akun ini telah dinonaktifkan. Hubungi admin.',
+  'auth/too-many-requests': 'Terlalu banyak percobaan gagal. Coba lagi dalam beberapa menit.',
+  'auth/network-request-failed': 'Gagal terhubung ke server. Periksa koneksi internet Anda.',
+  'auth/operation-not-allowed': 'Metode login email/password belum diaktifkan. Hubungi admin.',
+  'auth/email-already-in-use': 'Email sudah terdaftar. Silakan login.',
+  'auth/weak-password': 'Password terlalu lemah, minimal 6 karakter.',
+  'auth/missing-email': 'Masukkan alamat email terlebih dahulu.',
+};
+
+function getAuthErrorMessage(error: unknown, fallback: string): string {
+  const code = typeof error === 'object' && error !== null && 'code' in error
+    ? String((error as { code: unknown }).code)
+    : null;
+  if (code && AUTH_ERROR_MESSAGES[code]) return AUTH_ERROR_MESSAGES[code];
+  return error instanceof Error ? error.message : fallback;
 }
 
 /**
@@ -35,7 +62,7 @@ export async function signUpWithEmail(email: string, password: string, role = 'u
     });
     return { user, error: null };
   } catch (error: unknown) {
-    return { error: error instanceof Error ? error.message : 'Terjadi kesalahan tidak diketahui saat mendaftar.' };
+    return { error: getAuthErrorMessage(error, 'Terjadi kesalahan tidak diketahui saat mendaftar.') };
   }
 }
 
@@ -47,7 +74,21 @@ export async function signInWithEmail(email: string, password: string): Promise<
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     return { user: userCredential.user, error: null };
   } catch (error: unknown) {
-      return { error: error instanceof Error ? error.message : 'Terjadi kesalahan tidak diketahui saat login.' };
+      return { error: getAuthErrorMessage(error, 'Terjadi kesalahan tidak diketahui saat login.') };
+  }
+}
+
+/**
+* Mengirim email reset password ke alamat email yang didaftarkan.
+* Firebase tidak memberi tahu apakah email terdaftar atau tidak (demi keamanan),
+* jadi pesan sukses selalu generik meskipun emailnya tidak ada di sistem.
+*/
+export async function sendResetPasswordEmail(email: string): Promise<{ error: string | null }> {
+  try {
+    await sendPasswordResetEmail(auth, email);
+    return { error: null };
+  } catch (error: unknown) {
+    return { error: getAuthErrorMessage(error, 'Gagal mengirim email reset password.') };
   }
 }
 

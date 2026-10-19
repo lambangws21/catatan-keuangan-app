@@ -278,7 +278,7 @@ export default function SaldoManager({
           <p className="dash-kicker">
             Riwayat Saldo
           </p>
-          <h2 className="mt-1 break-words text-base font-semibold text-white sm:text-lg">Sirkulasi Dana Terkini</h2>
+          <h2 className="mt-1 wrap-break-word text-base font-semibold text-white sm:text-lg">Sirkulasi Dana Terkini</h2>
           <p className="text-[11px] text-(--dash-muted)">
             {totalEntries} entri dapat diekspor dengan cepat.
           </p>
@@ -337,33 +337,31 @@ export default function SaldoManager({
         </Select>
       </div>
 
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-        <div className="dash-panel-soft min-w-0 rounded-xl p-2.5 text-slate-100">
+      <div className="grid grid-cols-2 gap-2">
+        <div className="min-w-0 rounded-2xl border border-emerald-400/25 bg-emerald-500/10 p-3">
           <div className="flex items-center gap-2">
-            <Wallet className="h-3.5 w-3.5 text-emerald-300" />
-            <p className="text-[8px] uppercase tracking-[0.22em] text-(--dash-muted)">
-              Total Saldo
-            </p>
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-emerald-500/20">
+              <Wallet className="h-3.5 w-3.5 text-emerald-300" />
+            </span>
+            <p className="text-[10px] uppercase tracking-widest text-(--dash-muted)">Total Saldo</p>
           </div>
-          <p className="dash-value mt-1.5 truncate text-xl font-semibold text-white sm:text-2xl">{formatCurrency(totalSaldo)}</p>
-          <p className="mt-1 text-[10px] text-(--dash-muted)">
-            {hasEntries ? `${totalEntries} transaksi` : "Belum ada data"}
+          <p className="mt-2 truncate text-xl font-semibold tabular-nums text-white sm:text-2xl">
+            {formatCurrency(totalSaldo)}
+          </p>
+          <p className="mt-0.5 text-[10px] text-(--dash-muted)">
+            {hasEntries ? `${totalEntries} entri` : "Belum ada data"}
           </p>
         </div>
-        <div className="dash-panel-soft min-w-0 rounded-xl p-2.5 text-slate-100">
-          <p className="text-[8px] uppercase tracking-[0.22em] text-(--dash-muted)">
-            Entri terbaru
-          </p>
+        <div className="min-w-0 rounded-2xl border border-white/10 bg-white/5 p-3">
+          <p className="text-[10px] uppercase tracking-widest text-(--dash-muted)">Entri Terbaru</p>
           {latestEntries.length === 0 ? (
-            <p className="mt-2 text-[11px] text-(--dash-muted)">
-              Tambahkan saldo untuk melihat ringkasan.
-            </p>
+            <p className="mt-2 text-[11px] text-(--dash-muted)">Tambahkan saldo untuk melihat ringkasan.</p>
           ) : (
-            <ul className="mt-2 space-y-1.5 text-[11px] text-slate-800 dark:text-white/90">
+            <ul className="mt-2 space-y-1.5">
               {latestEntries.map((item) => (
-                <li key={item.id} className="flex min-w-0 items-center justify-between gap-2">
-                  <span className="shrink-0 font-medium">{item.tanggal}</span>
-                  <span className="min-w-0 truncate text-(--dash-muted)">{formatCurrency(Number(item.jumlah))}</span>
+                <li key={item.id} className="flex min-w-0 items-center justify-between gap-2 rounded-lg bg-white/5 px-2 py-1">
+                  <span className="shrink-0 text-[11px] tabular-nums text-(--dash-muted)">{item.tanggal}</span>
+                  <span className="min-w-0 truncate text-right text-[11px] font-semibold text-white">{formatCurrency(Number(item.jumlah))}</span>
                 </li>
               ))}
             </ul>
@@ -371,21 +369,21 @@ export default function SaldoManager({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+      <div className="grid grid-cols-3 gap-2">
         {(["ZB", "NM", "OTHER"] as const).map((group) => (
           <div
             key={group}
-            className={`min-w-0 rounded-xl border p-2.5 ${saldoGroupStyles[group].card}`}
+            className={`relative min-w-0 overflow-hidden rounded-2xl border p-2.5 ${saldoGroupStyles[group].card}`}
           >
-            <div className="flex items-center justify-between gap-2">
-              <p className={`min-w-0 truncate text-[8px] uppercase tracking-[0.18em] ${saldoGroupStyles[group].title}`}>
+            <div className="flex items-center justify-between gap-1">
+              <p className={`min-w-0 truncate text-[9px] font-semibold uppercase tracking-widest ${saldoGroupStyles[group].title} ${group === "NM" ? "italic" : ""}`}>
                 {companyGroupLabel(group)}
               </p>
-              <span className={`rounded-full border px-1.5 py-0.5 text-[8px] ${saldoGroupStyles[group].badge}`}>
+              <span className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[8px] tabular-nums ${saldoGroupStyles[group].badge}`}>
                 {groupSummary[group].count}
               </span>
             </div>
-            <p className={`mt-1.5 truncate text-sm sm:text-base ${saldoGroupStyles[group].value}`}>
+            <p className={`mt-2 truncate text-sm font-semibold tabular-nums sm:text-base ${saldoGroupStyles[group].value}`}>
               {formatCurrency(groupSummary[group].total)}
             </p>
           </div>
@@ -432,7 +430,7 @@ export default function SaldoManager({
                       <TableCell className="px-2 py-1.5 font-medium text-white">
                         <span className="inline-flex items-center gap-2">
                           <StickyNote className="h-3.5 w-3.5 text-emerald-200/70" />
-                          <span className="line-clamp-2 break-words">{item.keterangan}</span>
+                          <span className="line-clamp-2 wrap-break-word">{item.keterangan}</span>
                         </span>
                       </TableCell>
                       <TableCell className="px-2 py-1.5">
@@ -507,7 +505,7 @@ export default function SaldoManager({
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.24em] text-(--dash-muted)">
+                      <p className="inline-flex items-center gap-2 text-[10px] uppercase tracking-widest text-(--dash-muted)">
                         <CalendarDays className="h-3.5 w-3.5 text-emerald-200/70" />
                         <span>{item.tanggal}</span>
                       </p>

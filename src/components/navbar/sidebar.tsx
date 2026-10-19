@@ -35,7 +35,7 @@ export default function Sidebar({ isCollapsed, toggleSidebar }: SidebarProps) {
   return (
     <>
       <motion.aside
-        className="hidden lg:flex h-screen flex-col fixed inset-y-0 left-0 z-40 border-r border-gray-700 bg-gradient-to-b from-slate-900 via-slate-900/80 to-slate-900/60 text-white shadow-2xl"
+        className="hidden lg:flex h-screen flex-col fixed inset-y-0 left-0 z-40 border-r border-gray-700 bg-linear-to-b from-slate-900 via-slate-900/80 to-slate-900/60 text-white shadow-2xl"
         animate={{ width: isCollapsed ? 80 : 260 }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
       >
@@ -72,7 +72,7 @@ export default function Sidebar({ isCollapsed, toggleSidebar }: SidebarProps) {
                         "flex items-center gap-3 rounded-2xl px-3 py-2 text-sm font-medium text-slate-200 transition-all",
                         isCollapsed && "justify-center px-2",
                         isActive
-                          ? "bg-gradient-to-r from-emerald-400/30 to-cyan-400/20 text-white shadow-lg"
+                          ? "bg-linear-to-r from-emerald-400/30 to-cyan-400/20 text-white shadow-lg"
                           : "hover:bg-white/5 hover:text-white"
                       )}
                     >
@@ -144,7 +144,7 @@ export default function Sidebar({ isCollapsed, toggleSidebar }: SidebarProps) {
               className={cn(
                 "flex flex-1 items-center justify-center rounded-2xl px-3 py-2 text-xs font-semibold text-slate-200 transition",
                 isActive
-                  ? "bg-gradient-to-b from-emerald-400/40 to-cyan-500/10 text-white shadow-inner"
+                  ? "bg-linear-to-b from-emerald-400/40 to-cyan-500/10 text-white shadow-inner"
                   : "hover:bg-white/10"
               )}
             >

@@ -81,6 +81,7 @@ interface MealsMeetingManagerProps {
   transactions: Transaction[];
   isLoading: boolean;
   onDataChange: () => Promise<void>;
+  defaultDate?: string;
 }
 
 const formatCurrency = (value: number) =>
@@ -153,6 +154,7 @@ export default function MealsMeetingManager({
   transactions,
   isLoading,
   onDataChange,
+  defaultDate,
 }: MealsMeetingManagerProps) {
   const meals = useMemo(
     () => transactions.filter((t) => t.jenisBiaya === MEALS_TYPE),
@@ -186,7 +188,7 @@ export default function MealsMeetingManager({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editing, setEditing] = useState<Transaction | null>(null);
 
-  const [tanggal, setTanggal] = useState(new Date().toISOString().split("T")[0]);
+  const [tanggal, setTanggal] = useState(defaultDate ?? new Date().toISOString().split("T")[0]);
   const [jumlah, setJumlah] = useState<number | undefined>(350_000);
   const [klaim, setKlaim] = useState(DEFAULT_KLAIM_NAME);
   const [sumberBiaya, setSumberBiaya] = useState<MealsPaymentSource>("deposit");
@@ -214,7 +216,7 @@ export default function MealsMeetingManager({
   }, [sumberBiaya]);
 
   const resetForm = useCallback(() => {
-    setTanggal(new Date().toISOString().split("T")[0]);
+    setTanggal(defaultDate ?? new Date().toISOString().split("T")[0]);
     setJumlah(350_000);
     setKlaim(DEFAULT_KLAIM_NAME);
     setSumberBiaya("deposit");
@@ -227,7 +229,7 @@ export default function MealsMeetingManager({
     setBerkas(null);
     if (previewUrl?.startsWith("blob:")) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
-  }, [previewUrl]);
+  }, [defaultDate, previewUrl]);
 
   const openCreate = useCallback(() => {
     setEditing(null);
@@ -416,9 +418,9 @@ export default function MealsMeetingManager({
           </p>
           <h2 className="mt-1 flex min-w-0 items-center gap-2 text-lg font-semibold text-white sm:text-xl">
             <Handshake className="h-5 w-5 shrink-0 text-amber-300" />
-            <span className="min-w-0 break-words">{DISPLAY_NAME}</span>
+            <span className="min-w-0 wrap-break-word">{DISPLAY_NAME}</span>
           </h2>
-          <p className="mt-1 max-w-xl break-words text-xs leading-5 text-(--dash-muted)">
+          <p className="mt-1 max-w-xl wrap-break-word text-xs leading-5 text-(--dash-muted)">
             Catat biaya meeting, sumber biaya, bukti, dokter operasi, tindakan, lokasi, dan peserta.
           </p>
         </div>
@@ -463,7 +465,7 @@ export default function MealsMeetingManager({
                 </DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="grid gap-4">
-                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                <div className="rounded-2xl border border-white/10 bg-white/3 p-3">
                   <p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-(--dash-muted)">
                     Detail Utama
                   </p>
@@ -493,7 +495,7 @@ export default function MealsMeetingManager({
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                <div className="rounded-2xl border border-white/10 bg-white/3 p-3">
                   <p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-(--dash-muted)">
                     Klaim & Sumber Biaya
                   </p>
@@ -544,7 +546,7 @@ export default function MealsMeetingManager({
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                <div className="rounded-2xl border border-white/10 bg-white/3 p-3">
                   <p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-(--dash-muted)">
                     Operasi & Lokasi
                   </p>
@@ -598,7 +600,7 @@ export default function MealsMeetingManager({
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                <div className="rounded-2xl border border-white/10 bg-white/3 p-3">
                   <p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-(--dash-muted)">
                     Bukti & Catatan
                   </p>
@@ -759,7 +761,7 @@ export default function MealsMeetingManager({
                 return (
                   <div
                     key={tx.id}
-                    className="rounded-xl border border-white/10 bg-white/[0.04] p-3"
+                    className="rounded-xl border border-white/10 bg-white/4 p-3"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
@@ -829,14 +831,14 @@ export default function MealsMeetingManager({
                 );
               })}
               {sortedMeals.length > 12 ? (
-                <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3 text-center text-xs text-(--dash-muted)">
+                <div className="rounded-xl border border-white/10 bg-white/4 p-3 text-center text-xs text-(--dash-muted)">
                   Menampilkan 12 data terbaru dari {sortedMeals.length} data. Gunakan tampilan desktop untuk melihat tabel lengkap.
                 </div>
               ) : null}
             </div>
 
             {/* Desktop table */}
-            <div className="hidden overflow-auto rounded-xl border border-white/10 bg-white/[0.04] xl:block">
+            <div className="hidden overflow-auto rounded-xl border border-white/10 bg-white/4 xl:block">
               <div className="max-h-[380px] overflow-auto">
                 <Table className="min-w-[860px] text-[11px]">
                   <TableHeader>

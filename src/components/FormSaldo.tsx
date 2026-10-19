@@ -25,16 +25,18 @@ interface SaldoFormProps {
     onSaldoAdded: () => Promise<void>; // Fungsi untuk me-refresh data setelah penambahan
     floatingOffset?: "bottom" | "stacked";
     trigger?: ReactNode;
+    defaultDate?: string;
 }
 
 export default function SaldoForm({
   onSaldoAdded,
   floatingOffset = "bottom",
   trigger,
+  defaultDate,
 }: SaldoFormProps) {
   const { user } = useAuth(); // Dapatkan info pengguna untuk autentikasi
   const [isOpen, setIsOpen] = useState(false);
-  const [tanggal, setTanggal] = useState(new Date().toISOString().split("T")[0]);
+  const [tanggal, setTanggal] = useState(defaultDate ?? new Date().toISOString().split("T")[0]);
   const [keterangan, setKeterangan] = useState("");
   // State 'jumlah' sekarang bertipe number untuk kompatibilitas dengan CurrencyInput
   const [jumlah, setJumlah] = useState<number | undefined>(undefined);
@@ -44,7 +46,7 @@ export default function SaldoForm({
   const [draftReady, setDraftReady] = useState(false);
 
   const resetForm = () => {
-    setTanggal(new Date().toISOString().split("T")[0]);
+    setTanggal(defaultDate ?? new Date().toISOString().split("T")[0]);
     setKeterangan("");
     setJumlah(undefined);
     try {
@@ -66,6 +68,7 @@ export default function SaldoForm({
     try {
       const raw = localStorage.getItem(DRAFT_KEY);
       if (!raw) {
+        if (defaultDate) setTanggal(defaultDate);
         setDraftReady(true);
         return;
       }
@@ -75,6 +78,7 @@ export default function SaldoForm({
         jumlah?: number;
       };
       if (typeof parsed.tanggal === "string") setTanggal(parsed.tanggal);
+      else if (defaultDate) setTanggal(defaultDate);
       if (typeof parsed.keterangan === "string") setKeterangan(parsed.keterangan);
       if (typeof parsed.jumlah === "number") setJumlah(parsed.jumlah);
     } catch {
@@ -82,7 +86,7 @@ export default function SaldoForm({
     } finally {
       setDraftReady(true);
     }
-  }, [DRAFT_KEY, draftReady, isOpen]);
+  }, [DRAFT_KEY, draftReady, isOpen, defaultDate]);
 
   useEffect(() => {
     if (!isOpen) return;

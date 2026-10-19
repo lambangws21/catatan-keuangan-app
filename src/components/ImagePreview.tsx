@@ -66,7 +66,7 @@ export default function ImageGallery({ transactions, isLoading }: ImageGalleryPr
           <p className="dash-kicker">
             Galeri
           </p>
-          <h2 className="mt-1 flex min-w-0 items-center gap-2 break-words text-xl font-semibold text-white sm:text-2xl">
+          <h2 className="mt-1 flex min-w-0 items-center gap-2 wrap-break-word text-xl font-semibold text-white sm:text-2xl">
             <ImageIcon className="h-5 w-5 text-cyan-300" />
             Galeri Berkas
           </h2>
@@ -80,7 +80,7 @@ export default function ImageGallery({ transactions, isLoading }: ImageGalleryPr
         <div className="dash-panel-soft rounded-xl p-6 text-center text-sm text-(--dash-muted) sm:p-8">
           <ImageIcon className="mx-auto mb-3 h-9 w-9 text-white/60" />
           <p className="font-semibold text-white/90">Tidak ada berkas gambar</p>
-          <p className="break-words">Tambahkan transaksi dengan berkas agar muncul di galeri.</p>
+          <p className="wrap-break-word">Tambahkan transaksi dengan berkas agar muncul di galeri.</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
@@ -102,7 +102,7 @@ export default function ImageGallery({ transactions, isLoading }: ImageGalleryPr
               />
               <div className="absolute inset-0 bg-linear-to-t from-black/85 via-black/10 to-transparent opacity-100">
                 <div className="absolute bottom-0 left-0 right-0 p-3">
-                  <p className="line-clamp-2 break-words text-xs font-semibold text-white">
+                  <p className="line-clamp-2 wrap-break-word text-xs font-semibold text-white">
                     {item.keterangan}
                   </p>
                   <p className="mt-1 truncate text-[10px] text-white/70">
@@ -144,7 +144,7 @@ export default function ImageGallery({ transactions, isLoading }: ImageGalleryPr
                 Detail
               </p>
               <h3 className="mt-2 text-lg font-bold text-cyan-700 dark:text-cyan-300">
-                <span className="break-words">{selectedItem?.keterangan}</span>
+                <span className="wrap-break-word">{selectedItem?.keterangan}</span>
               </h3>
               <div className="mt-4 space-y-3 text-sm">
                 <div className="flex items-center gap-3">

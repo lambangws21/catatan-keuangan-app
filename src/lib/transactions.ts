@@ -172,6 +172,13 @@ export function groupReimbursementSummary(
     });
 
   (["ZB", "NM", "OTHER"] as const).forEach((group) => {
+    // Hanya hitung reimburse jika ada saldo yang masuk untuk grup ini.
+    // Jika saldo belum diinput, kita tidak tahu berapa yang sudah diberikan kantor —
+    // jangan langsung anggap seluruh pengeluaran perlu reimburse.
+    if (summary[group].saldoTotal === 0) {
+      summary[group].reimbursementTotal = 0;
+      return;
+    }
     const deficit = summary[group].expenseTotal - summary[group].saldoTotal;
     summary[group].reimbursementTotal = Math.max(0, deficit);
   });

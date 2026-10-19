@@ -253,11 +253,11 @@ export function OperasiMaterialsList({
               )}
             </div>
 
-            <div className="mt-2 font-[9px] leading-snug wrap-break-words">
+            <div className="mt-2 font-[9px] leading-snug wrap-wrap-break-word">
               {item.implant}
             </div>
 
-            <div className="mt-1 text-[9px] text-muted-foreground wrap-break-words">
+            <div className="mt-1 text-[9px] text-muted-foreground wrap-wrap-break-word">
               {item.vendor ? item.vendor : "—"}
             </div>
 
@@ -273,11 +273,11 @@ export function OperasiMaterialsList({
               <div className="mt-1 grid grid-cols-2 gap-2 text-[9px]">
                 <div className="rounded-lg bg-muted/40 p-2">
                   <div className="text-muted-foreground">Component</div>
-                  <div className="font-medium wrap-break-words">{item.component ?? "-"}</div>
+                  <div className="font-medium wrap-wrap-break-word">{item.component ?? "-"}</div>
                 </div>
                 <div className="rounded-lg bg-muted/40 p-1">
                   <div className="text-muted-foreground">Material</div>
-                  <div className="font-light wrap-break-words">{item.material}</div>
+                  <div className="font-light wrap-wrap-break-word">{item.material}</div>
                 </div>
               </div>
             )}
@@ -287,7 +287,7 @@ export function OperasiMaterialsList({
                 <div className="text-[9px] text-muted-foreground">Notes: -</div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <div className="min-w-0 flex-1 text-[9px] text-foreground/80 wrap-break-words">
+                  <div className="min-w-0 flex-1 text-[9px] text-foreground/80 wrap-wrap-break-word">
                     <span className="text-muted-foreground ">Notes: </span>
                     {notesPreview}
                   </div>
@@ -521,9 +521,9 @@ export function OperasiMaterialsList({
                           className="w-full text-left"
                           onClick={() => toggleSelected(item.id)}
                         >
-                          <div className="font-medium wrap-break-words">{item.implant}</div>
+                          <div className="font-medium wrap-wrap-break-word">{item.implant}</div>
                           {item.vendor && (
-                            <div className="text-xs text-muted-foreground wrap-break-words">
+                            <div className="text-xs text-muted-foreground wrap-wrap-break-word">
                               {item.vendor}
                             </div>
                           )}
@@ -533,13 +533,13 @@ export function OperasiMaterialsList({
                       <td
                         className={cx(
                           isCompact ? "hidden lg:table-cell px-2 py-1.5" : "px-3 py-2",
-                          "align-top wrap-break-words"
+                          "align-top wrap-wrap-break-word"
                         )}
                       >
                         {item.component ?? "-"}
                       </td>
 
-                      <td className={cx(isCompact ? "px-2 py-1.5" : "px-3 py-2", "align-top wrap-break-words")}>
+                      <td className={cx(isCompact ? "px-2 py-1.5" : "px-3 py-2", "align-top wrap-wrap-break-word")}>
                         {item.material}
                       </td>
 
@@ -549,7 +549,7 @@ export function OperasiMaterialsList({
                         ) : (
                           <div className="flex items-center gap-2">
                             <div className={cx(isCompact ? "hidden 2xl:block min-w-0 flex-1" : "min-w-0 flex-1")}>
-                              <div className="line-clamp-2 text-xs text-foreground/80 wrap-break-words">
+                              <div className="line-clamp-2 text-xs text-foreground/80 wrap-wrap-break-word">
                                 {notesPreview}
                               </div>
                             </div>

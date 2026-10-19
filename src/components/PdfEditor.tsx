@@ -476,7 +476,7 @@ export default function PdfEditor() {
               <FileText className="h-3.5 w-3.5" />
               PDF Editor
             </p>
-            <h1 className="mt-3 break-words text-2xl font-semibold text-white sm:text-3xl">
+            <h1 className="mt-3 wrap-break-word text-2xl font-semibold text-white sm:text-3xl">
               Edit PDF Ringan
             </h1>
             <p className="mt-1 max-w-2xl text-sm leading-6 text-(--dash-muted)">
@@ -543,7 +543,7 @@ export default function PdfEditor() {
               onChange={handleFileChange}
               className="h-11 border-white/10 bg-white/5 text-sm text-white file:mr-3 file:h-9 file:rounded-md file:border-0 file:bg-cyan-500 file:px-3 file:text-slate-950"
             />
-            <p className="break-words text-xs text-(--dash-muted)">
+            <p className="wrap-break-word text-xs text-(--dash-muted)">
               {fileName || "Belum ada file dipilih."}
             </p>
           </div>
@@ -642,7 +642,7 @@ export default function PdfEditor() {
                           : "transparent",
                       }}
                     >
-                      <span className="inline-flex items-start gap-1 whitespace-pre-wrap break-words">
+                      <span className="inline-flex items-start gap-1 whitespace-pre-wrap wrap-break-word">
                         <Grip className="mt-1 h-3 w-3 shrink-0 opacity-50" />
                         {item.text}
                       </span>
